@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saqib Hussain (PE) | Lead Electrical Engineer | GCC Mega Projects</title>
+    <meta name="description" content="Lead Electrical Engineer with 18+ years GCC experience in Metro, High-Rise, Cinemas, and Infrastructure. Expert in MEP, ELV, ICT systems.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'electric-blue': '#00d4ff',
+                        'electric-dark': '#0099cc',
+                        'luxury-gold': '#d4af37',
+                        'luxury-gold-light': '#ffd700',
+                        'charcoal': '#0a0a0a',
+                        'charcoal-light': '#1a1a1a',
+                        'charcoal-lighter': '#2a2a2a'
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                        'serif': ['Playfair Display', 'serif'],
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'electric-glow': 'linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(212,175,55,0.05) 100%)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --electric-blue: #00d4ff;
+            --luxury-gold: #d4af37;
+        }
+        
+        body {
+            background-color: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, var(--electric-blue), var(--luxury-gold));
+            border-radius: 4px;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-strong {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Electric Glow Effects */
+        .glow-blue {
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+        .glow-gold {
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        .text-glow {
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        /* Hero Canvas */
+        #hero-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Animation Classes */
+        .reveal-up {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .reveal-fade {
+            opacity: 0;
+        }
+
+        /* Project Card Hover */
+        .project-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .project-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.2);
+        }
+
+        /* Timeline */
+        .timeline-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--electric-blue), var(--luxury-gold));
+            transform: translateX(-50%);
+        }
+        
+        @media (max-width: 768px) {
+            .timeline-line {
+                left: 30px;
+            }
+        }
+
+        /* Marquee */
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 30s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Loader */
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0a;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+        .loader-circle {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 212, 255, 0.1);
+            border-top-color: var(--electric-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Filter Buttons */
+        .filter-btn.active {
+            background: linear-gradient(135deg, var(--electric-blue), var(--electric-dark));
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Skill Bar Animation */
+        .skill-bar-fill {
+            width: 0;
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Parallax Image Container */
+        .parallax-container {
+            overflow: hidden;
+        }
+        .parallax-image {
+            transition: transform 0.2s ease-out;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-electric-blue selection:text-black">
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="text-center">
+            <div class="loader-circle mx-auto mb-4"></div>
+            <p class="text-electric-blue font-serif text-lg tracking-widest">SH</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 transition-all duration-300" id="navbar">
+        <div class="glass-strong border-b border-white/5">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-20">
+                    <div class="flex-shrink-0 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-electric-blue to-luxury-gold flex items-center justify-center text-black font-bold text-xl font-serif">SH</div>
+                        <div class="hidden md:block">
+                            <h1 class="font-serif text-xl font-bold text-white">Saqib Hussain <span class="text-electric-blue">(PE)</span></h1>
+                            <p class="text-xs text-gray-400 tracking-wider">LEAD ELECTRICAL ENGINEER</p>
+                        </div>
+                    </div>
+                    
+                    <div class="hidden md:flex items-center space-x-8">
+                        <a href="#about" class="text-sm text-gray-300 hover:text-electric-blue transition-colors uppercase tracking-wider">Profile</a>
+                        <a href="#projects" class="text-sm text-gray-300 hover:text-electric-blue transition-colors uppercase tracking-wider">Projects</a>
+                        <a href="#expertise" class="text-sm text-gray-300 hover:text-electric-blue transition-colors uppercase tracking-wider">Expertise</a>
+                        <a href="#experience" class="text-sm text-gray-300 hover:text-electric-blue transition-colors uppercase tracking-wider">Experience</a>
+                        <a href="#contact" class="px-6 py-2 bg-gradient-to-r from-electric-blue to-electric-dark text-black font-semibold rounded-full hover:shadow-lg hover:shadow-electric-blue/30 transition-all transform hover:scale-105">Contact</a>
+                    </div>
+
+                    <button class="md:hidden text-white" onclick="toggleMobileMenu()">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div class="md:hidden hidden glass-strong border-b border-white/10" id="mobile-menu">
+            <div class="px-4 pt-2 pb-6 space-y-2">
+                <a href="#about" class="block px-3 py-2 text-gray-300 hover:text-electric-blue">Profile</a>
+                <a href="#projects" class="block px-3 py-2 text-gray-300 hover:text-electric-blue">Projects</a>
+                <a href="#expertise" class="block px-3 py-2 text-gray-300 hover:text-electric-blue">Expertise</a>
+                <a href="#experience" class="block px-3 py-2 text-gray-300 hover:text-electric-blue">Experience</a>
+                <a href="#contact" class="block px-3 py-2 text-electric-blue font-semibold">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative h-screen flex items-center justify-center overflow-hidden">
+        <canvas id="hero-canvas"></canvas>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-charcoal/50 to-charcoal pointer-events-none"></div>
+        
+        <div class="relative z-10 text-center px-4 max-w-6xl mx-auto">
+            <div class="mb-6 inline-block">
+                <span class="px-4 py-1 rounded-full border border-electric-blue/30 text-electric-blue text-sm tracking-widest uppercase bg-electric-blue/10 backdrop-blur-sm reveal-fade">
+                    Professional Engineer
+                </span>
+            </div>
+            
+            <h1 class="font-serif text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
+                <span class="block text-white reveal-up" id="hero-title-1">Lead Electrical</span>
+                <span class="block text-transparent bg-clip-text bg-gradient-to-r from-electric-blue via-white to-luxury-gold reveal-up" id="hero-title-2">Engineer</span>
+            </h1>
+            
+            <p class="text-xl md:text-2xl text-gray-300 mb-4 font-light max-w-3xl mx-auto reveal-up" id="hero-subtitle">
+                18+ Years of Mega Projects in GCC
+            </p>
+            
+            <p class="text-gray-400 mb-10 max-w-2xl mx-auto reveal-up" id="hero-desc">
+                Specialized in Metro Systems, High-Rise Towers, Smart Cinemas & Infrastructure<br>
+                <span class="text-electric-blue">Saudi Arabia</span> & <span class="text-luxury-gold">Qatar</span>
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center reveal-up" id="hero-cta">
+                <a href="#projects" class="group px-8 py-4 bg-electric-blue text-black font-bold rounded-full hover:bg-white transition-all transform hover:scale-105 flex items-center justify-center gap-2 glow-blue">
+                    View Projects
+                    <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                <a href="Saqib_Hussain_PE_CV.pdf" download="Saqib_Hussain_PE_CV.pdf" 
+   class="px-8 py-4 border border-white/20 text-white font-semibold rounded-full hover:bg-white/10 hover:border-electric-blue transition-all backdrop-blur-sm flex items-center justify-center gap-2">
+    <i data-lucide="download" class="w-5 h-5"></i>
+    Download CV
+</a>
+            </div>
+        </div>
+
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <i data-lucide="chevron-down" class="w-6 h-6 text-electric-blue"></i>
+        </div>
+    </section>
+
+    <!-- About / Profile Section -->
+    <section id="about" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <!-- Image Side -->
+                <div class="relative parallax-container rounded-2xl overflow-hidden h-[600px] group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-electric-blue/20 to-luxury-gold/20 z-10 mix-blend-overlay"></div>
+                    <img src="images/profile.jpg" alt="Saqib Hussain" class="w-full h-full object-cover parallax-image transform scale-110 group-hover:scale-100 transition-transform duration-700 grayscale hover:grayscale-0">
+                    
+                    <!-- Floating Badge -->
+                    <div class="absolute bottom-8 left-8 z-20 glass p-4 rounded-xl border border-white/10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full bg-electric-blue/20 flex items-center justify-center">
+                                <i data-lucide="award" class="w-6 h-6 text-electric-blue"></i>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-white">PE</p>
+                                <p class="text-xs text-gray-400">Licensed Engineer</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Side -->
+                <div>
+                    <h2 class="font-serif text-4xl md:text-5xl font-bold mb-6 text-white">
+                        Engineering <span class="text-electric-blue">Excellence</span><br>
+                        Across <span class="text-luxury-gold">GCC</span>
+                    </h2>
+                    
+                    <p class="text-gray-300 text-lg mb-8 leading-relaxed">
+                        Lead Electrical Engineer with 18+ years of experience in engineering, project management, 
+                        design & build, and construction management for large-scale infrastructure, commercial, 
+                        and high-rise projects. Specialized in technical design, procurement, testing & commissioning, 
+                        and quality control.
+                    </p>
+
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-2 gap-6 mb-8">
+                        <div class="glass p-6 rounded-xl border border-white/5 hover:border-electric-blue/30 transition-colors group">
+                            <p class="text-4xl font-bold text-electric-blue mb-1 counter" data-target="18">0</p>
+                            <p class="text-gray-400 text-sm uppercase tracking-wider">Years Experience</p>
+                            <div class="h-1 w-0 bg-electric-blue mt-3 group-hover:w-full transition-all duration-500"></div>
+                        </div>
+                        <div class="glass p-6 rounded-xl border border-white/5 hover:border-luxury-gold/30 transition-colors group">
+                            <p class="text-4xl font-bold text-luxury-gold mb-1 counter" data-target="50">0</p>
+                            <p class="text-gray-400 text-sm uppercase tracking-wider">Mega Projects</p>
+                            <div class="h-1 w-0 bg-luxury-gold mt-3 group-hover:w-full transition-all duration-500"></div>
+                        </div>
+                        <div class="glass p-6 rounded-xl border border-white/5 hover:border-electric-blue/30 transition-colors group">
+                            <p class="text-4xl font-bold text-white mb-1 counter" data-target="2">0</p>
+                            <p class="text-gray-400 text-sm uppercase tracking-wider">Countries</p>
+                            <div class="h-1 w-0 bg-white mt-3 group-hover:w-full transition-all duration-500"></div>
+                        </div>
+                        <div class="glass p-6 rounded-xl border border-white/5 hover:border-luxury-gold/30 transition-colors group">
+                            <p class="text-4xl font-bold text-electric-blue mb-1">100%</p>
+                            <p class="text-gray-400 text-sm uppercase tracking-wider">Code Compliance</p>
+                            <div class="h-1 w-0 bg-electric-blue mt-3 group-hover:w-full transition-all duration-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Memberships -->
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 text-gray-300">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-luxury-gold"></i>
+                            <span>Pakistan Engineering Council (Elect/24950) since 2008</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-gray-300">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-luxury-gold"></i>
+                            <span>Saudi Council of Engineers (99995) since 2012</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="py-24 bg-charcoal-light relative">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%2300d4ff\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="text-center mb-16">
+                <h2 class="font-serif text-4xl md:text-5xl font-bold mb-4 text-white">Mega Projects <span class="text-electric-blue">Portfolio</span></h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">Iconic infrastructure, high-rise developments, and critical systems across Saudi Arabia and Qatar</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap justify-center gap-4 mb-12">
+                <button class="filter-btn active px-6 py-2 rounded-full border border-white/20 text-sm font-medium transition-all hover:border-electric-blue" onclick="filterProjects('all')">All Projects</button>
+                <button class="filter-btn px-6 py-2 rounded-full border border-white/20 text-sm font-medium transition-all hover:border-electric-blue" onclick="filterProjects('saudi')">Saudi Arabia</button>
+                <button class="filter-btn px-6 py-2 rounded-full border border-white/20 text-sm font-medium transition-all hover:border-electric-blue" onclick="filterProjects('qatar')">Qatar</button>
+                <button class="filter-btn px-6 py-2 rounded-full border border-white/20 text-sm font-medium transition-all hover:border-electric-blue" onclick="filterProjects('cinema')">Cinemas</button>
+                <button class="filter-btn px-6 py-2 rounded-full border border-white/20 text-sm font-medium transition-all hover:border-electric-blue" onclick="filterProjects('infrastructure')">Infrastructure</button>
+            </div>
+
+            <!-- Projects Grid -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" id="projects-grid">
+                
+                <!-- Conrad Hotel -->
+                <div class="project-card glass rounded-2xl overflow-hidden group" data-category="saudi high-rise">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="images/conrad-hotel.jpg" alt="Conrad Hotel" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60"></div>
+                        <div class="absolute top-4 right-4 px-3 py-1 bg-electric-blue/20 backdrop-blur-md rounded-full text-xs text-electric-blue border border-electric-blue/30">High-Rise</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-electric-blue transition-colors">Conrad Hotel Hilton</h3>
+                        <p class="text-gray-400 text-sm mb-3">Laysen Valley, Riyadh | 17-Storey</p>
+                        <p class="text-gray-300 text-sm mb-4">Technical selection and procurement of Electrical and ICT systems for luxury high-rise construction.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">IFC Drawings</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">ICT Systems</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- King Faisal Air Academy -->
+                <div class="project-card glass rounded-2xl overflow-hidden group" data-category="saudi military">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="images/king-faisal-academy.jpg" alt="KFAA" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60"></div>
+                        <div class="absolute top-4 right-4 px-3 py-1 bg-luxury-gold/20 backdrop-blur-md rounded-full text-xs text-luxury-gold border border-luxury-gold/30">Military</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-electric-blue transition-colors">King Faisal Air Academy</h3>
+                        <p class="text-gray-400 text-sm mb-3">Al Majma'ah | BAE Systems Compound</p>
+                        <p class="text-gray-300 text-sm mb-4">Design & build of Electrical, ELV, PV solar, MV/LV networks for high-security military facility.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">CDD/RSAF</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">PV Solar</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Security</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Qatar Metro -->
+                <div class="project-card glass rounded-2xl overflow-hidden group" data-category="qatar metro infrastructure">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="images/doha-metro.jpg" alt="Doha Metro" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60"></div>
+                        <div class="absolute top-4 right-4 px-3 py-1 bg-electric-blue/20 backdrop-blur-md rounded-full text-xs text-electric-blue border border-electric-blue/30">Metro</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-electric-blue transition-colors">Doha Metro Project</h3>
+                        <p class="text-gray-400 text-sm mb-3">Qatar Railways | 35km Tunnels</p>
+                        <p class="text-gray-300 text-sm mb-4">27 Stations (UG, Elevated, At-Grade), MEP coordination with international consultants.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">NFPA-70</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">QCS 2014</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">T&C</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MUVI Cinemas -->
+                <div class="project-card glass rounded-2xl overflow-hidden group" data-category="saudi cinema">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop" alt="MUVI Cinemas" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60"></div>
+                        <div class="absolute top-4 right-4 px-3 py-1 bg-luxury-gold/20 backdrop-blur-md rounded-full text-xs text-luxury-gold border border-luxury-gold/30">Cinema</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-electric-blue transition-colors">MUVI Cinemas</h3>
+                        <p class="text-gray-400 text-sm mb-3">Multiple Locations | 4DX Systems</p>
+                        <p class="text-gray-300 text-sm mb-4">Boulevard, Salam Mall, Khaleej Mall, Atelier Mall. Specialized cinema electrical & AV systems.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">4DX</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">TMS</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Crestron</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Al Bidda Park -->
+                <div class="project-card glass rounded-2xl overflow-hidden group" data-category="qatar infrastructure">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="images/al-bidda-park.jpg" alt="Al Bidda Park" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60"></div>
+                        <div class="absolute top-4 right-4 px-3 py-1 bg-electric-blue/20 backdrop-blur-md rounded-full text-xs text-electric-blue border border-electric-blue/30">Infrastructure</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-electric-blue transition-colors">Al Bidda Park</h3>
+                        <p class="text-gray-400 text-sm mb-3">Doha, Qatar | Smart Systems</p>
+                        <p class="text-gray-300 text-sm mb-4">Substations, pump rooms, landscape lighting, CCTV, Public Address, Wi-Fi, irrigation systems.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Smart City</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Landscape</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Substation</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bank Al Jazira -->
+                <div class="project-card glass rounded-2xl overflow-hidden group" data-category="saudi commercial">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="images/bank-al-jazira.jpg" alt="Bank Al Jazira" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60"></div>
+                        <div class="absolute top-4 right-4 px-3 py-1 bg-luxury-gold/20 backdrop-blur-md rounded-full text-xs text-luxury-gold border border-luxury-gold/30">Commercial</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-electric-blue transition-colors">Bank Al Jazira HQ</h3>
+                        <p class="text-gray-400 text-sm mb-3">Jeddah | 10 Floors</p>
+                        <p class="text-gray-300 text-sm mb-4">Head office electrical systems, ELV, security integration, and banking infrastructure.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Banking</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Security</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Burj Marina -->
+                <div class="project-card glass rounded-2xl overflow-hidden group" data-category="qatar high-rise">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="images/burj-marina.jpg" alt="Burj Marina" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60"></div>
+                        <div class="absolute top-4 right-4 px-3 py-1 bg-electric-blue/20 backdrop-blur-md rounded-full text-xs text-electric-blue border border-electric-blue/30">High-Rise</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-electric-blue transition-colors">Burj Marina Tower</h3>
+                        <p class="text-gray-400 text-sm mb-3">Doha | 36 Storey + 2 Basements</p>
+                        <p class="text-gray-300 text-sm mb-4">Complete MEP services for commercial/residential tower with KEO International consultant.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">MEP</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">High-Rise</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VOX Cinemas -->
+                <div class="project-card glass rounded-2xl overflow-hidden group" data-category="saudi cinema">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=400&fit=crop" alt="VOX Cinemas" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60"></div>
+                        <div class="absolute top-4 right-4 px-3 py-1 bg-luxury-gold/20 backdrop-blur-md rounded-full text-xs text-luxury-gold border border-luxury-gold/30">Cinema</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-electric-blue transition-colors">VOX Cinemas</h3>
+                        <p class="text-gray-400 text-sm mb-3">Galleria Mall, Jubail</p>
+                        <p class="text-gray-300 text-sm mb-4">Advanced cinema electrical infrastructure, AV systems, and specialized lighting.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">AV Systems</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Lighting</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Riyadh Parks -->
+                <div class="project-card glass rounded-2xl overflow-hidden group" data-category="saudi infrastructure">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="images/riyadh-parks.jpg" alt="Riyadh Parks" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60"></div>
+                        <div class="absolute top-4 right-4 px-3 py-1 bg-electric-blue/20 backdrop-blur-md rounded-full text-xs text-electric-blue border border-electric-blue/30">Infrastructure</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-electric-blue transition-colors">Riyadh Park Projects</h3>
+                        <p class="text-gray-400 text-sm mb-3">Oyena/Jubila Cantonment, Al Hair Garden</p>
+                        <p class="text-gray-300 text-sm mb-4">Landscape lighting, MV/LV substations, pump rooms, and admin buildings for municipal parks.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Landscape</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">Substations</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Skills & Expertise -->
+    <section id="expertise" class="py-24 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-electric-blue/5 to-transparent pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="text-center mb-16">
+                <h2 class="font-serif text-4xl md:text-5xl font-bold mb-4 text-white">Core <span class="text-electric-blue">Expertise</span></h2>
+                <p class="text-gray-400">Technical mastery across electrical, ELV, and ICT systems</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Skill Card 1 -->
+                <div class="glass p-8 rounded-2xl hover:border-electric-blue/30 transition-all duration-300 group">
+                    <div class="w-14 h-14 rounded-xl bg-electric-blue/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="zap" class="w-7 h-7 text-electric-blue"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Electrical Design & Build</h3>
+                    <p class="text-gray-400 text-sm mb-4">MV/LV networks, substations, earthing, and power distribution systems.</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                        <div class="skill-bar-fill bg-electric-blue h-1.5 rounded-full" data-width="95%"></div>
+                    </div>
+                </div>
+
+                <!-- Skill Card 2 -->
+                <div class="glass p-8 rounded-2xl hover:border-luxury-gold/30 transition-all duration-300 group">
+                    <div class="w-14 h-14 rounded-xl bg-luxury-gold/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="shield" class="w-7 h-7 text-luxury-gold"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">ELV & Security Systems</h3>
+                    <p class="text-gray-400 text-sm mb-4">Fire Alarm, PAVA, CCTV, BMS, Access Control, and Intrusion Detection.</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                        <div class="skill-bar-fill bg-luxury-gold h-1.5 rounded-full" data-width="92%"></div>
+                    </div>
+                </div>
+
+                <!-- Skill Card 3 -->
+                <div class="glass p-8 rounded-2xl hover:border-electric-blue/30 transition-all duration-300 group">
+                    <div class="w-14 h-14 rounded-xl bg-electric-blue/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="calculator" class="w-7 h-7 text-electric-blue"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Technical Calculations</h3>
+                    <p class="text-gray-400 text-sm mb-4">Load flow, short circuit, cable sizing, and lighting calculations.</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                        <div class="skill-bar-fill bg-electric-blue h-1.5 rounded-full" data-width="90%"></div>
+                    </div>
+                </div>
+
+                <!-- Skill Card 4 -->
+                <div class="glass p-8 rounded-2xl hover:border-luxury-gold/30 transition-all duration-300 group">
+                    <div class="w-14 h-14 rounded-xl bg-luxury-gold/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="clipboard-check" class="w-7 h-7 text-luxury-gold"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Testing & Commissioning</h3>
+                    <p class="text-gray-400 text-sm mb-4">Complete T&C of electrical systems, QA/QC compliance, and handover.</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                        <div class="skill-bar-fill bg-luxury-gold h-1.5 rounded-full" data-width="88%"></div>
+                    </div>
+                </div>
+
+                <!-- Skill Card 5 -->
+                <div class="glass p-8 rounded-2xl hover:border-electric-blue/30 transition-all duration-300 group">
+                    <div class="w-14 h-14 rounded-xl bg-electric-blue/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="users" class="w-7 h-7 text-electric-blue"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Project Management</h3>
+                    <p class="text-gray-400 text-sm mb-4">Construction management, stakeholder coordination, and resource planning.</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                        <div class="skill-bar-fill bg-electric-blue h-1.5 rounded-full" data-width="85%"></div>
+                    </div>
+                </div>
+
+                <!-- Skill Card 6 -->
+                <div class="glass p-8 rounded-2xl hover:border-luxury-gold/30 transition-all duration-300 group">
+                    <div class="w-14 h-14 rounded-xl bg-luxury-gold/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="file-text" class="w-7 h-7 text-luxury-gold"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Compliance & Standards</h3>
+                    <p class="text-gray-400 text-sm mb-4">NFPA, BS, IEC, SBC, QCS, CDD, RSAF, and local authority approvals.</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                        <div class="skill-bar-fill bg-luxury-gold h-1.5 rounded-full" data-width="98%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Software Skills -->
+            <div class="mt-16 glass rounded-2xl p-8 border border-white/5">
+                <h3 class="text-2xl font-bold text-white mb-8 text-center">Technical Software & Tools</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="text-center group">
+                        <div class="w-16 h-16 mx-auto rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:bg-electric-blue/20 transition-colors">
+                            <span class="text-electric-blue font-bold">REV</span>
+                        </div>
+                        <p class="text-sm text-gray-300">REVIT MEP</p>
+                    </div>
+                    <div class="text-center group">
+                        <div class="w-16 h-16 mx-auto rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:bg-electric-blue/20 transition-colors">
+                            <span class="text-electric-blue font-bold">CAD</span>
+                        </div>
+                        <p class="text-sm text-gray-300">AutoCAD</p>
+                    </div>
+                    <div class="text-center group">
+                        <div class="w-16 h-16 mx-auto rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:bg-luxury-gold/20 transition-colors">
+                            <span class="text-luxury-gold font-bold">DIAL</span>
+                        </div>
+                        <p class="text-sm text-gray-300">DIALux</p>
+                    </div>
+                    <div class="text-center group">
+                        <div class="w-16 h-16 mx-auto rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:bg-luxury-gold/20 transition-colors">
+                            <span class="text-luxury-gold font-bold">NAV</span>
+                        </div>
+                        <p class="text-sm text-gray-300">Navisworks</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Brands Marquee -->
+    <section class="py-16 bg-charcoal-light border-y border-white/5">
+        <div class="text-center mb-8">
+            <p class="text-gray-400 text-sm uppercase tracking-widest">Technology Partners & Brands</p>
+        </div>
+        <div class="marquee-container">
+            <div class="marquee-content flex items-center gap-16 text-gray-500">
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">SCHNEIDER</span>
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">ABB</span>
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">SIEMENS</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">EATON</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">PHILIPS</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">DYNALITE</span>
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">BOSCH</span>
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">CRESTRON</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">CUMMINS</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">BELDEN</span>
+                <!-- Duplicate for seamless loop -->
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">SCHNEIDER</span>
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">ABB</span>
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">SIEMENS</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">EATON</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">PHILIPS</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">DYNALITE</span>
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">BOSCH</span>
+                <span class="text-2xl font-bold hover:text-electric-blue transition-colors cursor-default">CRESTRON</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">CUMMINS</span>
+                <span class="text-2xl font-bold hover:text-luxury-gold transition-colors cursor-default">BELDEN</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Experience Timeline -->
+    <section id="experience" class="py-24 relative">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-serif text-4xl md:text-5xl font-bold mb-4 text-white">Professional <span class="text-electric-blue">Journey</span></h2>
+                <p class="text-gray-400">18+ years of progressive engineering leadership</p>
+            </div>
+
+            <div class="relative">
+                <div class="timeline-line"></div>
+
+                <!-- EDSCO 2024-Present -->
+                <div class="relative mb-12 md:mb-0">
+                    <div class="md:flex items-center justify-between">
+                        <div class="md:w-5/12 md:text-right md:pr-8 mb-4 md:mb-0 timeline-content-left">
+                            <div class="glass p-6 rounded-xl border border-white/10 hover:border-electric-blue/30 transition-all">
+                                <span class="text-electric-blue font-bold text-sm">2024 - Present</span>
+                                <h3 class="text-xl font-bold text-white mt-1">Sr. Electrical Engineer</h3>
+                                <p class="text-luxury-gold font-semibold mb-2">EDSCO</p>
+                                <p class="text-gray-400 text-sm">Conrad Hotel Hilton Laysen Valley. Technical selection and procurement of Electrical/ICT systems for 17-storey high-rise.</p>
+                            </div>
+                        </div>
+                        <div class="absolute left-8 md:left-1/2 transform md:-translate-x-1/2 w-4 h-4 bg-electric-blue rounded-full border-4 border-charcoal z-10"></div>
+                        <div class="md:w-5/12 md:pl-8 hidden md:block"></div>
+                    </div>
+                </div>
+
+                <!-- ACGC 2022-2024 -->
+                <div class="relative mb-12 md:mb-0 md:mt-12">
+                    <div class="md:flex items-center justify-between">
+                        <div class="md:w-5/12 md:pr-8 hidden md:block"></div>
+                        <div class="absolute left-8 md:left-1/2 transform md:-translate-x-1/2 w-4 h-4 bg-luxury-gold rounded-full border-4 border-charcoal z-10"></div>
+                        <div class="md:w-5/12 md:text-left md:pl-8 mb-4 md:mb-0 timeline-content-right">
+                            <div class="glass p-6 rounded-xl border border-white/10 hover:border-luxury-gold/30 transition-all">
+                                <span class="text-luxury-gold font-bold text-sm">2022 - 2024</span>
+                                <h3 class="text-xl font-bold text-white mt-1">Sr. Electrical Engineer</h3>
+                                <p class="text-electric-blue font-semibold mb-2">ACGC</p>
+                                <p class="text-gray-400 text-sm">King Faisal Air Academy (BAE Compound). Design & build of PV solar, MV/LV, security systems for military facility.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EDSCO 2019-2022 -->
+                <div class="relative mb-12 md:mb-0 md:mt-12">
+                    <div class="md:flex items-center justify-between">
+                        <div class="md:w-5/12 md:text-right md:pr-8 mb-4 md:mb-0 timeline-content-left">
+                            <div class="glass p-6 rounded-xl border border-white/10 hover:border-electric-blue/30 transition-all">
+                                <span class="text-electric-blue font-bold text-sm">2019 - 2022</span>
+                                <h3 class="text-xl font-bold text-white mt-1">Electrical Engineer</h3>
+                                <p class="text-luxury-gold font-semibold mb-2">EDSCO</p>
+                                <p class="text-gray-400 text-sm">Bank Al Jazira HQ, ENBD Banks, MUVI/VOX/Empire Cinemas. Technical Department - Design & Procurement.</p>
+                            </div>
+                        </div>
+                        <div class="absolute left-8 md:left-1/2 transform md:-translate-x-1/2 w-4 h-4 bg-electric-blue rounded-full border-4 border-charcoal z-10"></div>
+                        <div class="md:w-5/12 md:pl-8 hidden md:block"></div>
+                    </div>
+                </div>
+
+                <!-- REDCO 2016-2019 -->
+                <div class="relative mb-12 md:mb-0 md:mt-12">
+                    <div class="md:flex items-center justify-between">
+                        <div class="md:w-5/12 md:pr-8 hidden md:block"></div>
+                        <div class="absolute left-8 md:left-1/2 transform md:-translate-x-1/2 w-4 h-4 bg-luxury-gold rounded-full border-4 border-charcoal z-10"></div>
+                        <div class="md:w-5/12 md:text-left md:pl-8 mb-4 md:mb-0 timeline-content-right">
+                            <div class="glass p-6 rounded-xl border border-white/10 hover:border-luxury-gold/30 transition-all">
+                                <span class="text-luxury-gold font-bold text-sm">2016 - 2019</span>
+                                <h3 class="text-xl font-bold text-white mt-1">Sr. Electrical Engineer</h3>
+                                <p class="text-electric-blue font-semibold mb-2">REDCO International</p>
+                                <p class="text-gray-400 text-sm">Qatar Railways Doha Metro (35km tunnels, 27 stations), Al Bidda Park, Burj Marina 36-storey tower.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anjal Al Khaleej 2011-2015 -->
+                <div class="relative mb-12 md:mb-0 md:mt-12">
+                    <div class="md:flex items-center justify-between">
+                        <div class="md:w-5/12 md:text-right md:pr-8 mb-4 md:mb-0 timeline-content-left">
+                            <div class="glass p-6 rounded-xl border border-white/10 hover:border-electric-blue/30 transition-all">
+                                <span class="text-electric-blue font-bold text-sm">2011 - 2015</span>
+                                <h3 class="text-xl font-bold text-white mt-1">Electrical Engineer</h3>
+                                <p class="text-luxury-gold font-semibold mb-2">Anjal Al Khaleej</p>
+                                <p class="text-gray-400 text-sm">Infrastructure projects with Riyadh Municipalities. Substations, pump rooms, parks, buildings, roads.</p>
+                            </div>
+                        </div>
+                        <div class="absolute left-8 md:left-1/2 transform md:-translate-x-1/2 w-4 h-4 bg-electric-blue rounded-full border-4 border-charcoal z-10"></div>
+                        <div class="md:w-5/12 md:pl-8 hidden md:block"></div>
+                    </div>
+                </div>
+
+                <!-- PESCO 2007-2011 -->
+                <div class="relative md:mt-12">
+                    <div class="md:flex items-center justify-between">
+                        <div class="md:w-5/12 md:pr-8 hidden md:block"></div>
+                        <div class="absolute left-8 md:left-1/2 transform md:-translate-x-1/2 w-4 h-4 bg-luxury-gold rounded-full border-4 border-charcoal z-10"></div>
+                        <div class="md:w-5/12 md:text-left md:pl-8 mb-4 md:mb-0 timeline-content-right">
+                            <div class="glass p-6 rounded-xl border border-white/10 hover:border-luxury-gold/30 transition-all">
+                                <span class="text-luxury-gold font-bold text-sm">2007 - 2011</span>
+                                <h3 class="text-xl font-bold text-white mt-1">Electrical Engineer</h3>
+                                <p class="text-electric-blue font-semibold mb-2">PESCO</p>
+                                <p class="text-gray-400 text-sm">Power utility experience. Transformers, generators, MV/LV panels, WAPDA standards, power distribution.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Education & Certifications -->
+    <section class="py-24 bg-charcoal-light">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-16">
+                
+                <!-- Education -->
+                <div>
+                    <h2 class="font-serif text-3xl font-bold mb-8 text-white flex items-center gap-3">
+                        <i data-lucide="graduation-cap" class="text-electric-blue"></i>
+                        Education
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <div class="glass p-6 rounded-xl border-l-4 border-electric-blue">
+                            <h3 class="text-xl font-bold text-white">Bachelor of Electrical Engineering</h3>
+                            <p class="text-electric-blue font-semibold">University of Engineering & Technology, Peshawar</p>
+                            <p class="text-gray-400 text-sm mt-1">Pakistan, 2007</p>
+                        </div>
+                        
+                        <div class="glass p-6 rounded-xl border-l-4 border-luxury-gold">
+                            <h3 class="text-xl font-bold text-white">Higher Secondary School Certificate</h3>
+                            <p class="text-luxury-gold font-semibold">Modernage Public School & College</p>
+                            <p class="text-gray-400 text-sm mt-1">Pre-Engineering, Abbottabad, 2003</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Certifications -->
+                <div>
+                    <h2 class="font-serif text-3xl font-bold mb-8 text-white flex items-center gap-3">
+                        <i data-lucide="award" class="text-luxury-gold"></i>
+                        Certifications & Training
+                    </h2>
+                    
+                    <div class="grid gap-4">
+                        <div class="glass p-5 rounded-lg flex items-center gap-4 hover:border-electric-blue/30 transition-all">
+                            <div class="w-12 h-12 rounded-full bg-electric-blue/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="badge-check" class="w-6 h-6 text-electric-blue"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white">PMP® Preparatory Course</h4>
+                                <p class="text-sm text-gray-400">Advanced Project Management</p>
+                            </div>
+                        </div>
+
+                        <div class="glass p-5 rounded-lg flex items-center gap-4 hover:border-luxury-gold/30 transition-all">
+                            <div class="w-12 h-12 rounded-full bg-luxury-gold/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="shield" class="w-6 h-6 text-luxury-gold"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white">Safety in Switchgears & Fire</h4>
+                                <p class="text-sm text-gray-400">EATON Certified</p>
+                            </div>
+                        </div>
+
+                        <div class="glass p-5 rounded-lg flex items-center gap-4 hover:border-electric-blue/30 transition-all">
+                            <div class="w-12 h-12 rounded-full bg-electric-blue/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="settings" class="w-6 h-6 text-electric-blue"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white">O&M of MCC & SKM Units</h4>
+                                <p class="text-sm text-gray-400">Schneider Electric & Mannai Trading</p>
+                            </div>
+                        </div>
+
+                        <div class="glass p-5 rounded-lg flex items-center gap-4 hover:border-luxury-gold/30 transition-all">
+                            <div class="w-12 h-12 rounded-full bg-luxury-gold/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="zap" class="w-6 h-6 text-luxury-gold"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white">Technical & Safety Courses</h4>
+                                <p class="text-sm text-gray-400">PESCO T-500 & S-100 Certified</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-24 relative">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-electric-blue/5 pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="text-center mb-16">
+                <h2 class="font-serif text-4xl md:text-5xl font-bold mb-4 text-white">Let's Build the <span class="text-electric-blue">Future</span></h2>
+                <p class="text-gray-400">Available for leadership roles in GCC mega projects</p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-12">
+                <!-- Contact Info -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="glass p-6 rounded-xl border border-white/10">
+                        <div class="w-12 h-12 rounded-full bg-electric-blue/10 flex items-center justify-center mb-4">
+                            <i data-lucide="map-pin" class="w-6 h-6 text-electric-blue"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-1">Location</h3>
+                        <p class="text-gray-400">6552 Rawdhat Al Tenhat, Az Zahra<br>Riyadh 12812, Saudi Arabia</p>
+                    </div>
+
+                    <div class="glass p-6 rounded-xl border border-white/10">
+                        <div class="w-12 h-12 rounded-full bg-luxury-gold/10 flex items-center justify-center mb-4">
+                            <i data-lucide="mail" class="w-6 h-6 text-luxury-gold"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-1">Email</h3>
+                        <a href="mailto:engr.saqib@hotmail.com" class="text-gray-400 hover:text-electric-blue transition-colors">engr.saqib@hotmail.com</a>
+                    </div>
+
+                    <div class="glass p-6 rounded-xl border border-white/10">
+                        <div class="w-12 h-12 rounded-full bg-electric-blue/10 flex items-center justify-center mb-4">
+                            <i data-lucide="phone" class="w-6 h-6 text-electric-blue"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-1">Phone</h3>
+                        <p class="text-gray-400">+966 570 39 6865</p>
+                    </div>
+
+                   <a href="Saqib_Hussain_PE_CV.pdf" download="Saqib_Hussain_PE_CV.pdf" 
+   class="block w-full py-4 bg-gradient-to-r from-electric-blue to-electric-dark text-black font-bold rounded-xl text-center hover:shadow-lg hover:shadow-electric-blue/30 transition-all transform hover:scale-105">
+    <i data-lucide="download" class="w-5 h-5 inline-block mr-2"></i>
+    Download CV
+</a>
+
+                    <a href="https://sa.linkedin.com/in/saqib-hussain-318563b5" target="_blank" class="block w-full py-4 border border-white/20 text-white font-semibold rounded-xl text-center hover:bg-white/5 transition-all">
+                        <i data-lucide="linkedin" class="w-5 h-5 inline-block mr-2"></i>
+                        LinkedIn Profile
+                    </a>
+                </div>                
+<!-- Contact Form -->
+                <div class="lg:col-span-2">
+                    <form action="https://formspree.io/f/xkozozwj"method="POST">glass p-8 rounded-2xl border border-white/10">
+                        <!-- H: Your email where messages will be sent -->
+                        <input type="hidden" name="_replyto" value="engr.saqib@hotmail.com">
+                        <input type="hidden" name="_subject" value="New Portfolio Inquiry - Saqib Hussain PE">
+                        
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Name</label>
+                                <input type="text" name="name" required class="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-lg focus:border-electric-blue focus:outline-none text-white transition-colors" placeholder="Your Name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                                <input type="email" name="email" required class="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-lg focus:border-electric-blue focus:outline-none text-white transition-colors" placeholder="your@email.com">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Subject</label>
+                            <input type="text" name="subject" required class="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-lg focus:border-electric-blue focus:outline-none text-white transition-colors" placeholder="Project Opportunity / Consultation">
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Message</label>
+                            <textarea name="message" rows="5" required class="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-lg focus:border-electric-blue focus:outline-none text-white transition-colors resize-none" placeholder="Describe your project requirements..."></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full py-4 bg-gradient-to-r from-electric-blue to-electric-dark text-black font-bold rounded-lg hover:shadow-lg hover:shadow-electric-blue/30 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                            Send Message
+                        </button>
+                        
+                        <p class="text-center text-xs text-gray-500 mt-4">
+                            <i data-lucide="shield-check" class="w-3 h-3 inline-block mr-1"></i>
+                            Securely delivered to engr.saqib@hotmail.com
+                        </p>
+                    </form>
+                </div>
+
+                   
+    <!-- Footer -->
+    <footer class="py-12 border-t border-white/5 bg-charcoal-light">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-electric-blue to-luxury-gold flex items-center justify-center text-black font-bold text-xl font-serif">SH</div>
+                    <div>
+                        <h3 class="font-serif text-lg font-bold text-white">Saqib Hussain</h3>
+                        <p class="text-xs text-gray-400">Lead Electrical Engineer (PE)</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-8 text-sm text-gray-400">
+                    <a href="#about" class="hover:text-electric-blue transition-colors">Profile</a>
+                    <a href="#projects" class="hover:text-electric-blue transition-colors">Projects</a>
+                    <a href="#experience" class="hover:text-electric-blue transition-colors">Experience</a>
+                    <a href="#contact" class="hover:text-electric-blue transition-colors">Contact</a>
+                </div>
+
+                <div class="flex gap-4">
+                    <a href="https://sa.linkedin.com/in/saqib-hussain-318563b5" target="_blank" class="w-10 h-10 rounded-full glass flex items-center justify-center text-gray-400 hover:text-electric-blue hover:border-electric-blue/30 transition-all">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                    <a href="mailto:engr.saqib@hotmail.com" class="w-10 h-10 rounded-full glass flex items-center justify-center text-gray-400 hover:text-luxury-gold hover:border-luxury-gold/30 transition-all">
+                        <i data-lucide="mail" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="mt-8 pt-8 border-t border-white/5 text-center text-sm text-gray-500">
+                <p>&copy; 2024 Saqib Hussain (PE). All rights reserved. | Engineering Excellence in GCC</p>
+                <p class="mt-2 text-xs">Pakistan Engineering Council (Elect/24950) | Saudi Council of Engineers (99995)</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Remove Loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 500);
+                }
+            }, 1000);
+        });
+
+        // Mobile Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            if(menu) menu.classList.toggle('hidden');
+        }
+
+        // Project Filtering
+        function filterProjects(category) {
+            const cards = document.querySelectorAll('.project-card');
+            const buttons = document.querySelectorAll('.filter-btn');
+            
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.getAttribute('onclick').includes(category)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            cards.forEach(card => {
+                const cardCategory = card.getAttribute('data-category');
+                if(category === 'all' || cardCategory.includes(category)) {
+                    card.style.display = 'block';
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'scale(1)';
+                    }, 10);
+                } else {
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.8)';
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                    }, 400);
+                }
+            });
+        }
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if(target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const mobileMenu = document.getElementById('mobile-menu');
+                    if(mobileMenu) mobileMenu.classList.add('hidden');
+                }
+            });
+        });
+
+        // Counter Animation on Scroll
+        const observerOptions = {
+            threshold: 0.5,
+            rootMargin: "0px"
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const counters = entry.target.querySelectorAll('.counter');
+                    counters.forEach(counter => {
+                        const target = parseInt(counter.getAttribute('data-target'));
+                        let current = 0;
+                        const increment = target / 50;
+                        const timer = setInterval(() => {
+                            current += increment;
+                            if (current >= target) {
+                                counter.textContent = target + (target === 100 ? '%' : '+');
+                                clearInterval(timer);
+                            } else {
+                                counter.textContent = Math.floor(current) + (target === 100 ? '%' : '');
+                            }
+                        }, 30);
+                    });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.counter').forEach(counter => {
+            observer.observe(counter.parentElement.parentElement);
+        });
+
+        // Skill bars animation
+        const skillObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const bar = entry.target;
+                    const width = bar.getAttribute('data-width');
+                    bar.style.width = width;
+                    skillObserver.unobserve(bar);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('.skill-bar-fill').forEach(bar => {
+            skillObserver.observe(bar);
+        });
+    </script>
+</body>
+</html>
