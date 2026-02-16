@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LV Electrical Design Suite | Engr. Saqib Hussain (PE)</title>
+    
+    <!-- jsPDF and AutoTable Plugin for professional PDF tables -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --accent: #0066cc;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --text: #212529;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, #2c5282 100%);
+            color: white;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            max-height: 100px;
+            width: auto;
+        }
+
+        .header-text h1 {
+            margin: 0;
+        }
+
+        .header-text p {
+            margin: 0;
+            font-size: 0.9em;
+        }
+        
+        /* Navigation Tabs */
+        .nav-container {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .nav-tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-weight: 500;
+            color: var(--gray);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .nav-tab:hover {
+            color: var(--primary);
+            background-color: rgba(30,58,95,0.05);
+        }
+        
+        .nav-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background-color: rgba(0,102,204,0.05);
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+        
+        .module {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        
+        .module.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Card Layout */
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        /* Grid System for Input/Output */
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        @media (max-width: 968px) {
+            .calc-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+        }
+        
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .unit {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-left: 0.25rem;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0052a3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,102,204,0.3);
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .btn-secondary {
+            background-color: var(--gray);
+            color: white;
+        }
+        
+        .btn-edit {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-delete {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        /* Results Section */
+        .results-panel {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--accent);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            height: fit-content;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-label {
+            font-weight: 600;
+            color: var(--gray);
+        }
+        
+        .result-value {
+            font-weight: 700;
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .result-pass {
+            color: var(--success);
+        }
+        
+        .result-fail {
+            color: var(--danger);
+        }
+        
+        .result-warn {
+            color: #d97706;
+        }
+        
+        /* Alerts */
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .alert-info {
+            background-color: #e7f3ff;
+            border-left: 4px solid var(--accent);
+            color: #004085;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border-left: 4px solid var(--warning);
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background-color: #f8d7da;
+            border-left: 4px solid var(--danger);
+            color: #721c24;
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: var(--primary);
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        /* Badges */
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .badge-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        /* Utility */
+        .text-center { text-align: center; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-3 { margin-top: 1rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .d-flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        
+        /* Print styles */
+        @media print {
+            .nav-container, .btn, .no-print {
+                display: none !important;
+            }
+            .module {
+                display: block !important;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <img src="images/logo.png" alt="LV Electrical Design Suite Logo" class="logo" id="header-logo">
+        <div class="header-text">
+            <h1>LV Electrical Design Suite</h1>
+            <p>Quick calculators – Educational use only | Engr. Saqib Hussain (PE)</p>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-container">
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('cable')">Cable & Load</button>
+            <button class="nav-tab" onclick="switchTab('breaker')">Breaker Sizing</button>
+            <button class="nav-tab" onclick="switchTab('transformer')">Transformer Sizing</button>
+            <button class="nav-tab" onclick="switchTab('pfc')">Power Factor Correction</button>
+            <button class="nav-tab" onclick="switchTab('discrimination')">Discrimination</button>
+            <button class="nav-tab" onclick="switchTab('schedule')">Distribution Schedule</button>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- MODULE 1: CABLE & LOAD CALCULATOR -->
+        <section id="cable" class="module active">
+            <div class="calc-grid">
+                <div class="card">
+                    <div class="card-header">Input Parameters</div>
+                    <div class="card-body">
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>System Type</label>
+                                <select id="cable-system" onchange="calculateCable()">
+                                    <option value="3ph">3-Phase</option>
+                                    <option value="1ph">1-Phase</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Voltage <span class="unit">(V)</span></label>
+                                <input type="number" id="cable-voltage" value="400" oninput="calculateCable()">
+                            </div>
+                        </div>
+
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Load Input Mode</label>
+                                <select id="cable-load-mode" onchange="toggleLoadMode()">
+                                    <option value="kw">Real Power (kW)</option>
+                                    <option value="kva">Apparent Power (kVA)</option>
+                                    <option value="amps">Current (A)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label id="load-input-label">Load <span class="unit">(kW)</span></label>
+                                <input type="number" id="cable-load" value="50" oninput="calculateCable()">
+                            </div>
+                        </div>
+
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Power Factor</label>
+                                <input type="number" id="cable-pf" value="0.85" min="0.1" max="1" step="0.01" oninput="calculateCable()">
+                            </div>
+                            <div class="form-group">
+                                <label>Allowable Volt Drop <span class="unit">(%)</span></label>
+                                <input type="number" id="cable-vd-limit" value="5" step="0.1" oninput="calculateCable()">
+                            </div>
+                        </div>
+
+                        <hr style="margin: 1.5rem 0; border-color: var(--border);">
+
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Material</label>
+                                <select id="cable-material" onchange="updateCableSizes(); calculateCable()">
+                                    <option value="Cu">Copper (Cu)</option>
+                                    <option value="Al">Aluminum (Al)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Cable Size <span class="unit">(mm²)</span></label>
+                                <select id="cable-size" onchange="calculateCable()">
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Installation Method</label>
+                            <select id="cable-installation" onchange="calculateCable()">
+                                <option value="1.0">Method C (Clipped Direct)</option>
+                                <option value="0.85">Method E (In Free Air)</option>
+                                <option value="0.7">Method D (In Conduit)</option>
+                                <option value="0.65">Buried Direct</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Cable Length <span class="unit">(m)</span></label>
+                            <input type="number" id="cable-length" value="50" oninput="calculateCable()">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Prospective Fault Current (Isc) <span class="unit">(kA)</span> <small style="color:var(--gray)">Optional</small></label>
+                            <input type="number" id="cable-fault" value="" placeholder="e.g. 10" oninput="calculateCable()">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="exportCablePDF()" style="margin-top: 1rem;">
+                            Export to PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="results-panel">
+                        <h3 style="margin-bottom: 1rem; color: var(--primary);">Calculation Results</h3>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Design Current (Ib)</span>
+                            <span class="result-value" id="res-ib">0 A</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Cable Rating (Iz)</span>
+                            <span class="result-value" id="res-iz">0 A</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Loading on Cable</span>
+                            <span class="result-value" id="res-loading">0%</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Voltage Drop (ΔV)</span>
+                            <span class="result-value" id="res-vd-v">0 V</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Voltage Drop (%)</span>
+                            <span class="result-value" id="res-vd-pct">0%</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">End Voltage</span>
+                            <span class="result-value" id="res-end-v">0 V</span>
+                        </div>
+
+                        <div class="result-item" id="fault-result-row" style="display:none;">
+                            <span class="result-label">Est. Fault Current at End</span>
+                            <span class="result-value" id="res-fault-end">0 kA</span>
+                        </div>
+
+                        <hr style="margin: 1rem 0;">
+                        
+                        <div class="result-item">
+                            <span class="result-label">Voltage Drop Check</span>
+                            <span class="result-value" id="res-vd-status">-</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Cable Capacity Check</span>
+                            <span class="result-value" id="res-cap-status">-</span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <strong>Note:</strong> Calculations based on BS 7671 / IEC 60364 cable data (approximate values for copper at 90°C PVC and aluminum at 90°C XLPE). Verify with manufacturer's tables for critical designs.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 2: BREAKER SIZING -->
+        <section id="breaker" class="module">
+            <div class="calc-grid">
+                <div class="card">
+                    <div class="card-header">Protection Requirements</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Design Current (Ib) <span class="unit">(A)</span></label>
+                            <input type="number" id="break-ib" value="125">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Cable Rating (Iz) <span class="unit">(A)</span> <small>for comparison</small></label>
+                            <input type="number" id="break-iz" value="160" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Prospective Short-Circuit Current (Isc) <span class="unit">(kA)</span></label>
+                            <input type="number" id="break-isc" value="22" step="0.1">
+                        </div>
+
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Brand</label>
+                                <select id="break-brand" onchange="updateBreakerModels()">
+                                    <option value="Schneider">Schneider Electric</option>
+                                    <option value="ABB">ABB</option>
+                                    <option value="Siemens">Siemens</option>
+                                    <option value="Eaton">Eaton</option>
+                                    <option value="LS">LS Electric</option>
+                                    <option value="Hager">Hager</option>
+                                    <option value="Dormann">Dormann Smith</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Type</label>
+                                <select id="break-type" onchange="toggleMCBOptions()">
+                                    <option value="MCCB">MCCB (Molded Case)</option>
+                                    <option value="MCB">MCB (Miniature)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="mcb-curve-group" style="display:none;">
+                            <label>Trip Curve (MCB only)</label>
+                            <select id="break-curve">
+                                <option value="B">B Curve (3-5xIn)</option>
+                                <option value="C" selected>C Curve (5-10xIn)</option>
+                                <option value="D">D Curve (10-20xIn)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Safety Margin on In <span class="unit">(e.g. 1.25 for 125%)</span></label>
+                            <input type="number" id="break-margin" value="1.25" step="0.05" min="1.0">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="calculateBreaker()">
+                            Find Suitable Breaker
+                        </button>
+                        
+                        <button class="btn btn-success" onclick="exportBreakerPDF()" style="margin-left: 0.5rem;">
+                            Export PDF
+                        </button>
+                        
+                        <button class="btn btn-secondary" onclick="copyFromCable()" style="margin-top: 0.5rem;">
+                            Copy Data from Cable Module
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="results-panel">
+                        <h3 style="margin-bottom: 1rem; color: var(--primary);">Protection Analysis</h3>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Required In (with margin)</span>
+                            <span class="result-value" id="break-req-in">0 A</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Recommended Breaker</span>
+                            <span class="result-value" id="break-model" style="font-family: inherit; font-size: 0.9rem;">-</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Breaker Rating (In)</span>
+                            <span class="result-value" id="break-rating">0 A</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Breaking Capacity (Icu)</span>
+                            <span class="result-value" id="break-icu">0 kA</span>
+                        </div>
+
+                        <hr style="margin: 1rem 0;">
+                        
+                        <div class="result-item">
+                            <span class="result-label">Overload Protection</span>
+                            <span class="result-value" id="break-overload-check">-</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Short-Circuit Capacity</span>
+                            <span class="result-value" id="break-sc-check">-</span>
+                        </div>
+                        
+                        <div class="alert alert-warning mt-3" id="break-comment" style="display:none;">
+                            Commentary will appear here...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: TRANSFORMER SIZING -->
+        <section id="transformer" class="module">
+            <div class="calc-grid">
+                <div class="card">
+                    <div class="card-header">Transformer Requirements</div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-2">
+                            Assumes 3-Phase, 400V secondary output (LV side).
+                        </div>
+
+                        <div class="form-group">
+                            <label>Total Connected Load</label>
+                            <div class="input-row">
+                                <input type="number" id="xfmr-load" value="350" step="0.1">
+                                <select id="xfmr-load-unit" style="width: 120px;">
+                                    <option value="kw">kW</option>
+                                    <option value="kva">kVA</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Overall Power Factor</label>
+                            <input type="number" id="xfmr-pf" value="0.85" min="0.1" max="1" step="0.01">
+                        </div>
+
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Future Expansion Margin <span class="unit">(%)</span></label>
+                                <input type="number" id="xfmr-margin" value="20" min="0" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label>Maximum Desired Loading <span class="unit">(%)</span></label>
+                                <input type="number" id="xfmr-loading" value="80" min="50" max="100">
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="calculateTransformer()">
+                            Size Transformer
+                        </button>
+                        <button class="btn btn-success" onclick="exportTransformerPDF()" style="margin-left: 0.5rem;">
+                            Export PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="results-panel">
+                        <h3 style="margin-bottom: 1rem; color: var(--primary);">Sizing Results</h3>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Calculated Load (S)</span>
+                            <span class="result-value" id="xfmr-calc-kva">0 kVA</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">With Future Margin</span>
+                            <span class="result-value" id="xfmr-future-kva">0 kVA</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Required Capacity @ <span id="xfmr-target-load">80</span>%</span>
+                            <span class="result-value" id="xfmr-req-kva">0 kVA</span>
+                        </div>
+
+                        <hr style="margin: 1rem 0;">
+                        
+                        <div class="result-item" style="background: rgba(0,102,204,0.1); padding: 1rem; border-radius: 4px;">
+                            <span class="result-label">Recommended Standard Size</span>
+                            <span class="result-value" id="xfmr-rec" style="font-size: 1.2rem;">0 kVA</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Full Load Current (400V)</span>
+                            <span class="result-value" id="xfmr-flc">0 A</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Actual Loading</span>
+                            <span class="result-value" id="xfmr-actual-load">0%</span>
+                        </div>
+                        
+                        <div class="alert mt-3" id="xfmr-warning" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: POWER FACTOR CORRECTION -->
+        <section id="pfc" class="module">
+            <div class="calc-grid">
+                <div class="card">
+                    <div class="card-header">Power Factor Correction</div>
+                    <div class="card-body">
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>System</label>
+                                <select id="pfc-system">
+                                    <option value="3ph">3-Phase</option>
+                                    <option value="1ph">1-Phase</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Voltage <span class="unit">(V)</span></label>
+                                <input type="number" id="pfc-voltage" value="400">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Real Power (P) <span class="unit">(kW)</span></label>
+                            <input type="number" id="pfc-kw" value="200" step="0.1">
+                        </div>
+
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Existing PF (cos φ₁)</label>
+                                <input type="number" id="pfc-pf1" value="0.75" min="0.1" max="1" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label>Target PF (cos φ₂)</label>
+                                <input type="number" id="pfc-pf2" value="0.95" min="0.1" max="1" step="0.01">
+                            </div>
+                        </div>
+
+                        <hr style="margin: 1.5rem 0;">
+                        
+                        <div class="form-group">
+                            <label>Energy Tariff (Optional) <span class="unit">($/kVA demand/month)</span></label>
+                            <input type="number" id="pfc-tariff" value="0" placeholder="For savings estimate">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="calculatePFC()">
+                            Calculate Correction
+                        </button>
+                        <button class="btn btn-success" onclick="exportPFCPDF()" style="margin-left: 0.5rem;">
+                            Export PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="results-panel">
+                        <h3 style="margin-bottom: 1rem; color: var(--primary);">Correction Requirements</h3>
+                        
+                        <div class="result-item">
+                            <span class="result-label">tan φ₁ (Existing)</span>
+                            <span class="result-value" id="pfc-tan1">0</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">tan φ₂ (Target)</span>
+                            <span class="result-value" id="pfc-tan2">0</span>
+                        </div>
+
+                        <div class="result-item" style="background: rgba(40,167,69,0.1); padding: 1rem; border-radius: 4px; margin: 0.5rem 0;">
+                            <span class="result-label">Required Capacitor (Qc)</span>
+                            <span class="result-value result-pass" id="pfc-kvar" style="font-size: 1.1rem;">0 kVAR</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Capacitance/Phase (Est.) <span id="pfc-conn-type" style="font-size:0.8rem;color:var(--gray)"></span></span>
+                            <span class="result-value" id="pfc-uf">0 µF</span>
+                        </div>
+
+                        <hr style="margin: 1rem 0;">
+                        
+                        <h4 style="margin-bottom: 0.5rem; color: var(--primary);">Current Impact</h4>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Current (Before)</span>
+                            <span class="result-value" id="pfc-i1">0 A</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Current (After)</span>
+                            <span class="result-value result-pass" id="pfc-i2">0 A</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Current Reduction</span>
+                            <span class="result-value" id="pfc-reduction">0%</span>
+                        </div>
+
+                        <div class="alert alert-info mt-3" id="pfc-savings" style="display:none;">
+                            Estimated monthly savings: <strong id="pfc-save-amt">$0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 5: DISCRIMINATION -->
+        <section id="discrimination" class="module">
+            <div class="card">
+                <div class="card-header">Selectivity / Discrimination Check (Simplified)</div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>Disclaimer:</strong> This is a preliminary rule-of-thumb check only. Final discrimination analysis requires manufacturer TCC curves, selectivity tables, and cascading data. Consult manufacturer guides for critical protection coordination.
+                    </div>
+
+                    <div class="calc-grid" style="margin-top: 1.5rem;">
+                        <div>
+                            <h3 style="color: var(--primary); margin-bottom: 1rem; border-bottom: 2px solid var(--accent); display: inline-block;">Upstream (Feeder)</h3>
+                            <div class="form-group">
+                                <label>Breaker Model</label>
+                                <input type="text" id="disc-up-model" placeholder="e.g. NSX 250" value="Compact NSX 250">
+                            </div>
+                            <div class="input-row">
+                                <div class="form-group">
+                                    <label>In Rating <span class="unit">(A)</span></label>
+                                    <input type="number" id="disc-up-in" value="250">
+                                </div>
+                                <div class="form-group">
+                                    <label>Icu <span class="unit">(kA)</span></label>
+                                    <input type="number" id="disc-up-icu" value="36">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Curve / Type</label>
+                                <select id="disc-up-curve">
+                                    <option value="TM">Thermal-Magnetic</option>
+                                    <option value="M">Magnetic Only</option>
+                                    <option value="E">Electronic</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 style="color: var(--primary); margin-bottom: 1rem; border-bottom: 2px solid var(--accent); display: inline-block;">Downstream (Sub-main)</h3>
+                            <div class="form-group">
+                                <label>Breaker Model</label>
+                                <input type="text" id="disc-down-model" placeholder="e.g. NSX 160" value="Compact NSX 160">
+                            </div>
+                            <div class="input-row">
+                                <div class="form-group">
+                                    <label>In Rating <span class="unit">(A)</span></label>
+                                    <input type="number" id="disc-down-in" value="160">
+                                </div>
+                                <div class="form-group">
+                                    <label>Icu <span class="unit">(kA)</span></label>
+                                    <input type="number" id="disc-down-icu" value="36">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Curve Type</label>
+                                <select id="disc-down-curve">
+                                    <option value="TM">Thermal-Magnetic</option>
+                                    <option value="B">MCB-B</option>
+                                    <option value="C">MCB-C</option>
+                                    <option value="D">MCB-D</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label>Fault Current at Downstream Location <span class="unit">(kA)</span></label>
+                        <input type="number" id="disc-isc" value="15">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="checkDiscrimination()" style="margin-top: 1rem;">
+                        Run Discrimination Check
+                    </button>
+                    <button class="btn btn-success" onclick="exportDiscPDF()" style="margin-left: 0.5rem;">
+                        Export PDF
+                    </button>
+
+                    <div id="disc-results" style="margin-top: 2rem; display:none;">
+                        <table id="disc-table">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Upstream</th>
+                                    <th>Downstream</th>
+                                    <th>Assessment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="disc-table-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                        
+                        <div class="alert mt-3" id="disc-verdict" style="margin-top: 1rem;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 6: DISTRIBUTION SCHEDULE -->
+        <section id="schedule" class="module">
+            <div class="card">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>LV Distribution Schedule (Panel Board)</span>
+                    <div class="d-flex gap-2">
+                        <input type="text" id="panel-name" placeholder="Panel ID (e.g. LV-SDB-01)" style="width:200px;">
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-2">
+                        Add circuits one by one. Calculations are automatic based on inputs.
+                    </div>
+
+                    <!-- Add Circuit Form -->
+                    <div style="background:#f8f9fa; padding:1rem; border-radius:4px; margin-bottom:1.5rem; border:1px solid var(--border);">
+                        <h4 style="margin-bottom:1rem; color:var(--primary);">Add New Circuit</h4>
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Circuit ID</label>
+                                <input type="text" id="sch-cct-id" placeholder="e.g. R1">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <input type="text" id="sch-desc" placeholder="e.g. Lighting Floor 1">
+                            </div>
+                        </div>
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Load <span class="unit">(kW)</span></label>
+                                <input type="number" id="sch-load" step="0.01" placeholder="0">
+                            </div>
+                            <div class="form-group">
+                                <label>System</label>
+                                <select id="sch-system">
+                                    <option value="3ph">3-Phase</option>
+                                    <option value="1ph">1-Phase</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Voltage <span class="unit">(V)</span></label>
+                                <input type="number" id="sch-volts" value="230">
+                            </div>
+                            <div class="form-group">
+                                <label>Power Factor</label>
+                                <input type="number" id="sch-pf" value="0.85" step="0.01" min="0" max="1">
+                            </div>
+                        </div>
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label>Cable Size</label>
+                                <input type="text" id="sch-cable" placeholder="e.g. 4C x 6mm² XLPE">
+                            </div>
+                            <div class="form-group">
+                                <label>Breaker</label>
+                                <input type="text" id="sch-breaker" placeholder="e.g. 32A Type C">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Demand Factor <span class="unit">(%)</span></label>
+                            <input type="number" id="sch-demand" value="100" min="0" max="100">
+                        </div>
+                        <button class="btn btn-success" onclick="addScheduleRow()">
+                            Add Circuit to Schedule
+                        </button>
+                    </div>
+
+                    <!-- Schedule Table -->
+                    <div class="table-container">
+                        <table id="schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>Cct</th>
+                                    <th>Description</th>
+                                    <th>Load (kW)</th>
+                                    <th>PF</th>
+                                    <th>Ib (A)</th>
+                                    <th>Demand (%)</th>
+                                    <th>Demand (kW)</th>
+                                    <th>Demand (kVA)</th>
+                                    <th>Cable</th>
+                                    <th>Breaker</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schedule-body">
+                                <!-- Rows added here -->
+                            </tbody>
+                            <tfoot style="background:#e9ecef; font-weight:bold;">
+                                <tr>
+                                    <td colspan="2">TOTALS</td>
+                                    <td id="tot-connected-kw">0</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td id="tot-demand-kw">0</td>
+                                    <td id="tot-demand-kva">0</td>
+                                    <td colspan="3">Suggested Main: <span id="suggested-main" style="color:var(--accent);">-</span></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="mt-3 d-flex justify-between">
+                        <button class="btn btn-secondary" onclick="clearSchedule()">
+                            Clear All
+                        </button>
+                        <button class="btn btn-primary" onclick="exportSchedulePDF()">
+                            Export Schedule to PDF (Landscape)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+    /* ==========================================
+       DATA SECTION - Shared across modules
+       ========================================== */
+
+    // Breaker Database - Simplified representative data
+    const breakerData = {
+        "Schneider": {
+            "MCCB": [
+                {model: "Compact NSX 100", inMax: 100, icu: 36},
+                {model: "Compact NSX 160", inMax: 160, icu: 36},
+                {model: "Compact NSX 250", inMax: 250, icu: 36},
+                {model: "Compact NSX 400", inMax: 400, icu: 45},
+                {model: "Compact NSX 630", inMax: 630, icu: 50}
+            ],
+            "MCB": [
+                {model: "Acti9 iC60N 1P", ratings: [6,10,16,20,25,32,40,50,63], icu: 10},
+                {model: "Acti9 iC60H 1P", ratings: [6,10,16,20,25,32,40,50,63], icu: 15}
+            ]
+        },
+        "ABB": {
+            "MCCB": [
+                {model: "Tmax XT1", inMax: 160, icu: 36},
+                {model: "Tmax XT2", inMax: 250, icu: 36},
+                {model: "Tmax XT3", inMax: 400, icu: 36},
+                {model: "Tmax XT4", inMax: 630, icu: 45}
+            ],
+            "MCB": [
+                {model: "S200 1P", ratings: [6,10,16,20,25,32,40,50,63], icu: 6},
+                {model: "S200M 1P", ratings: [6,10,16,20,25,32,40,50,63], icu: 10}
+            ]
+        },
+        "Siemens": {
+            "MCCB": [
+                {model: "3VA1 160", inMax: 160, icu: 36},
+                {model: "3VA1 250", inMax: 250, icu: 36},
+                {model: "3VA2 400", inMax: 400, icu: 55}
+            ],
+            "MCB": [
+                {model: "5SY6 1P", ratings: [6,10,16,20,25,32,40,50,63], icu: 6}
+            ]
+        },
+        "Eaton": {
+            "MCCB": [
+                {model: "NZM 100", inMax: 100, icu: 50},
+                {model: "NZM 160", inMax: 160, icu: 50},
+                {model: "NZM 250", inMax: 250, icu: 50}
+            ],
+            "MCB": [
+                {model: "PLHT 1P", ratings: [10,16,20,25,32,40,50,63,80,100], icu: 15}
+            ]
+        },
+        "LS": {
+            "MCCB": [
+                {model: "Meta-MEC 100", inMax: 100, icu: 35},
+                {model: "Meta-MEC 250", inMax: 250, icu: 35},
+                {model: "Susol 400", inMax: 400, icu: 50}
+            ],
+            "MCB": [
+                {model: "BKN 1P", ratings: [6,10,16,20,25,32,40,50,63], icu: 10}
+            ]
+        },
+        "Hager": {
+            "MCB": [
+                {model: "MCN 1P", ratings: [6,10,16,20,25,32,40,50,63], icu: 6}
+            ],
+            "MCCB": [
+                {model: "HDA 160", inMax: 160, icu: 25},
+                {model: "HDA 250", inMax: 250, icu: 25}
+            ]
+        },
+        "Dormann": {
+            "MCCB": [
+                {model: "Loadline 160", inMax: 160, icu: 25},
+                {model: "Loadline 250", inMax: 250, icu: 25},
+                {model: "Loadline 400", inMax: 400, icu: 36}
+            ],
+            "MCB": [
+                {model: "DM60 1P", ratings: [6,10,16,20,25,32,40,50,63], icu: 10}
+            ]
+        }
+    };
+
+    // Cable Data (R and X in ohm/km, Iz in A at 30°C ambient, method C base)
+    const cableDatabase = {
+        "Cu": {
+            "1.5": {r: 12.1, x: 0.15, iz: 19},
+            "2.5": {r: 7.41, x: 0.15, iz: 26},
+            "4": {r: 4.61, x: 0.14, iz: 35},
+            "6": {r: 3.08, x: 0.13, iz: 44},
+            "10": {r: 1.83, x: 0.13, iz: 61},
+            "16": {r: 1.15, x: 0.12, iz: 82},
+            "25": {r: 0.727, x: 0.12, iz: 108},
+            "35": {r: 0.524, x: 0.11, iz: 136},
+            "50": {r: 0.387, x: 0.11, iz: 165},
+            "70": {r: 0.268, x: 0.10, iz: 210},
+            "95": {r: 0.193, x: 0.10, iz: 257},
+            "120": {r: 0.153, x: 0.10, iz: 300},
+            "150": {r: 0.124, x: 0.09, iz: 344},
+            "185": {r: 0.0991, x: 0.09, iz: 397},
+            "240": {r: 0.0772, x: 0.09, iz: 478},
+            "300": {r: 0.0618, x: 0.08, iz: 552}
+        },
+        "Al": {
+            "16": {r: 1.91, x: 0.12, iz: 64},
+            "25": {r: 1.20, x: 0.12, iz: 84},
+            "35": {r: 0.868, x: 0.11, iz: 105},
+            "50": {r: 0.641, x: 0.11, iz: 130},
+            "70": {r: 0.443, x: 0.10, iz: 167},
+            "95": {r: 0.320, x: 0.10, iz: 205},
+            "120": {r: 0.253, x: 0.10, iz: 240},
+            "150": {r: 0.206, x: 0.09, iz: 278},
+            "185": {r: 0.164, x: 0.09, iz: 322},
+            "240": {r: 0.125, x: 0.09, iz: 389},
+            "300": {r: 0.100, x: 0.08, iz: 450}
+        }
+    };
+
+    // Standard Transformer Ratings (kVA)
+    const standardTransformers = [100, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500];
+
+    // Global variable to store logo base64 data
+    let logoBase64 = null;
+    let logoLoaded = false;
+
+    /* ==========================================
+       INITIALIZATION
+       ========================================== */
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCableSizes();
+        calculateCable();
+        initLogo();
+    });
+
+    // Initialize logo with multiple attempts
+    function initLogo() {
+        const img = document.getElementById('header-logo');
+        
+        if (!img) {
+            console.error('Logo image element not found');
+            return;
+        }
+
+        // If already loaded
+        if (img.complete && img.naturalWidth > 0) {
+            convertLogoToBase64(img);
+            return;
+        }
+
+        // Wait for load
+        img.onload = function() {
+            console.log('Logo loaded successfully');
+            convertLogoToBase64(img);
+        };
+
+        img.onerror = function() {
+            console.error('Logo failed to load from:', img.src);
+            // Try alternative path
+            tryAlternativeLogoPath();
+        };
+
+        // Timeout fallback
+        setTimeout(function() {
+            if (!logoLoaded) {
+                console.warn('Logo load timeout, trying alternative method');
+                tryAlternativeLogoPath();
+            }
+        }, 3000);
+    }
+
+    // Try to load logo with fetch as alternative
+    function tryAlternativeLogoPath() {
+        const paths = ['images/logo.png', 'logo.png', './images/logo.png', '../images/logo.png'];
+        let currentPath = 0;
+
+        function tryNextPath() {
+            if (currentPath >= paths.length) {
+                console.error('All logo paths failed');
+                return;
+            }
+
+            const img = new Image();
+            img.onload = function() {
+                console.log('Logo loaded from alternative path:', paths[currentPath]);
+                convertLogoToBase64(img);
+            };
+            img.onerror = function() {
+                currentPath++;
+                tryNextPath();
+            };
+            img.src = paths[currentPath];
+        }
+
+        tryNextPath();
+    }
+
+    // Convert loaded image to base64
+    function convertLogoToBase64(img) {
+        try {
+            const canvas = document.createElement('canvas');
+            // Use natural dimensions
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            logoBase64 = canvas.toDataURL('image/png');
+            logoLoaded = true;
+            
+            console.log('Logo converted to base64 successfully. Size:', canvas.width, 'x', canvas.height);
+        } catch (e) {
+            console.error('Error converting logo to base64:', e);
+        }
+    }
+
+    // Tab Switching
+    function switchTab(tabId) {
+        document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // Populate cable size dropdown initially
+    function updateCableSizes() {
+        const mat = document.getElementById('cable-material').value;
+        const select = document.getElementById('cable-size');
+        select.innerHTML = '';
+        
+        Object.keys(cableDatabase[mat]).forEach(size => {
+            const opt = document.createElement('option');
+            opt.value = size;
+            opt.textContent = size + ' mm²';
+            select.appendChild(opt);
+        });
+    }
+
+    /* ==========================================
+       MODULE 1: CABLE & LOAD CALCULATIONS
+       ========================================== */
+    
+    function toggleLoadMode() {
+        const mode = document.getElementById('cable-load-mode').value;
+        const label = document.getElementById('load-input-label');
+        if(mode === 'kw') label.innerHTML = 'Load <span class="unit">(kW)</span>';
+        else if(mode === 'kva') label.innerHTML = 'Load <span class="unit">(kVA)</span>';
+        else label.innerHTML = 'Current <span class="unit">(A)</span>';
+        calculateCable();
+    }
+
+    function calculateCable() {
+        const system = document.getElementById('cable-system').value;
+        const voltage = parseFloat(document.getElementById('cable-voltage').value);
+        const loadMode = document.getElementById('cable-load-mode').value;
+        const loadInput = parseFloat(document.getElementById('cable-load').value) || 0;
+        const pf = parseFloat(document.getElementById('cable-pf').value);
+        const vdLimit = parseFloat(document.getElementById('cable-vd-limit').value);
+        const material = document.getElementById('cable-material').value;
+        const size = document.getElementById('cable-size').value;
+        const length = parseFloat(document.getElementById('cable-length').value) || 0;
+        const installFactor = parseFloat(document.getElementById('cable-installation').value);
+        const faultLevel = parseFloat(document.getElementById('cable-fault').value);
+
+        const cableProps = cableDatabase[material][size];
+        if(!cableProps) return;
+
+        let ib = 0;
+        if(loadMode === 'kw') {
+            if(system === '3ph') ib = (loadInput * 1000) / (Math.sqrt(3) * voltage * pf);
+            else ib = (loadInput * 1000) / (voltage * pf);
+        } else if(loadMode === 'kva') {
+            if(system === '3ph') ib = (loadInput * 1000) / (Math.sqrt(3) * voltage);
+            else ib = (loadInput * 1000) / voltage;
+        } else {
+            ib = loadInput;
+        }
+
+        const iz = cableProps.iz * installFactor;
+        const loading = (ib / iz) * 100;
+
+        const sinPhi = Math.sin(Math.acos(pf));
+        const vdVolts = ib * length * ((cableProps.r * pf) + (cableProps.x * sinPhi)) / 1000;
+        const vdPercent = (vdVolts / voltage) * 100;
+        const endVoltage = voltage - vdVolts;
+
+        const vdPass = vdPercent <= vdLimit;
+        const capPass = ib <= iz;
+
+        let faultAtEnd = null;
+        if(faultLevel && faultLevel > 0) {
+            const vPhase = voltage / Math.sqrt(3);
+            const zSource = vPhase / (faultLevel * 1000);
+            const zCable = length * Math.sqrt(Math.pow(cableProps.r,2) + Math.pow(cableProps.x,2)) / 1000;
+            const zTotal = zSource + zCable;
+            faultAtEnd = (vPhase / zTotal) / 1000;
+        }
+
+        document.getElementById('res-ib').textContent = ib.toFixed(1) + ' A';
+        document.getElementById('res-iz').textContent = iz.toFixed(0) + ' A';
+        document.getElementById('res-loading').textContent = loading.toFixed(1) + '%';
+        document.getElementById('res-loading').className = 'result-value ' + (loading > 100 ? 'result-fail' : (loading > 80 ? 'result-warn' : ''));
+        
+        document.getElementById('res-vd-v').textContent = vdVolts.toFixed(2) + ' V';
+        document.getElementById('res-vd-pct').textContent = vdPercent.toFixed(2) + '%';
+        document.getElementById('res-end-v').textContent = endVoltage.toFixed(1) + ' V';
+
+        const vdStatus = document.getElementById('res-vd-status');
+        vdStatus.textContent = vdPass ? 'PASS' : 'FAIL';
+        vdStatus.className = 'result-value ' + (vdPass ? 'result-pass' : 'result-fail');
+
+        const capStatus = document.getElementById('res-cap-status');
+        capStatus.textContent = capPass ? 'PASS (Ib ≤ Iz)' : 'FAIL (Overloaded)';
+        capStatus.className = 'result-value ' + (capPass ? 'result-pass' : 'result-fail');
+
+        if(faultAtEnd !== null) {
+            document.getElementById('fault-result-row').style.display = 'flex';
+            document.getElementById('res-fault-end').textContent = faultAtEnd.toFixed(2) + ' kA';
+        } else {
+            document.getElementById('fault-result-row').style.display = 'none';
+        }
+    }
+
+    /* ==========================================
+       MODULE 2: BREAKER SIZING
+       ========================================== */
+
+    function toggleMCBOptions() {
+        const type = document.getElementById('break-type').value;
+        document.getElementById('mcb-curve-group').style.display = type === 'MCB' ? 'block' : 'none';
+    }
+
+    function calculateBreaker() {
+        const ib = parseFloat(document.getElementById('break-ib').value) || 0;
+        const isc = parseFloat(document.getElementById('break-isc').value) || 0;
+        const iz = parseFloat(document.getElementById('break-iz').value) || 9999;
+        const brand = document.getElementById('break-brand').value;
+        const type = document.getElementById('break-type').value;
+        const margin = parseFloat(document.getElementById('break-margin').value) || 1.0;
+        
+        const requiredIn = ib * margin;
+        
+        let suggested = null;
+        let breakers = breakerData[brand][type];
+        
+        if(type === 'MCCB') {
+            for(let b of breakers) {
+                if(b.inMax >= requiredIn && b.icu >= isc) {
+                    suggested = b;
+                    break;
+                }
+            }
+            if(!suggested) {
+                for(let b of breakers) {
+                    if(b.inMax >= requiredIn) {
+                        suggested = b;
+                        suggested.icuWarning = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            for(let b of breakers) {
+                for(let rating of b.ratings) {
+                    if(rating >= requiredIn && b.icu >= isc) {
+                        suggested = {model: b.model, inMax: rating, icu: b.icu};
+                        break;
+                    }
+                }
+                if(suggested) break;
+            }
+        }
+
+        document.getElementById('break-req-in').textContent = requiredIn.toFixed(1) + ' A';
+        
+        if(suggested) {
+            document.getElementById('break-model').textContent = suggested.model;
+            document.getElementById('break-rating').textContent = suggested.inMax + ' A';
+            document.getElementById('break-icu').textContent = suggested.icu + ' kA';
+            
+            const inOk = suggested.inMax <= iz;
+            const iscOk = suggested.icu >= isc;
+            
+            const olElem = document.getElementById('break-overload-check');
+            if(inOk) {
+                olElem.textContent = 'OK (In ≤ Iz)';
+                olElem.className = 'result-value result-pass';
+            } else {
+                olElem.textContent = 'CAUTION (In > Iz)';
+                olElem.className = 'result-value result-warn';
+            }
+            
+            const scElem = document.getElementById('break-sc-check');
+            if(iscOk) {
+                scElem.textContent = 'OK (Icu ≥ Isc)';
+                scElem.className = 'result-value result-pass';
+            } else {
+                scElem.textContent = 'FAIL (Icu < Isc)';
+                scElem.className = 'result-value result-fail';
+            }
+            
+            const comment = document.getElementById('break-comment');
+            comment.style.display = 'block';
+            let text = `Breaker rating ${suggested.inMax}A with Icu ${suggested.icu}kA is ${suggested.inMax >= requiredIn ? 'suitable' : 'marginally suitable'} for Ib ${ib}A.`;
+            if(suggested.icuWarning) text += ' Warning: Breaking capacity may be insufficient for prospective fault current.';
+            comment.textContent = text;
+            
+        } else {
+            document.getElementById('break-model').textContent = 'Not found - Check larger frame';
+            document.getElementById('break-rating').textContent = '-';
+            document.getElementById('break-icu').textContent = '-';
+        }
+    }
+
+    function copyFromCable() {
+        const ib = document.getElementById('res-ib').textContent;
+        const iz = document.getElementById('res-iz').textContent;
+        if(ib && ib !== '0 A') {
+            document.getElementById('break-ib').value = parseFloat(ib);
+            document.getElementById('break-iz').value = parseFloat(iz);
+            const fault = document.getElementById('res-fault-end').textContent;
+            if(fault && fault !== '0 kA') {
+                document.getElementById('break-isc').value = parseFloat(fault);
+            } else {
+                const srcFault = document.getElementById('cable-fault').value;
+                if(srcFault) document.getElementById('break-isc').value = srcFault;
+            }
+            calculateBreaker();
+            alert('Data copied from Cable module results.');
+        } else {
+            alert('Please calculate Cable module first.');
+        }
+    }
+
+    /* ==========================================
+       MODULE 3: TRANSFORMER SIZING
+       ========================================== */
+
+    function calculateTransformer() {
+        const loadInput = parseFloat(document.getElementById('xfmr-load').value) || 0;
+        const unit = document.getElementById('xfmr-load-unit').value;
+        const pf = parseFloat(document.getElementById('xfmr-pf').value);
+        const margin = parseFloat(document.getElementById('xfmr-margin').value) || 0;
+        const targetLoading = parseFloat(document.getElementById('xfmr-loading').value) || 80;
+        
+        let s = loadInput;
+        if(unit === 'kw') {
+            s = loadInput / pf;
+        }
+        
+        const sFuture = s * (1 + margin/100);
+        const sReq = sFuture / (targetLoading/100);
+        
+        let selected = standardTransformers.find(t => t >= sReq);
+        if(!selected) selected = standardTransformers[standardTransformers.length-1];
+        
+        const flc = selected / (Math.sqrt(3) * 0.4);
+        const actualLoading = (s / selected) * 100;
+        
+        document.getElementById('xfmr-calc-kva').textContent = s.toFixed(1) + ' kVA';
+        document.getElementById('xfmr-future-kva').textContent = sFuture.toFixed(1) + ' kVA';
+        document.getElementById('xfmr-target-load').textContent = targetLoading;
+        document.getElementById('xfmr-req-kva').textContent = sReq.toFixed(1) + ' kVA';
+        document.getElementById('xfmr-rec').textContent = selected + ' kVA';
+        document.getElementById('xfmr-flc').textContent = flc.toFixed(0) + ' A';
+        document.getElementById('xfmr-actual-load').textContent = actualLoading.toFixed(1) + '%';
+        
+        const warn = document.getElementById('xfmr-warning');
+        if(actualLoading < 30) {
+            warn.style.display = 'block';
+            warn.className = 'alert alert-warning';
+            warn.textContent = 'Warning: Actual loading is quite low (<30%). Consider a smaller transformer for better efficiency.';
+        } else if(actualLoading > 90) {
+            warn.style.display = 'block';
+            warn.className = 'alert alert-danger';
+            warn.textContent = 'Warning: Actual loading is high (>90%). Limited room for future load growth.';
+        } else {
+            warn.style.display = 'none';
+        }
+    }
+
+    /* ==========================================
+       MODULE 4: POWER FACTOR CORRECTION
+       ========================================== */
+
+    function calculatePFC() {
+        const system = document.getElementById('pfc-system').value;
+        const voltage = parseFloat(document.getElementById('pfc-voltage').value);
+        const p = parseFloat(document.getElementById('pfc-kw').value) || 0;
+        const pf1 = parseFloat(document.getElementById('pfc-pf1').value);
+        const pf2 = parseFloat(document.getElementById('pfc-pf2').value);
+        const tariff = parseFloat(document.getElementById('pfc-tariff').value) || 0;
+        
+        const theta1 = Math.acos(pf1);
+        const theta2 = Math.acos(pf2);
+        const tan1 = Math.tan(theta1);
+        const tan2 = Math.tan(theta2);
+        
+        const qc = p * (tan1 - tan2);
+        
+        const f = 50;
+        let cPerPhase = 0;
+        let connType = '';
+        
+        if(system === '3ph') {
+            cPerPhase = (qc * 1000) / (3 * 2 * Math.PI * f * Math.pow(voltage, 2));
+            connType = '(Delta, per phase)';
+        } else {
+            cPerPhase = (qc * 1000) / (2 * Math.PI * f * Math.pow(voltage, 2));
+            connType = '(Single)';
+        }
+        
+        const i1 = system === '3ph' ? (p*1000)/(Math.sqrt(3)*voltage*pf1) : (p*1000)/(voltage*pf1);
+        const i2 = system === '3ph' ? (p*1000)/(Math.sqrt(3)*voltage*pf2) : (p*1000)/(voltage*pf2);
+        const reduction = ((i1-i2)/i1)*100;
+        
+        const oldKva = p / pf1;
+        const newKva = p / pf2;
+        const kvaReduction = oldKva - newKva;
+        const monthlySave = kvaReduction * tariff;
+        
+        document.getElementById('pfc-tan1').textContent = tan1.toFixed(3);
+        document.getElementById('pfc-tan2').textContent = tan2.toFixed(3);
+        document.getElementById('pfc-kvar').textContent = qc.toFixed(1) + ' kVAR';
+        document.getElementById('pfc-uf').textContent = (cPerPhase*1000000).toFixed(1) + ' µF';
+        document.getElementById('pfc-conn-type').textContent = connType;
+        
+        document.getElementById('pfc-i1').textContent = i1.toFixed(1) + ' A';
+        document.getElementById('pfc-i2').textContent = i2.toFixed(1) + ' A';
+        document.getElementById('pfc-reduction').textContent = reduction.toFixed(1) + '%';
+        
+        if(tariff > 0) {
+            document.getElementById('pfc-savings').style.display = 'block';
+            document.getElementById('pfc-save-amt').textContent = '$' + monthlySave.toFixed(0) + '/month';
+        }
+    }
+
+    /* ==========================================
+       MODULE 5: DISCRIMINATION CHECK
+       ========================================== */
+
+    function checkDiscrimination() {
+        const upModel = document.getElementById('disc-up-model').value;
+        const upIn = parseFloat(document.getElementById('disc-up-in').value) || 0;
+        const upIcu = parseFloat(document.getElementById('disc-up-icu').value) || 0;
+        const upCurve = document.getElementById('disc-up-curve').value;
+        
+        const downModel = document.getElementById('disc-down-model').value;
+        const downIn = parseFloat(document.getElementById('disc-down-in').value) || 0;
+        const downIcu = parseFloat(document.getElementById('disc-down-icu').value) || 0;
+        const downCurve = document.getElementById('disc-down-curve').value;
+        
+        const isc = parseFloat(document.getElementById('disc-isc').value) || 0;
+        
+        const ratio = upIn / downIn;
+        const ratioOk = ratio >= 1.6;
+        
+        const curveCheck = checkCurveCompatibility(upCurve, downCurve);
+        
+        const icuCheck = upIcu >= isc && downIcu >= isc;
+        
+        const tbody = document.getElementById('disc-table-body');
+        tbody.innerHTML = `
+            <tr>
+                <td>Model</td>
+                <td>${upModel}</td>
+                <td>${downModel}</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>In Rating (A)</td>
+                <td>${upIn}</td>
+                <td>${downIn}</td>
+                <td>${ratioOk ? '<span class="badge badge-success">Ratio OK (≥1.6)</span>' : '<span class="badge badge-warning">Ratio Low</span>'}</td>
+            </tr>
+            <tr>
+                <td>Icu (kA)</td>
+                <td>${upIcu}</td>
+                <td>${downIcu}</td>
+                <td>${icuCheck ? '<span class="badge badge-success">Adequate</span>' : '<span class="badge badge-danger">Insufficient</span>'}</td>
+            </tr>
+            <tr>
+                <td>Curve Type</td>
+                <td>${upCurve}</td>
+                <td>${downCurve}</td>
+                <td>${curveCheck}</td>
+            </tr>
+        `;
+        
+        const verdict = document.getElementById('disc-verdict');
+        verdict.style.display = 'block';
+        
+        if(ratioOk && icuCheck && !curveCheck.includes('FAIL')) {
+            verdict.className = 'alert alert-info';
+            verdict.innerHTML = '<strong>Likely Selective:</strong> Based on rule-of-thumb ratios and curves, selectivity is probable for overloads. For short-circuit selectivity, verify with manufacturer TCC curves.';
+        } else {
+            verdict.className = 'alert alert-warning';
+            verdict.innerHTML = '<strong>Selectivity Uncertain or Poor:</strong> Check manufacturer selectivity tables. ' + 
+                (ratio < 1.6 ? 'In ratio is less than 1.6. ' : '') +
+                (!icuCheck ? 'Breaking capacity issues detected. ' : '');
+        }
+        
+        document.getElementById('disc-results').style.display = 'block';
+    }
+
+    function checkCurveCompatibility(up, down) {
+        if(up === 'TM' && (down === 'B' || down === 'C' || down === 'D')) {
+            return '<span class="badge badge-success">Likely OK (TM vs MCB)</span>';
+        }
+        if(up === 'E' && down === 'TM') {
+            return '<span class="badge badge-success">Likely OK (Electronic coord)</span>';
+        }
+        if(up === down) {
+            return '<span class="badge badge-warning">Same type - Check curves</span>';
+        }
+        return '<span class="badge badge-success">Check Mfg Data</span>';
+    }
+
+    /* ==========================================
+       MODULE 6: DISTRIBUTION SCHEDULE
+       ========================================== */
+    
+    let scheduleData = [];
+    let editIndex = -1;
+
+    function addScheduleRow() {
+        const id = document.getElementById('sch-cct-id').value || 'C' + (scheduleData.length + 1);
+        const desc = document.getElementById('sch-desc').value || '-';
+        const load = parseFloat(document.getElementById('sch-load').value) || 0;
+        const system = document.getElementById('sch-system').value;
+        const volts = parseFloat(document.getElementById('sch-volts').value) || 230;
+        const pf = parseFloat(document.getElementById('sch-pf').value) || 0.85;
+        const cable = document.getElementById('sch-cable').value || '-';
+        const breaker = document.getElementById('sch-breaker').value || '-';
+        const demand = parseFloat(document.getElementById('sch-demand').value) || 100;
+        
+        const ib = system === '3ph' ? (load*1000)/(Math.sqrt(3)*volts*pf) : (load*1000)/(volts*pf);
+        const demandKw = load * (demand/100);
+        const demandKva = demandKw / pf;
+        
+        const row = {id, desc, load, system, volts, pf, ib, demand, demandKw, demandKva, cable, breaker};
+        
+        if(editIndex >= 0) {
+            scheduleData[editIndex] = row;
+            editIndex = -1;
+        } else {
+            scheduleData.push(row);
+        }
+        
+        clearScheduleForm();
+        renderSchedule();
+    }
+
+    function renderSchedule() {
+        const tbody = document.getElementById('schedule-body');
+        tbody.innerHTML = '';
+        
+        let totConn = 0, totDemKw = 0, totDemKva = 0;
+        
+        scheduleData.forEach((row, idx) => {
+            totConn += row.load;
+            totDemKw += row.demandKw;
+            totDemKva += row.demandKva;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.id}</td>
+                <td>${row.desc}</td>
+                <td>${row.load.toFixed(2)}</td>
+                <td>${row.pf}</td>
+                <td>${row.ib.toFixed(1)}</td>
+                <td>${row.demand}</td>
+                <td>${row.demandKw.toFixed(2)}</td>
+                <td>${row.demandKva.toFixed(2)}</td>
+                <td>${row.cable}</td>
+                <td>${row.breaker}</td>
+                <td>
+                    <button type="button" class="btn-edit" data-action="edit" data-index="${idx}">Edit</button>
+                    <button type="button" class="btn-delete" data-action="delete" data-index="${idx}">Del</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        // Add event listeners to buttons
+        tbody.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const action = this.getAttribute('data-action');
+                const index = parseInt(this.getAttribute('data-index'));
+                
+                if(action === 'edit') {
+                    editScheduleRow(index);
+                } else if(action === 'delete') {
+                    deleteScheduleRow(index);
+                }
+            });
+        });
+        
+        document.getElementById('tot-connected-kw').textContent = totConn.toFixed(2);
+        document.getElementById('tot-demand-kw').textContent = totDemKw.toFixed(2);
+        document.getElementById('tot-demand-kva').textContent = totDemKva.toFixed(2);
+        
+        const mainIb = totDemKva / (Math.sqrt(3) * 0.4);
+        const suggested = Math.ceil(mainIb / 10) * 10;
+        document.getElementById('suggested-main').textContent = suggested + ' A MCCB (approx)';
+    }
+
+    function deleteScheduleRow(idx) {
+        if(confirm('Delete this circuit?')) {
+            scheduleData.splice(idx, 1);
+            renderSchedule();
+        }
+    }
+
+    function editScheduleRow(idx) {
+        const row = scheduleData[idx];
+        document.getElementById('sch-cct-id').value = row.id;
+        document.getElementById('sch-desc').value = row.desc;
+        document.getElementById('sch-load').value = row.load;
+        document.getElementById('sch-system').value = row.system;
+        document.getElementById('sch-volts').value = row.volts;
+        document.getElementById('sch-pf').value = row.pf;
+        document.getElementById('sch-cable').value = row.cable;
+        document.getElementById('sch-breaker').value = row.breaker;
+        document.getElementById('sch-demand').value = row.demand;
+        editIndex = idx;
+        
+        // Scroll to form
+        document.querySelector('#schedule .card-body > div').scrollIntoView({behavior: 'smooth'});
+    }
+
+    function clearScheduleForm() {
+        document.getElementById('sch-cct-id').value = '';
+        document.getElementById('sch-desc').value = '';
+        document.getElementById('sch-load').value = '';
+        document.getElementById('sch-cable').value = '';
+        document.getElementById('sch-breaker').value = '';
+        document.getElementById('sch-demand').value = '100';
+        editIndex = -1;
+    }
+
+    function clearSchedule() {
+        if(confirm('Clear all circuits?')) {
+            scheduleData = [];
+            renderSchedule();
+        }
+    }
+
+    /* ==========================================
+       PDF EXPORT FUNCTIONS WITH LOGO SUPPORT
+       ========================================== */
+    
+    const { jsPDF } = window.jspdf;
+
+    function getCurrentDateTime() {
+        return new Date().toLocaleString();
+    }
+
+    // Add logo to PDF header - 100px width positioned at top right
+    function addLogoToPDF(doc, yPosition = 15) {
+        if (!logoBase64 || !logoLoaded) {
+            console.warn('Logo not ready, skipping logo in PDF');
+            return yPosition;
+        }
+        
+        try {
+            // Create temporary image to get dimensions
+            const img = new Image();
+            img.src = logoBase64;
+            
+            // Calculate dimensions to fit 100px width (26.46mm)
+            const maxWidth = 26.46; // 100px in mm at 96 DPI
+            const aspectRatio = img.height / img.width;
+            const width = maxWidth;
+            const height = maxWidth * aspectRatio;
+            
+            // Position at top right with 15mm margin from right
+            const x = doc.internal.pageSize.width - width - 15;
+            
+            // Add to PDF
+            doc.addImage(logoBase64, 'PNG', x, yPosition, width, height);
+            
+            console.log('Logo added to PDF at position:', x, yPosition, 'size:', width, 'x', height);
+            
+            return yPosition + height + 5; // Return new Y position below logo
+        } catch (e) {
+            console.error('Error adding logo to PDF:', e);
+            return yPosition;
+        }
+    }
+
+    // Add footer with small logo (60px) and signature
+    function addFooterToPDF(doc) {
+        const pageCount = doc.internal.getNumberOfPages();
+        
+        for(let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            
+            const footerY = doc.internal.pageSize.height - 20;
+            
+            // Add small logo if available (60px = 15.88mm)
+            if (logoBase64 && logoLoaded) {
+                try {
+                    const img = new Image();
+                    img.src = logoBase64;
+                    
+                    const maxWidth = 15.88; // 60px in mm
+                    const aspectRatio = img.height / img.width;
+                    const width = maxWidth;
+                    const height = maxWidth * aspectRatio;
+                    
+                    doc.addImage(logoBase64, 'PNG', 15, footerY - height + 5, width, height);
+                    
+                    // Signature text to the right of logo
+                    doc.setFontSize(9);
+                    doc.setTextColor(100);
+                    doc.text(`Signature: Engr. Saqib Hussain (PE) | ${getCurrentDateTime()}`, 15 + width + 5, footerY);
+                } catch (e) {
+                    // Fallback to text only
+                    doc.setFontSize(9);
+                    doc.setTextColor(100);
+                    doc.text(`Signature: Engr. Saqib Hussain (PE) | ${getCurrentDateTime()}`, 15, footerY + 5);
+                }
+            } else {
+                // No logo, just text
+                doc.setFontSize(9);
+                doc.setTextColor(100);
+                doc.text(`Signature: Engr. Saqib Hussain (PE) | ${getCurrentDateTime()}`, 15, footerY + 5);
+            }
+            
+            // Page number
+            doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 40, doc.internal.pageSize.height - 10);
+        }
+    }
+
+    async function exportCablePDF() {
+        // Wait for logo if not loaded
+        if (!logoLoaded) {
+            console.log('Waiting for logo to load...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        const doc = new jsPDF();
+        
+        // Add logo and get Y position for content
+        const startY = addLogoToPDF(doc, 15) + 10;
+        
+        doc.setFontSize(16);
+        doc.text("LV Electrical Design Suite - Cable & Load Calculation", 15, startY);
+        
+        doc.setFontSize(11);
+        doc.text("Input Parameters:", 15, startY + 15);
+        doc.setFontSize(10);
+        doc.text(`System: ${document.getElementById('cable-system').value}`, 15, startY + 22);
+        doc.text(`Voltage: ${document.getElementById('cable-voltage').value} V`, 15, startY + 28);
+        doc.text(`Load: ${document.getElementById('cable-load').value} ${document.getElementById('cable-load-mode').value}`, 15, startY + 34);
+        doc.text(`Cable: ${document.getElementById('cable-material').value} ${document.getElementById('cable-size').value}mm²`, 15, startY + 40);
+        doc.text(`Length: ${document.getElementById('cable-length').value} m`, 15, startY + 46);
+        
+        doc.text("Results:", 15, startY + 58);
+        doc.text(`Design Current (Ib): ${document.getElementById('res-ib').textContent}`, 15, startY + 65);
+        doc.text(`Cable Rating (Iz): ${document.getElementById('res-iz').textContent}`, 15, startY + 71);
+        doc.text(`Voltage Drop: ${document.getElementById('res-vd-pct').textContent}`, 15, startY + 77);
+        doc.text(`End Voltage: ${document.getElementById('res-end-v').textContent}`, 15, startY + 83);
+        doc.text(`Status VD: ${document.getElementById('res-vd-status').textContent}`, 15, startY + 89);
+        doc.text(`Status Capacity: ${document.getElementById('res-cap-status').textContent}`, 15, startY + 95);
+        
+        addFooterToPDF(doc);
+        doc.save('Cable_Calculation.pdf');
+    }
+
+    async function exportBreakerPDF() {
+        if (!logoLoaded) await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const doc = new jsPDF();
+        
+        const startY = addLogoToPDF(doc, 15) + 10;
+        
+        doc.setFontSize(16);
+        doc.text("LV Electrical Design Suite - Breaker Sizing", 15, startY);
+        
+        doc.setFontSize(11);
+        doc.text("Protection Analysis:", 15, startY + 15);
+        doc.setFontSize(10);
+        doc.text(`Required In: ${document.getElementById('break-req-in').textContent}`, 15, startY + 25);
+        doc.text(`Recommended: ${document.getElementById('break-model').textContent}`, 15, startY + 32);
+        doc.text(`Rating: ${document.getElementById('break-rating').textContent}`, 15, startY + 39);
+        doc.text(`Icu: ${document.getElementById('break-icu').textContent}`, 15, startY + 46);
+        doc.text(`Overload Check: ${document.getElementById('break-overload-check').textContent}`, 15, startY + 60);
+        doc.text(`Short-Circuit Check: ${document.getElementById('break-sc-check').textContent}`, 15, startY + 67);
+        
+        const comment = document.getElementById('break-comment');
+        if(comment.style.display !== 'none') {
+            doc.text(`Comments: ${comment.textContent}`, 15, startY + 74);
+        }
+        
+        addFooterToPDF(doc);
+        doc.save('Breaker_Sizing.pdf');
+    }
+
+    async function exportTransformerPDF() {
+        if (!logoLoaded) await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const doc = new jsPDF();
+        
+        const startY = addLogoToPDF(doc, 15) + 10;
+        
+        doc.setFontSize(16);
+        doc.text("LV Electrical Design Suite - Transformer Sizing", 15, startY);
+        doc.setFontSize(10);
+        doc.text(`Calculated Load: ${document.getElementById('xfmr-calc-kva').textContent}`, 15, startY + 15);
+        doc.text(`With Margin: ${document.getElementById('xfmr-future-kva').textContent}`, 15, startY + 22);
+        doc.text(`Required @ ${document.getElementById('xfmr-target-load').textContent}%: ${document.getElementById('xfmr-req-kva').textContent}`, 15, startY + 29);
+        doc.text(`Recommended: ${document.getElementById('xfmr-rec').textContent}`, 15, startY + 36);
+        doc.text(`Full Load Current: ${document.getElementById('xfmr-flc').textContent}`, 15, startY + 43);
+        doc.text(`Actual Loading: ${document.getElementById('xfmr-actual-load').textContent}`, 15, startY + 50);
+        
+        addFooterToPDF(doc);
+        doc.save('Transformer_Sizing.pdf');
+    }
+
+    async function exportPFCPDF() {
+        if (!logoLoaded) await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const doc = new jsPDF();
+        
+        const startY = addLogoToPDF(doc, 15) + 10;
+        
+        doc.setFontSize(16);
+        doc.text("LV Electrical Design Suite - Power Factor Correction", 15, startY);
+        doc.setFontSize(10);
+        doc.text(`Required kVAR: ${document.getElementById('pfc-kvar').textContent}`, 15, startY + 15);
+        doc.text(`Current Before: ${document.getElementById('pfc-i1').textContent}`, 15, startY + 22);
+        doc.text(`Current After: ${document.getElementById('pfc-i2').textContent}`, 15, startY + 29);
+        doc.text(`Reduction: ${document.getElementById('pfc-reduction').textContent}`, 15, startY + 36);
+        
+        const saveElem = document.getElementById('pfc-savings');
+        if(saveElem.style.display !== 'none') {
+            doc.text(`Estimated Savings: ${document.getElementById('pfc-save-amt').textContent}`, 15, startY + 50);
+        }
+        
+        addFooterToPDF(doc);
+        doc.save('PFC_Calculation.pdf');
+    }
+
+    async function exportDiscPDF() {
+        if (!logoLoaded) await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const doc = new jsPDF();
+        
+        const startY = addLogoToPDF(doc, 15) + 10;
+        
+        doc.setFontSize(16);
+        doc.text("LV Electrical Design Suite - Discrimination Check", 15, startY);
+        doc.setFontSize(10);
+        doc.text("PRELIMINARY CHECK ONLY - Refer to manufacturer TCC curves for final design.", 15, startY + 10);
+        
+        doc.autoTable({
+            startY: startY + 20,
+            html: '#disc-table',
+            styles: {fontSize: 9},
+            headStyles: {fillColor: [30, 58, 95]}
+        });
+        
+        addFooterToPDF(doc);
+        doc.save('Discrimination_Check.pdf');
+    }
+
+    async function exportSchedulePDF() {
+        if (!logoLoaded) await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const doc = new jsPDF('l', 'mm', 'a4'); // Landscape
+        const panelName = document.getElementById('panel-name').value || 'Distribution Panel';
+        
+        const startY = addLogoToPDF(doc, 15) + 5;
+        
+        doc.setFontSize(16);
+        doc.text(`Distribution Schedule - ${panelName}`, 15, startY);
+        doc.setFontSize(10);
+        doc.text(`Total Connected: ${document.getElementById('tot-connected-kw').textContent} kW`, 15, startY + 10);
+        doc.text(`Total Demand: ${document.getElementById('tot-demand-kva').textContent} kVA`, 80, startY + 10);
+        doc.text(`Main Breaker: ${document.getElementById('suggested-main').textContent}`, 150, startY + 10);
+        
+        doc.autoTable({
+            startY: startY + 20,
+            html: '#schedule-table',
+            styles: {fontSize: 8, cellPadding: 2},
+            headStyles: {fillColor: [30, 58, 95]},
+            columnStyles: {
+                0: {cellWidth: 15},
+                1: {cellWidth: 'auto'},
+                10: {cellWidth: 20}
+            }
+        });
+        
+        addFooterToPDF(doc);
+        doc.save(`Schedule_${panelName.replace(/\s+/g, '_')}.pdf`);
+    }
+</script>
+</body>
+</html>
