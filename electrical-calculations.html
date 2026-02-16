@@ -408,7 +408,7 @@
 
     <!-- Header -->
     <header class="header">
-        <img src="https://cdn.jsdelivr.net/gh/ensaqib/portfolio@a380b34a46860b0f69eeb4574c373bdf22c4eb35/images/logo.png" alt="LV Electrical Design Suite Logo" class="logo" id="header-logo">
+        <img src="https://i.postimg.cc/0576JfKZ/logo.png" alt="LV Electrical Design Suite Logo" class="logo" id="header-logo">
         <div class="header-text">
             <h1>LV Electrical Design Suite</h1>
             <p>Quick calculators – Educational use only | Engr. Saqib Hussain (PE)</p>
@@ -1272,52 +1272,6 @@
         }, 3000);
     }
 
-    // Try to load logo with fetch as alternative
-    function tryAlternativeLogoPath() {
-        const paths = ['images/logo.png', 'logo.png', './images/logo.png', '../images/logo.png'];
-        let currentPath = 0;
-
-        function tryNextPath() {
-            if (currentPath >= paths.length) {
-                console.error('All logo paths failed');
-                return;
-            }
-
-            const img = new Image();
-            img.onload = function() {
-                console.log('Logo loaded from alternative path:', paths[currentPath]);
-                convertLogoToBase64(img);
-            };
-            img.onerror = function() {
-                currentPath++;
-                tryNextPath();
-            };
-            img.src = paths[currentPath];
-        }
-
-        tryNextPath();
-    }
-
-    // Convert loaded image to base64
-    function convertLogoToBase64(img) {
-        try {
-            const canvas = document.createElement('canvas');
-            // Use natural dimensions
-            canvas.width = img.naturalWidth || img.width;
-            canvas.height = img.naturalHeight || img.height;
-            
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            
-            logoBase64 = canvas.toDataURL('image/png');
-            logoLoaded = true;
-            
-            console.log('Logo converted to base64 successfully. Size:', canvas.width, 'x', canvas.height);
-        } catch (e) {
-            console.error('Error converting logo to base64:', e);
-        }
-    }
-
     // Tab Switching
     function switchTab(tabId) {
         document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
@@ -2105,6 +2059,7 @@
 </script>
 </body>
 </html>
+
 
 
 
