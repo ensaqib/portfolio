@@ -408,7 +408,7 @@
 
     <!-- Header -->
     <header class="header">
-        <img src="./images/logo.png" alt="LV Electrical Design Suite Logo" class="logo" id="header-logo">
+        <img src="/portfolio/images/logo.png" alt="LV Electrical Design Suite Logo" class="logo" id="header-logo">
         <div class="header-text">
             <h1>LV Electrical Design Suite</h1>
             <p>Quick calculators – Educational use only | Engr. Saqib Hussain (PE)</p>
@@ -1273,9 +1273,9 @@
     }
 
     // Try to load logo with fetch as alternative
-    function tryAlternativeLogoPath() {
-        const paths = ['images/logo.png', 'logo.png', './images/logo.png', '../images/logo.png'];
-        let currentPath = 0;
+    fetch('/portfolio/images/logo.png')
+  .then(r => console.log('✅ Logo found:', r.status))
+  .catch(e => console.log('❌ Not found'));
 
         function tryNextPath() {
             if (currentPath >= paths.length) {
@@ -2106,5 +2106,6 @@
 </body>
 
 </html>
+
 
 
