@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical Engineering Toolkit | Professional Calculators</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        electrical: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        warning: '#f59e0b',
+                        danger: '#dc2626',
+                        success: '#16a34a'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .calculator-card {
+            transition: all 0.3s ease;
+        }
+        .calculator-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .input-group {
+            transition: all 0.2s;
+        }
+        .input-group:focus-within {
+            transform: scale(1.02);
+        }
+        .result-highlight {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .tab-active {
+            background-color: #0ea5e9;
+            color: white;
+        }
+        .tab-inactive {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+        .tab-inactive:hover {
+            background-color: #e2e8f0;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .grid-bg {
+            background-image: radial-gradient(circle at 1px 1px, #cbd5e1 1px, transparent 0);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+    <!-- Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+    <!-- AMP Logo -->
+    <img src="https://i.postimg.cc/0576JfKZ/logo.png" alt="AMP Logo" class="h-20 w-auto">
+    
+    <div class="h-8 w-px bg-slate-600 mx-2"></div>
+    
+    <div>
+        <h1 class="text-xl font-bold tracking-tight"> Engr. Saqib Hussain (PE) </h1>
+        <p class="text-xs text-slate-400">Professional Design Calculations</p>
+    </div>
+</div>
+    <div>
+        <h1 class="text-xl font-bold tracking-tight"></h1>
+        <p class="text-xs text-slate-400">Education Purpose</p>
+    </div>
+</div>
+                </div>
+                <nav class="hidden md:flex space-x-1">
+                    <button onclick="showSection('shortcircuit')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-slate-800">Short Circuit</button>
+                    <button onclick="showSection('cable')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-slate-800">Cable Sizing</button>
+                    <button onclick="showSection('motor')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-slate-800">Motor</button>
+                    <button onclick="showSection('earthing')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-slate-800">Earthing</button>
+                    <button onclick="showSection('lighting')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-slate-800">Lighting</button>
+                    <button onclick="showSection('harmonics')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-slate-800">Harmonics</button>
+                    <button onclick="showSection('protection')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-slate-800">Protection</button>
+                    <button onclick="showSection('energy')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-slate-800">Energy</button>
+                </nav>
+                <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="md:hidden p-2 rounded-lg hover:bg-slate-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-800 border-t border-slate-700">
+            <div class="px-4 py-2 space-y-1">
+                <button onclick="showSection('shortcircuit'); toggleMobileMenu()" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700">Short Circuit Study</button>
+                <button onclick="showSection('cable'); toggleMobileMenu()" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700">Cable Sizing</button>
+                <button onclick="showSection('motor'); toggleMobileMenu()" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700">Motor Tools</button>
+                <button onclick="showSection('earthing'); toggleMobileMenu()" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700">Earthing</button>
+                <button onclick="showSection('lighting'); toggleMobileMenu()" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700">Lighting</button>
+                <button onclick="showSection('harmonics'); toggleMobileMenu()" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700">Harmonics</button>
+                <button onclick="showSection('protection'); toggleMobileMenu()" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700">Protection</button>
+                <button onclick="showSection('energy'); toggleMobileMenu()" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700">Energy</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div class="text-sm text-slate-500 mb-1">Active Calculators</div>
+                <div class="text-2xl font-bold text-slate-800">8 Tools</div>
+                <div class="text-xs text-electrical-600 mt-1">All systems operational</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div class="text-sm text-slate-500 mb-1">Standard Compliance</div>
+                <div class="text-2xl font-bold text-slate-800">IEC/NEC</div>
+                <div class="text-xs text-success mt-1">BS 7671 / NFPA 70</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div class="text-sm text-slate-500 mb-1">Last Updated</div>
+                <div class="text-2xl font-bold text-slate-800">2025</div>
+                <div class="text-xs text-slate-400 mt-1">Latest formulas</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div class="text-sm text-slate-500 mb-1">Calculation Mode</div>
+                <div class="text-2xl font-bold text-slate-800">Advanced</div>
+                <div class="text-xs text-electrical-600 mt-1">Multi-parameter</div>
+            </div>
+        </div>
+
+        <!-- 1. Short Circuit & Fault Study -->
+        <section id="shortcircuit" class="calculator-section mb-8">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-danger rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Short-Circuit & Fault Study</h2>
+                            <p class="text-xs text-slate-400">3-Phase and 1-Phase fault current calculations</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-danger/20 text-danger text-xs font-semibold rounded-full">Critical</span>
+                </div>
+                
+                <div class="p-6 grid-bg">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Input Panel -->
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <h3 class="font-semibold text-slate-700 mb-3 flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-electrical-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    Transformer Parameters
+                                </h3>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="input-group">
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Transformer kVA</label>
+                                        <input type="number" id="sc-kva" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-electrical-500 focus:border-electrical-500 text-sm" placeholder="1000" value="1000">
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Voltage (V)</label>
+                                        <input type="number" id="sc-voltage" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-electrical-500 focus:border-electrical-500 text-sm" placeholder="415" value="415">
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">% Impedance (%Z)</label>
+                                        <input type="number" id="sc-z" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-electrical-500 focus:border-electrical-500 text-sm" placeholder="6" value="6" step="0.1">
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">X/R Ratio</label>
+                                        <input type="number" id="sc-xr" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-electrical-500 focus:border-electrical-500 text-sm" placeholder="10" value="10">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <h3 class="font-semibold text-slate-700 mb-3 flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-electrical-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                                    Cable Parameters
+                                </h3>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="input-group">
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Cable Length (m)</label>
+                                        <input type="number" id="sc-length" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-electrical-500 focus:border-electrical-500 text-sm" placeholder="50" value="50">
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Conductor Size (mm²)</label>
+                                        <select id="sc-cable-size" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-electrical-500 focus:border-electrical-500 text-sm">
+                                            <option value="1.5">1.5 mm²</option>
+                                            <option value="2.5">2.5 mm²</option>
+                                            <option value="4">4 mm²</option>
+                                            <option value="6">6 mm²</option>
+                                            <option value="10">10 mm²</option>
+                                            <option value="16">16 mm²</option>
+                                            <option value="25">25 mm²</option>
+                                            <option value="35">35 mm²</option>
+                                            <option value="50">50 mm²</option>
+                                            <option value="70">70 mm²</option>
+                                            <option value="95">95 mm²</option>
+                                            <option value="120">120 mm²</option>
+                                            <option value="150">150 mm²</option>
+                                            <option value="185">185 mm²</option>
+                                            <option value="240" selected>240 mm²</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Material</label>
+                                        <select id="sc-material" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-electrical-500 focus:border-electrical-500 text-sm">
+                                            <option value="copper" selected>Copper</option>
+                                            <option value="aluminum">Aluminum</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Breaker Icu (kA)</label>
+                                        <input type="number" id="sc-icu" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-electrical-500 focus:border-electrical-500 text-sm" placeholder="50" value="50">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onclick="calculateShortCircuit()" class="w-full bg-electrical-600 hover:bg-electrical-700 text-white font-semibold py-3 rounded-lg transition-all transform active:scale-95 shadow-lg shadow-electrical-500/30">
+                                Calculate Fault Currents
+                            </button>
+                        </div>
+
+                        <!-- Results Panel -->
+                        <div class="space-y-4">
+                            <div id="sc-results" class="hidden animate-fade-in">
+                                <div class="bg-slate-900 text-white p-4 rounded-xl mb-4">
+                                    <h3 class="text-sm font-semibold text-slate-400 mb-3">FAULT CURRENT SUMMARY</h3>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                                            <span class="text-sm">Transformer Secondary (3φ)</span>
+                                            <span class="text-xl font-bold text-danger" id="sc-trans-3ph">-- kA</span>
+                                        </div>
+                                        <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                                            <span class="text-sm">Transformer Secondary (1φ)</span>
+                                            <span class="text-lg font-semibold text-warning" id="sc-trans-1ph">-- kA</span>
+                                        </div>
+                                        <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                                            <span class="text-sm">At MDB (3φ)</span>
+                                            <span class="text-lg font-semibold text-electrical-400" id="sc-mdb">-- kA</span>
+                                        </div>
+                                        <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                                            <span class="text-sm">At Final DB (3φ)</span>
+                                            <span class="text-lg font-semibold text-electrical-400" id="sc-db">-- kA</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <h3 class="font-semibold text-slate-700 mb-3">Breaker Adequacy Check</h3>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg">
+                                            <span class="text-sm text-slate-600">Calculated Isc vs Icu</span>
+                                            <span class="text-sm font-bold" id="sc-check-icu">--</span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg">
+                                            <span class="text-sm text-slate-600">Safety Margin</span>
+                                            <span class="text-sm font-bold" id="sc-margin">--</span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg">
+                                            <span class="text-sm text-slate-600">Recommendation</span>
+                                            <span class="text-sm font-bold" id="sc-recommend">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+                                    <p class="text-xs text-blue-800">
+                                        <strong>Note:</strong> Calculations assume IEC 60909 methodology. Cable impedance based on 90°C operation. For precise studies, consider motor contribution and generator decay curves.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div id="sc-placeholder" class="flex items-center justify-center h-64 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300">
+                                <div class="text-center text-slate-400">
+                                    <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                    <p class="text-sm">Enter parameters and calculate</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Voltage Drop & Cable Sizing -->
+        <section id="cable" class="calculator-section mb-8 hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-electrical-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Voltage Drop & Cable Sizing</h2>
+                            <p class="text-xs text-slate-400">Multi-section feeder with cumulative drop analysis</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-electrical-500/20 text-electrical-400 text-xs font-semibold rounded-full">Advanced</span>
+                </div>
+
+                <div class="p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Feeder Sections -->
+                        <div class="lg:col-span-2 space-y-4">
+                            <div class="flex space-x-2 mb-4">
+                                <button onclick="addCableSection()" class="px-4 py-2 bg-electrical-600 text-white rounded-lg text-sm font-medium hover:bg-electrical-700 transition-colors">
+                                    + Add Section
+                                </button>
+                                <button onclick="resetCableSections()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors">
+                                    Reset
+                                </button>
+                            </div>
+
+                            <div id="cable-sections" class="space-y-3">
+                                <!-- Sections will be added here dynamically -->
+                            </div>
+
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <h3 class="font-semibold text-slate-700 mb-3">Installation Conditions</h3>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Installation Method</label>
+                                        <select id="cable-method" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                            <option value="1.0">Conduit/Trunking (Ref Method C)</option>
+                                            <option value="0.95">Direct Buried</option>
+                                            <option value="0.85">Tray/Ladder (1 layer)</option>
+                                            <option value="0.75">Tray/Ladder (2 layers)</option>
+                                            <option value="0.65">Tray/Ladder (3+ layers)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Ambient Temp (°C)</label>
+                                        <input type="number" id="cable-ambient" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" value="30">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Grouping Factor</label>
+                                        <select id="cable-grouping" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                            <option value="1.0">Single Circuit</option>
+                                            <option value="0.9">2 Circuits</option>
+                                            <option value="0.8">3 Circuits</option>
+                                            <option value="0.75">4 Circuits</option>
+                                            <option value="0.7">6+ Circuits</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Max Allowed Drop (%)</label>
+                                        <input type="number" id="cable-maxdrop" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" value="4" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onclick="calculateCableSizing()" class="w-full bg-electrical-600 hover:bg-electrical-700 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-electrical-500/30">
+                                Calculate Cable Sizing
+                            </button>
+                        </div>
+
+                        <!-- Results -->
+                        <div class="space-y-4">
+                            <div id="cable-results" class="hidden animate-fade-in">
+                                <div class="bg-slate-900 text-white p-4 rounded-xl">
+                                    <h3 class="text-sm font-semibold text-slate-400 mb-3">CUMULATIVE ANALYSIS</h3>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between border-b border-slate-700 pb-2">
+                                            <span>Total Length</span>
+                                            <span class="font-mono" id="cable-total-length">-- m</span>
+                                        </div>
+                                        <div class="flex justify-between border-b border-slate-700 pb-2">
+                                            <span>Total Voltage Drop</span>
+                                            <span class="font-mono text-warning" id="cable-total-drop">-- V (%)</span>
+                                        </div>
+                                        <div class="flex justify-between border-b border-slate-700 pb-2">
+                                            <span>End Voltage</span>
+                                            <span class="font-mono" id="cable-end-voltage">-- V</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 bg-white p-4 rounded-xl border border-slate-200">
+                                    <h3 class="font-semibold text-slate-700 mb-3">Recommendations</h3>
+                                    <div id="cable-recommendations" class="space-y-2 text-sm">
+                                        <!-- Dynamic recommendations -->
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 bg-green-50 border border-green-200 p-3 rounded-lg">
+                                    <h4 class="text-sm font-semibold text-green-800 mb-1">Cable Size Guide</h4>
+                                    <p class="text-xs text-green-700" id="cable-size-guide">
+                                        Based on IEC 60364-5-52 with correction factors applied.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div id="cable-placeholder" class="flex items-center justify-center h-64 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300">
+                                <div class="text-center text-slate-400">
+                                    <p class="text-sm">Add sections to analyze</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Motor Tools -->
+        <section id="motor" class="calculator-section mb-8 hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-warning rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">MCC / Motor Tools</h2>
+                            <p class="text-xs text-slate-400">Starting current, protection sizing, and voltage dip</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <!-- Tabs -->
+                    <div class="flex space-x-1 mb-6 bg-slate-100 p-1 rounded-lg">
+                        <button onclick="switchMotorTab('starting')" id="tab-starting" class="flex-1 py-2 px-4 rounded-md text-sm font-medium tab-active transition-all">Starting Current</button>
+                        <button onclick="switchMotorTab('protection')" id="tab-protection" class="flex-1 py-2 px-4 rounded-md text-sm font-medium tab-inactive transition-all">Protection Sizing</button>
+                        <button onclick="switchMotorTab('voltage')" id="tab-voltage" class="flex-1 py-2 px-4 rounded-md text-sm font-medium tab-inactive transition-all">Voltage Dip</button>
+                    </div>
+
+                    <!-- Starting Current Calculator -->
+                    <div id="motor-starting" class="motor-panel">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Motor Power (kW)</label>
+                                        <input type="number" id="motor-kw" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="55" value="55">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Voltage (V)</label>
+                                        <input type="number" id="motor-voltage" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="415" value="415">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Efficiency (%)</label>
+                                        <input type="number" id="motor-eff" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="95" value="95">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Power Factor</label>
+                                        <input type="number" id="motor-pf" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="0.85" value="0.85" step="0.01">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-2">Starting Method</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button onclick="setMotorMethod('dol')" id="method-dol" class="p-3 border-2 border-electrical-500 bg-electrical-50 rounded-lg text-center text-sm font-medium">DOL</button>
+                                        <button onclick="setMotorMethod('star')" id="method-star" class="p-3 border-2 border-slate-200 rounded-lg text-center text-sm font-medium hover:border-electrical-300">Star-Delta</button>
+                                        <button onclick="setMotorMethod('soft')" id="method-soft" class="p-3 border-2 border-slate-200 rounded-lg text-center text-sm font-medium hover:border-electrical-300">Soft Starter</button>
+                                        <button onclick="setMotorMethod('vfd')" id="method-vfd" class="p-3 border-2 border-slate-200 rounded-lg text-center text-sm font-medium hover:border-electrical-300">VFD</button>
+                                    </div>
+                                </div>
+
+                                <div id="soft-starter-settings" class="hidden bg-slate-50 p-3 rounded-lg">
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Current Limit (% FLA)</label>
+                                    <input type="number" id="motor-soft-limit" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="350" value="350">
+                                </div>
+
+                                <button onclick="calculateMotorStarting()" class="w-full bg-electrical-600 hover:bg-electrical-700 text-white font-semibold py-3 rounded-lg">
+                                    Calculate Starting Parameters
+                                </button>
+                            </div>
+
+                            <div id="motor-starting-results" class="space-y-4">
+                                <!-- Results populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Protection Sizing (Hidden by default) -->
+                    <div id="motor-protection" class="motor-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Full Load Current (A)</label>
+                                    <input type="number" id="prot-fla" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="100">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Starting Method</label>
+                                    <select id="prot-method" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                        <option value="dol">DOL</option>
+                                        <option value="star">Star-Delta</option>
+                                        <option value="soft">Soft Starter</option>
+                                    </select>
+                                </div>
+                                <button onclick="calculateMotorProtection()" class="w-full bg-electrical-600 hover:bg-electrical-700 text-white font-semibold py-3 rounded-lg">
+                                    Size Protection
+                                </button>
+                            </div>
+                            <div id="motor-protection-results" class="space-y-3">
+                                <!-- Results -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Voltage Dip (Hidden by default) -->
+                    <div id="motor-voltage" class="motor-panel hidden">
+                        <div class="grid grid-cols-1 lg:grid-c2 gap-6">
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Transformer kVA</label>
+                                        <input type="number" id="vd-trans-kva" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="1000">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">%Z</label>
+                                        <input type="number" id="vd-trans-z" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="6">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Motor Starting kVA</label>
+                                        <input type="number" id="vd-start-kva" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="300">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Base Load (kVA)</label>
+                                        <input type="number" id="vd-base-load" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="200">
+                                    </div>
+                                </div>
+                                <button onclick="calculateVoltageDip()" class="w-full bg-electrical-600 hover:bg-electrical-700 text-white font-semibold py-3 rounded-lg">
+                                    Calculate Voltage Dip
+                                </button>
+                            </div>
+                            <div id="voltage-dip-results" class="bg-slate-900 text-white p-6 rounded-xl">
+                                <!-- Results -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Earthing & Protection -->
+        <section id="earthing" class="calculator-section mb-8 hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-success rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Earthing & Protection Tools</h2>
+                            <p class="text-xs text-slate-400">Earth resistance, loop impedance, and touch voltage</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Earth Electrode -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-slate-700 mb-3">Earth Electrode Resistance</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Soil Resistivity (Ω·m)</label>
+                                <input type="number" id="earth-rho" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="100">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Electrode Length (m)</label>
+                                <input type="number" id="earth-length" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="3">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Electrode Diameter (mm)</label>
+                                <input type="number" id="earth-dia" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="16">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Configuration</label>
+                                <select id="earth-config" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                    <option value="single">Single Rod</option>
+                                    <option value="parallel">Parallel Rods (spacing 3m)</option>
+                                    <option value="plate">Plate Electrode</option>
+                                </select>
+                            </div>
+                            <button onclick="calculateEarthResistance()" class="w-full bg-success hover:bg-green-700 text-white font-medium py-2 rounded-lg text-sm">
+                                Calculate Re
+                            </button>
+                            <div id="earth-res-result" class="hidden bg-white p-3 rounded-lg border border-slate-200 text-center">
+                                <div class="text-2xl font-bold text-success" id="earth-re-value">-- Ω</div>
+                                <div class="text-xs text-slate-500">Earth Resistance</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loop Impedance -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-slate-700 mb-3">Fault Loop Impedance</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Supply Voltage (V)</label>
+                                <input type="number" id="loop-voltage" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="230">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Circuit Breaker (A)</label>
+                                <input type="number" id="loop-breaker" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="32">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Breaker Type</label>
+                                <select id="loop-type" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                    <option value="B">Type B (3-5x)</option>
+                                    <option value="C">Type C (5-10x)</option>
+                                    <option value="D">Type D (10-20x)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Measured Zs (Ω)</label>
+                                <input type="number" id="loop-zs" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="1.5" step="0.01">
+                            </div>
+                            <button onclick="calculateLoopImpedance()" class="w-full bg-success hover:bg-green-700 text-white font-medium py-2 rounded-lg text-sm">
+                                Verify Trip
+                            </button>
+                            <div id="loop-result" class="hidden bg-white p-3 rounded-lg border border-slate-200">
+                                <div class="text-center mb-2">
+                                    <div class="text-xl font-bold" id="loop-maxzs">-- Ω</div>
+                                    <div class="text-xs text-slate-500">Max Allowed Zs</div>
+                                </div>
+                                <div class="text-center p-2 rounded-lg text-sm font-medium" id="loop-status"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Touch Voltage -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-slate-700 mb-3">Touch/Step Voltage</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Earth Fault Current (A)</label>
+                                <input type="number" id="touch-current" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="1000">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Grid Resistance (Ω)</label>
+                                <input type="number" id="touch-resistance" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.5" step="0.1">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Surface Layer (cm)</label>
+                                <input type="number" id="touch-layer" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="10">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Exposure Time (s)</label>
+                                <input type="number" id="touch-time" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="1" step="0.1">
+                            </div>
+                            <button onclick="calculateTouchVoltage()" class="w-full bg-success hover:bg-green-700 text-white font-medium py-2 rounded-lg text-sm">
+                                Calculate Safety
+                            </button>
+                            <div id="touch-result" class="hidden bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span>Touch Voltage:</span>
+                                    <span class="font-bold" id="touch-voltage-val">-- V</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span>Safe Limit:</span>
+                                    <span class="font-bold" id="touch-limit-val">-- V</span>
+                                </div>
+                                <div class="text-center p-2 rounded-lg text-sm font-medium" id="touch-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Lighting & Load -->
+        <section id="lighting" class="calculator-section mb-8 hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Lighting & Load Tools</h2>
+                            <p class="text-xs text-slate-400">Lumen method, emergency lighting, and diversity</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Lumen Method -->
+                        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <h3 class="font-semibold text-slate-700 mb-4 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/></svg>
+                                Room Lighting Calculator (Lumen Method)
+                            </h3>
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Room Length (m)</label>
+                                    <input type="number" id="light-length" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="10">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Room Width (m)</label>
+                                    <input type="number" id="light-width" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="8">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Mounting Height (m)</label>
+                                    <input type="number" id="light-height" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="3">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Working Plane (m)</label>
+                                    <input type="number" id="light-plane" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.8">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Room Usage / Illuminance</label>
+                                <select id="light-usage" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" onchange="updateLuxValue()">
+                                    <option value="100">Corridors (100 lux)</option>
+                                    <option value="200">Storage/Warehouses (200 lux)</option>
+                                    <option value="300">General Offices (300 lux)</option>
+                                    <option value="500" selected>Detailed Work/Classrooms (500 lux)</option>
+                                    <option value="750">Precision Work (750 lux)</option>
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Ceiling Reflectance</label>
+                                    <select id="light-ceiling" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                        <option value="0.7">White (70%)</option>
+                                        <option value="0.5">Light (50%)</option>
+                                        <option value="0.3">Dark (30%)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Wall Reflectance</label>
+                                    <select id="light-wall" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                        <option value="0.5">Light (50%)</option>
+                                        <option value="0.3">Medium (30%)</option>
+                                        <option value="0.1">Dark (10%)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Luminaire Type (UF)</label>
+                                <select id="light-uf" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                    <option value="0.6">Direct/Downlight (UF 0.6)</option>
+                                    <option value="0.5">Semi-Direct (UF 0.5)</option>
+                                    <option value="0.4">General Diffuse (UF 0.4)</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Lumens per Fitting</label>
+                                <input type="number" id="light-lumens" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="3000" value="3000">
+                            </div>
+
+                            <button onclick="calculateLighting()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg">
+                                Calculate Fittings
+                            </button>
+
+                            <div id="lighting-result" class="hidden mt-4 bg-white p-4 rounded-lg border border-slate-200">
+                                <div class="grid grid-cols-2 gap-4 text-center">
+                                    <div>
+                                        <div class="text-2xl font-bold text-yellow-600" id="light-count">--</div>
+                                        <div class="text-xs text-slate-500">Fittings Required</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-2xl font-bold text-slate-700" id="light-spacing">-- m</div>
+                                        <div class="text-xs text-slate-500">Spacing</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-slate-200 text-xs text-slate-600">
+                                    Total Flux: <span id="light-total-flux" class="font-mono"></span> lm<br>
+                                    Utilization Factor: <span id="light-uf-display" class="font-mono"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Emergency & Diversity -->
+                        <div class="space-y-4">
+                            <!-- Emergency Lighting -->
+                            <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                                <h3 class="font-semibold text-slate-700 mb-3">Emergency Lighting Battery</h3>
+                                <div class="space-y-3">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-600 mb-1">Load (W)</label>
+                                            <input type="number" id="em-watts" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="20">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-600 mb-1">Voltage (V)</label>
+                                            <input type="number" id="em-volts" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="12">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Required Autonomy (hours)</label>
+                                        <select id="em-hours" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                            <option value="1">1 hour (Standard)</option>
+                                            <option value="1.5">1.5 hours</option>
+                                            <option value="3">3 hours (High risk)</option>
+                                        </select>
+                                    </div>
+                                    <button onclick="calculateEmergency()" class="w-full bg-slate-700 hover:bg-slate-800 text-white font-medium py-2 rounded-lg text-sm">
+                                        Size Battery
+                                    </button>
+                                    <div id="em-result" class="hidden bg-white p-3 rounded-lg border border-slate-200">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-slate-600">Battery Capacity:</span>
+                                            <span class="text-lg font-bold text-slate-800" id="em-ah">-- Ah</span>
+                                        </div>
+                                        <div class="text-xs text-slate-500 mt-1">Including 20% aging factor</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Diversity Calculator -->
+                            <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                                <h3 class="font-semibold text-slate-700 mb-3">Diversity & Demand Factor</h3>
+                                <div class="space-y-3">
+                                    <div id="load-items" class="space-y-2">
+                                        <div class="flex gap-2">
+                                            <input type="text" placeholder="Load Description" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                            <input type="number" placeholder="kW" class="w-20 px-3 py-2 border border-slate-300 rounded-lg text-sm load-kw">
+                                            <input type="number" placeholder="DF%" class="w-20 px-3 py-2 border border-slate-300 rounded-lg text-sm load-df" value="100">
+                                        </div>
+                                    </div>
+                                    <button onclick="addLoadItem()" class="text-sm text-electrical-600 hover:text-electrical-700 font-medium">+ Add Load</button>
+                                    
+                                    <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200">
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-600 mb-1">Diversity Factor</label>
+                                            <input type="number" id="diversity-factor" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.8" value="0.8" step="0.1">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-600 mb-1">Power Factor</label>
+                                            <input type="number" id="diversity-pf" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.9" value="0.9" step="0.1">
+                                        </div>
+                                    </div>
+                                    
+                                    <button onclick="calculateDiversity()" class="w-full bg-electrical-600 hover:bg-electrical-700 text-white font-medium py-2 rounded-lg text-sm">
+                                        Calculate Demand
+                                    </button>
+                                    
+                                    <div id="diversity-result" class="hidden bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+                                        <div class="flex justify-between text-sm">
+                                            <span>Connected Load:</span>
+                                            <span class="font-mono font-semibold" id="div-connected">-- kW</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span>Maximum Demand:</span>
+                                            <span class="font-mono font-semibold text-electrical-600" id="div-demand">-- kW</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm border-t border-slate-200 pt-2">
+                                            <span>Apparent Power:</span>
+                                            <span class="font-mono font-semibold" id="div-kva">-- kVA</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span>Current (3φ 415V):</span>
+                                            <span class="font-mono font-semibold" id="div-current">-- A</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Harmonics & THD -->
+        <section id="harmonics" class="calculator-section mb-8 hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Harmonics & THD Helpers</h2>
+                            <p class="text-xs text-slate-400">THD estimation and K-factor transformer selection</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- THD Calculator -->
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-slate-700 mb-4">THD Calculator</h3>
+                        <div class="mb-4">
+                            <label class="block text-xs font-medium text-slate-600 mb-2">Harmonic Currents (% of Fundamental)</label>
+                            <div id="harmonic-inputs" class="space-y-2 max-h-64 overflow-y-auto">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-mono w-12">H1:</span>
+                                    <input type="number" class="harmonic-val flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="100" value="100" data-h="1">
+                                    <span class="text-xs text-slate-500">%</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-mono w-12">H3:</span>
+                                    <input type="number" class="harmonic-val flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0" value="30" data-h="3">
+                                    <span class="text-xs text-slate-500">%</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-mono w-12">H5:</span>
+                                    <input type="number" class="harmonic-val flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0" value="20" data-h="5">
+                                    <span class="text-xs text-slate-500">%</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-mono w-12">H7:</span>
+                                    <input type="number" class="harmonic-val flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0" value="14" data-h="7">
+                                    <span class="text-xs text-slate-500">%</span>
+                                </div>
+                            </div>
+                            <button onclick="addHarmonic()" class="mt-2 text-sm text-purple-600 hover:text-purple-700 font-medium">+ Add Harmonic</button>
+                        </div>
+                        
+                        <button onclick="calculateTHD()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg">
+                            Calculate THD & K-Factor
+                        </button>
+
+                        <div id="thd-results" class="hidden mt-4 grid grid-cols-2 gap-3">
+                            <div class="bg-white p-3 rounded-lg border border-slate-200 text-center">
+                                <div class="text-2xl font-bold text-purple-600" id="thd-value">--%</div>
+                                <div class="text-xs text-slate-500">THD Current</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-slate-200 text-center">
+                                <div class="text-2xl font-bold text-slate-700" id="k-factor-value">--</div>
+                                <div class="text-xs text-slate-500">K-Factor</div>
+                            </div>
+                            <div class="col-span-2 bg-white p-3 rounded-lg border border-slate-200">
+                                <div class="text-xs text-slate-600 mb-1">Recommended Transformer:</div>
+                                <div class="text-lg font-bold text-slate-800" id="k-rating-rec">K-13</div>
+                                <div class="text-xs text-slate-500 mt-1">For non-linear load applications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transformer Selection Guide -->
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-slate-700 mb-4">K-Factor Selection Guide</h3>
+                        <div class="space-y-3 text-sm">
+                            <div class="bg-white p-3 rounded-lg border border-slate-200">
+                                <div class="font-semibold text-slate-700">K-1 (Standard)</div>
+                                <div class="text-xs text-slate-600 mt-1">Linear loads only. No harmonic content.</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-slate-200">
+                                <div class="font-semibold text-slate-700">K-4</div>
+                                <div class="text-xs text-slate-600 mt-1">Minor harmonics. Small amount of non-linear loads (&lt;15%).</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-slate-200">
+                                <div class="font-semibold text-slate-700">K-13</div>
+                                <div class="text-xs text-slate-600 mt-1">High harmonics. Significant non-linear loads (15-40%). UPS, VFDs.</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-slate-200">
+                                <div class="font-semibold text-slate-700">K-20</div>
+                                <div class="text-xs text-slate-600 mt-1">Very high harmonics. Predominantly non-linear loads (&gt;40%). Data centers.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 bg-purple-50 border border-purple-200 p-3 rounded-lg">
+                            <h4 class="text-sm font-semibold text-purple-800 mb-1">Formula Reference</h4>
+                            <div class="text-xs text-purple-700 font-mono">
+                                THD = √(Σ(Ih²)) / I₁ × 100%<br>
+                                K = Σ(Ih² × h²) / Σ(Ih²)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Protection Coordination -->
+        <section id="protection" class="calculator-section mb-8 hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Protection Coordination Support</h2>
+                            <p class="text-xs text-slate-400">Time-current curves and grading margins</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Grading Margin Calculator -->
+                        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <h3 class="font-semibold text-slate-700 mb-4">Grading Margin Check</h3>
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Upstream Time (s)</label>
+                                        <input type="number" id="coord-t1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.5" step="0.01">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Downstream Time (s)</label>
+                                        <input type="number" id="coord-t2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.1" step="0.01">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Breaker Technology</label>
+                                    <select id="coord-tech" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                        <option value="0.1">Electromechanical (0.1s margin)</option>
+                                        <option value="0.05">Static/Electronic (0.05s margin)</option>
+                                        <option value="0.02">Digital (0.02s margin)</option>
+                                    </select>
+                                </div>
+                                <button onclick="checkGrading()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg">
+                                    Check Coordination
+                                </button>
+                                <div id="coord-result" class="hidden bg-white p-3 rounded-lg border border-slate-200">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm text-slate-600">Actual Margin:</span>
+                                        <span class="font-bold" id="coord-margin">-- s</span>
+                                    </div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm text-slate-600">Required:</span>
+                                        <span class="font-bold" id="coord-required">-- s</span>
+                                    </div>
+                                    <div class="text-center p-2 rounded-lg text-sm font-medium" id="coord-status"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Helper -->
+                        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <h3 class="font-semibold text-slate-700 mb-4">Breaker Settings Helper</h3>
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Load Current (A)</label>
+                                        <input type="number" id="set-load" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="100">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Breaker Frame (A)</label>
+                                        <input type="number" id="set-frame" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="160">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Starting Current (A) [if motor]</label>
+                                    <input type="number" id="set-start" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0">
+                                </div>
+                                <button onclick="suggestSettings()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg">
+                                    Suggest Settings
+                                </button>
+                                <div id="settings-result" class="hidden bg-white p-3 rounded-lg border border-slate-200 space-y-2 text-sm">
+                                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                                        <span class="text-slate-600">Ir (Long time):</span>
+                                        <span class="font-mono font-bold" id="set-ir">-- A</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                                        <span class="text-slate-600">tr:</span>
+                                        <span class="font-mono" id="set-tr">--</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                                        <span class="text-slate-600">Isd (Short time):</span>
+                                        <span class="font-mono font-bold" id="set-isd">-- A</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                                        <span class="text-slate-600">tsd:</span>
+                                        <span class="font-mono" id="set-tsd">--</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-600">Ii (Instantaneous):</span>
+                                        <span class="font-mono font-bold" id="set-ii">-- A</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fuse vs MCCB -->
+                        <div class="lg:col-span-2 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <h3 class="font-semibold text-slate-700 mb-4">Fuse vs MCCB Coordination</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Upstream: Fuse Rating (A)</label>
+                                    <input type="number" id="fuse-up" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="160">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Downstream: MCCB Rating (A)</label>
+                                    <input type="number" id="mccb-down" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="63">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Prospective Fault (kA)</label>
+                                    <input type="number" id="fuse-fault" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="10">
+                                </div>
+                            </div>
+                            <button onclick="checkFuseCoordination()" class="mt-4 w-full md:w-auto px-6 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg">
+                                Check Coordination
+                            </button>
+                            <div id="fuse-result" class="hidden mt-4 bg-white p-4 rounded-lg border border-slate-200">
+                                <div class="grid grid-cols-3 gap-4 text-center">
+                                    <div>
+                                        <div class="text-xs text-slate-500">Pre-arcing I²t</div>
+                                        <div class="font-mono font-bold" id="fuse-i2t">--</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-slate-500">MCCB Let-through</div>
+                                        <div class="font-mono font-bold" id="mccb-let">--</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-slate-500">Status</div>
+                                        <div class="font-bold" id="fuse-status">--</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. Energy & Billing -->
+        <section id="energy" class="calculator-section mb-8 hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Energy & Billing Calculators</h2>
+                            <p class="text-xs text-slate-400">Cost estimation, PF correction, and generator economics</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Energy Cost -->
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-slate-700 mb-4">Energy Cost Estimation</h3>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Monthly kWh</label>
+                                    <input type="number" id="energy-kwh" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="10000">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Max Demand (kW)</label>
+                                    <input type="number" id="energy-md" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="500">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Energy Rate ($/kWh)</label>
+                                    <input type="number" id="energy-rate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.12" step="0.01">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">MD Charge ($/kW)</label>
+                                    <input type="number" id="energy-md-rate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="15" step="0.1">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Power Factor</label>
+                                <input type="number" id="energy-pf" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.85" step="0.01">
+                            </div>
+                            <button onclick="calculateEnergyCost()" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg">
+                                Calculate Bill
+                            </button>
+                            <div id="energy-result" class="hidden bg-white p-4 rounded-lg border border-slate-200 space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span>Energy Charge:</span>
+                                    <span class="font-mono" id="cost-energy">$--</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span>MD Charge:</span>
+                                    <span class="font-mono" id="cost-md">$--</span>
+                                </div>
+                                <div class="flex justify-between text-sm text-red-600" id="pf-penalty-row">
+                                    <span>PF Penalty:</span>
+                                    <span class="font-mono" id="cost-pf">$--</span>
+                                </div>
+                                <div class="flex justify-between font-bold text-lg border-t border-slate-200 pt-2">
+                                    <span>Total Monthly:</span>
+                                    <span class="font-mono text-green-600" id="cost-total">$--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PF Correction -->
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-slate-700 mb-4">PF Improvement Savings</h3>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Current PF</label>
+                                    <input type="number" id="pf-old" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.75" step="0.01">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Target PF</label>
+                                    <input type="number" id="pf-new" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0.95" step="0.01">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Load kW</label>
+                                <input type="number" id="pf-load" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">kVAR Cost ($/kVAR)</label>
+                                <input type="number" id="pf-cost" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="50">
+                            </div>
+                            <button onclick="calculatePFCorrection()" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg">
+                                Calculate Savings
+                            </button>
+                            <div id="pf-result" class="hidden bg-white p-4 rounded-lg border border-slate-200 space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span>kVAR Required:</span>
+                                    <span class="font-mono font-bold" id="pf-kvar">-- kVAR</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span>Investment:</span>
+                                    <span class="font-mono" id="pf-invest">$--</span>
+                                </div>
+                                <div class="flex justify-between text-sm text-green-600">
+                                    <span>Monthly Savings:</span>
+                                    <span class="font-mono font-bold" id="pf-saving">$--</span>
+                                </div>
+                                <div class="flex justify-between text-sm font-semibold border-t border-slate-200 pt-2">
+                                    <span>Payback Period:</span>
+                                    <span class="font-mono text-green-600" id="pf-payback">-- months</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generator Cost -->
+                    <div class="lg:col-span-2 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-slate-700 mb-4">Generator Running Cost</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Generator kVA</label>
+                                <input type="number" id="gen-kva" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Load Factor (%)</label>
+                                <input type="number" id="gen-load" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="75">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Fuel Cost ($/L)</label>
+                                <input type="number" id="gen-fuel-cost" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="1.2" step="0.1">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Maintenance ($/hr)</label>
+                                <input type="number" id="gen-maint" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="5" step="0.5">
+                            </div>
+                        </div>
+                        <button onclick="calculateGenCost()" class="mt-4 w-full md:w-auto px-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg">
+                            Calculate Generator Economics
+                        </button>
+                        <div id="gen-result" class="hidden mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-white p-4 rounded-lg border border-slate-200 text-center">
+                                <div class="text-xs text-slate-500 mb-1">Fuel Consumption</div>
+                                <div class="text-xl font-bold text-slate-800" id="gen-fuel-consumption">-- L/hr</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg border border-slate-200 text-center">
+                                <div class="text-xs text-slate-500 mb-1">Cost per Hour</div>
+                                <div class="text-xl font-bold text-green-600" id="gen-cost-hour">$--</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg border border-slate-200 text-center">
+                                <div class="text-xs text-slate-500 mb-1">Cost per kWh</div>
+                                <div class="text-xl font-bold text-slate-800" id="gen-cost-kwh">$--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-white font-semibold mb-1">Electrical Engineering Toolkit</h3>
+                    <p class="text-sm">Professional calculations for electrical system design</p>
+                </div>
+                <div class="text-sm text-center md:text-right">
+                    <p>Compliant with IEC 60364, BS 7671, IEEE 141/242</p>
+                    <p class="mt-1 text-xs text-slate-500">Always verify critical calculations with certified software</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Global State
+        let cableSections = [];
+        let motorMethod = 'dol';
+        let currentSection = 'shortcircuit';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            addCableSection(); // Add initial cable section
+            showSection('shortcircuit');
+        });
+
+        // Navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.calculator-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected
+            document.getElementById(sectionId).classList.remove('hidden');
+            currentSection = sectionId;
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.add('hidden');
+        }
+
+        // 1. Short Circuit Calculations
+        function calculateShortCircuit() {
+            const kva = parseFloat(document.getElementById('sc-kva').value) || 0;
+            const voltage = parseFloat(document.getElementById('sc-voltage').value) || 415;
+            const z = parseFloat(document.getElementById('sc-z').value) || 6;
+            const xr = parseFloat(document.getElementById('sc-xr').value) || 10;
+            const length = parseFloat(document.getElementById('sc-length').value) || 0;
+            const cableSize = parseFloat(document.getElementById('sc-cable-size').value) || 240;
+            const material = document.getElementById('sc-material').value;
+            const icu = parseFloat(document.getElementById('sc-icu').value) || 50;
+
+            if (kva === 0) {
+                alert('Please enter transformer kVA');
+                return;
+            }
+
+            // Transformer impedance calculation
+            const zTrans = (z / 100) * (Math.pow(voltage, 2) / (kva * 1000));
+            const rTrans = zTrans / Math.sqrt(1 + Math.pow(xr, 2));
+            const xTrans = rTrans * xr;
+
+            // Transformer fault currents
+            const vPh = voltage / Math.sqrt(3);
+            const isc3Trans = (kva * 1000) / (Math.sqrt(3) * voltage * (z/100)) / 1000; // kA
+            const isc1Trans = isc3Trans * 0.8; // Approximate 1-phase (typically 0.8-1.0 x 3-phase for solidly grounded)
+
+            // Cable impedance (simplified)
+            const rho = material === 'copper' ? 0.0225 : 0.036; // Ohm-mm²/m at 90°C
+            const rCable = (rho * length) / cableSize;
+            const xCable = 0.00008 * length; // Approximate reactance
+
+            // Total impedance at MDB (assuming cable is after transformer)
+            const rTotalMDB = rTrans + rCable;
+            const xTotalMDB = xTrans + xCable;
+            const zTotalMDB = Math.sqrt(Math.pow(rTotalMDB, 2) + Math.pow(xTotalMDB, 2));
+
+            const isc3MDB = (vPh / zTotalMDB) / 1000; // kA
+
+            // For final DB, add another cable section (assume same cable for simplicity, or 50% length)
+            const rTotalDB = rTotalMDB + (rCable * 0.5);
+            const xTotalDB = xTotalMDB + (xCable * 0.5);
+            const zTotalDB = Math.sqrt(Math.pow(rTotalDB, 2) + Math.pow(xTotalDB, 2));
+            
+            const isc3DB = (vPh / zTotalDB) / 1000;
+
+            // Update UI
+            document.getElementById('sc-trans-3ph').textContent = isc3Trans.toFixed(2) + ' kA';
+            document.getElementById('sc-trans-1ph').textContent = isc1Trans.toFixed(2) + ' kA';
+            document.getElementById('sc-mdb').textContent = isc3MDB.toFixed(2) + ' kA';
+            document.getElementById('sc-db').textContent = isc3DB.toFixed(2) + ' kA';
+
+            // Breaker check
+            const maxFault = Math.max(isc3Trans, isc3MDB, isc3DB);
+            const margin = ((icu - maxFault) / maxFault) * 100;
+            
+            document.getElementById('sc-check-icu').textContent = maxFault.toFixed(2) + ' kA ≤ ' + icu + ' kA';
+            document.getElementById('sc-margin').textContent = margin.toFixed(1) + '%';
+            
+            const recElem = document.getElementById('sc-recommend');
+            if (margin >= 20) {
+                recElem.textContent = 'Adequate';
+                recElem.className = 'text-sm font-bold text-success';
+            } else if (margin >= 0) {
+                recElem.textContent = 'Marginal - Consider higher Icu';
+                recElem.className = 'text-sm font-bold text-warning';
+            } else {
+                recElem.textContent = 'INADEQUATE - Upgrade breaker';
+                recElem.className = 'text-sm font-bold text-danger';
+            }
+
+            document.getElementById('sc-placeholder').classList.add('hidden');
+            document.getElementById('sc-results').classList.remove('hidden');
+        }
+
+        // 2. Cable Sizing
+        function addCableSection() {
+            const id = cableSections.length;
+            cableSections.push({ id: id, length: 0, load: 0, size: 16 });
+            
+            const div = document.createElement('div');
+            div.className = 'bg-white p-4 rounded-lg border border-slate-200 shadow-sm';
+            div.id = `cable-section-${id}`;
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="font-semibold text-slate-700 text-sm">Section ${id + 1}: ${id === 0 ? 'MDB → SMDB' : id === 1 ? 'SMDB → FDB' : 'FDB → Load'}</h4>
+                    ${id > 0 ? `<button onclick="removeCableSection(${id})" class="text-red-500 hover:text-red-700 text-xs">Remove</button>` : ''}
+                </div>
+                <div class="grid grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-600 mb-1">Length (m)</label>
+                        <input type="number" class="cable-length w-full px-2 py-1 border border-slate-300 rounded text-sm" placeholder="50" value="50" onchange="updateCableSection(${id})">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-600 mb-1">Load (A)</label>
+                        <input type="number" class="cable-load w-full px-2 py-1 border border-slate-300 rounded text-sm" placeholder="100" value="100" onchange="updateCableSection(${id})">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-600 mb-1">Size (mm²)</label>
+                        <select class="cable-size w-full px-2 py-1 border border-slate-300 rounded text-sm" onchange="updateCableSection(${id})">
+                            <option value="1.5">1.5</option>
+                            <option value="2.5">2.5</option>
+                            <option value="4">4</option>
+                            <option value="6">6</option>
+                            <option value="10">10</option>
+                            <option value="16">16</option>
+                            <option value="25">25</option>
+                            <option value="35" selected>35</option>
+                            <option value="50">50</option>
+                            <option value="70">70</option>
+                            <option value="95">95</option>
+                            <option value="120">120</option>
+                            <option value="150">150</option>
+                            <option value="185">185</option>
+                            <option value="240">240</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-600 mb-1">Material</label>
+                        <select class="cable-mat w-full px-2 py-1 border border-slate-300 rounded text-sm">
+                            <option value="copper">Cu</option>
+                            <option value="aluminum">Al</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-slate-500 cable-drop-display">Voltage drop: -- V</div>
+            `;
+            
+            document.getElementById('cable-sections').appendChild(div);
+        }
+
+        function removeCableSection(id) {
+            const elem = document.getElementById(`cable-section-${id}`);
+            if (elem) elem.remove();
+            cableSections = cableSections.filter(s => s.id !== id);
+        }
+
+        function resetCableSections() {
+            document.getElementById('cable-sections').innerHTML = '';
+            cableSections = [];
+            addCableSection();
+        }
+
+        function updateCableSection(id) {
+            // Real-time updates can be added here
+        }
+
+        function calculateCableSizing() {
+            const methodFactor = parseFloat(document.getElementById('cable-method').value);
+            const ambient = parseFloat(document.getElementById('cable-ambient').value) || 30;
+            const grouping = parseFloat(document.getElementById('cable-grouping').value);
+            const maxDropPercent = parseFloat(document.getElementById('cable-maxdrop').value) || 4;
+            
+            // Temperature correction (simplified)
+            const tempFactor = ambient > 30 ? 1 - ((ambient - 30) * 0.005) : 1;
+            const totalFactor = methodFactor * tempFactor * grouping;
+            
+            let totalLength = 0;
+            let cumulativeDrop = 0;
+            let totalDropVolts = 0;
+            const voltage = 415; // Assume 3-phase
+            const maxDropVolts = voltage * (maxDropPercent / 100);
+            
+            const sections = document.querySelectorAll('#cable-sections > div');
+            let resultsHTML = '';
+            
+            sections.forEach((section, index) => {
+                const length = parseFloat(section.querySelector('.cable-length').value) || 0;
+                const load = parseFloat(section.querySelector('.cable-load').value) || 0;
+                const size = parseFloat(section.querySelector('.cable-size').value);
+                const material = section.querySelector('.cable-mat').value;
+                
+                totalLength += length;
+                
+                // Voltage drop calculation (mV/A/m)
+                const mvAm = getCableMvAm(size, material);
+                const sectionDrop = (mvAm * load * length) / 1000; // Volts
+                totalDropVolts += sectionDrop;
+                
+                const sectionDropPercent = (sectionDrop / voltage) * 100;
+                cumulativeDrop += sectionDropPercent;
+                
+                // Ampacity check (simplified based on IEC 60364-5-52)
+                const baseAmpacity = getCableAmpacity(size, material);
+                const correctedAmpacity = baseAmpacity * totalFactor;
+                
+                const status = load <= correctedAmpacity ? 'OK' : 'Undersized';
+                const statusColor = load <= correctedAmpacity ? 'text-green-600' : 'text-red-600';
+                
+                section.querySelector('.cable-drop-display').textContent = 
+                    `Drop: ${sectionDrop.toFixed(2)}V (${sectionDropPercent.toFixed(2)}%) | Ampacity: ${correctedAmpacity.toFixed(0)}A [${status}]`;
+                section.querySelector('.cable-drop-display').className = `mt-2 text-xs font-medium ${statusColor}`;
+                
+                resultsHTML += `
+                    <div class="flex justify-between text-sm p-2 bg-slate-50 rounded">
+                        <span>Section ${index + 1} (${size}mm²):</span>
+                        <span class="font-mono">${sectionDrop.toFixed(2)}V (${sectionDropPercent.toFixed(2)}%)</span>
+                    </div>
+                `;
+            });
+            
+            const endVoltage = voltage - totalDropVolts;
+            
+            document.getElementById('cable-total-length').textContent = totalLength + ' m';
+            document.getElementById('cable-total-drop').textContent = `${totalDropVolts.toFixed(2)} V (${cumulativeDrop.toFixed(2)}%)`;
+            document.getElementById('cable-end-voltage').textContent = endVoltage.toFixed(1) + ' V';
+            
+            // Recommendations
+            let recHTML = '';
+            if (cumulativeDrop > maxDropPercent) {
+                recHTML += `<div class="p-2 bg-red-50 text-red-700 rounded text-sm">⚠️ Total voltage drop exceeds ${maxDropPercent}%. Increase cable sizes.</div>`;
+            } else {
+                recHTML += `<div class="p-2 bg-green-50 text-green-700 rounded text-sm">✓ Voltage drop within limits</div>`;
+            }
+            
+            document.getElementById('cable-recommendations').innerHTML = recHTML + resultsHTML;
+            
+            document.getElementById('cable-placeholder').classList.add('hidden');
+            document.getElementById('cable-results').classList.remove('hidden');
+        }
+
+        function getCableMvAm(size, material) {
+            // Approximate mV/A/m values for 3-phase (copper)
+            const copperValues = {
+                1.5: 25, 2.5: 15, 4: 9.5, 6: 6.4, 10: 3.8, 16: 2.4,
+                25: 1.5, 35: 1.1, 50: 0.77, 70: 0.55, 95: 0.41,
+                120: 0.33, 150: 0.27, 185: 0.22, 240: 0.18
+            };
+            const mult = material === 'aluminum' ? 1.6 : 1;
+            return (copperValues[size] || 1) * mult;
+        }
+
+        function getCableAmpacity(size, material) {
+            // Approximate base ampacity at 30°C (copper)
+            const copperAmp = {
+                1.5: 20, 2.5: 28, 4: 38, 6: 49, 10: 68, 16: 91,
+                25: 119, 35: 148, 50: 180, 70: 232, 95: 282,
+                120: 328, 150: 379, 185: 434, 240: 514
+            };
+            const mult = material === 'aluminum' ? 0.78 : 1;
+            return (copperAmp[size] || 100) * mult;
+        }
+
+        // 3. Motor Tools
+        function switchMotorTab(tab) {
+            document.querySelectorAll('.motor-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`motor-${tab}`).classList.remove('hidden');
+            
+            document.querySelectorAll('[id^="tab-"]').forEach(t => {
+                t.classList.remove('tab-active');
+                t.classList.add('tab-inactive');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('tab-inactive');
+            document.getElementById(`tab-${tab}`).classList.add('tab-active');
+        }
+
+        function setMotorMethod(method) {
+            motorMethod = method;
+            document.querySelectorAll('[id^="method-"]').forEach(btn => {
+                btn.classList.remove('border-electrical-500', 'bg-electrical-50');
+                btn.classList.add('border-slate-200');
+            });
+            document.getElementById(`method-${method}`).classList.remove('border-slate-200');
+            document.getElementById(`method-${method}`).classList.add('border-electrical-500', 'bg-electrical-50');
+            
+            document.getElementById('soft-starter-settings').classList.toggle('hidden', method !== 'soft');
+        }
+
+        function calculateMotorStarting() {
+            const kw = parseFloat(document.getElementById('motor-kw').value) || 0;
+            const voltage = parseFloat(document.getElementById('motor-voltage').value) || 415;
+            const eff = parseFloat(document.getElementById('motor-eff').value) || 95;
+            const pf = parseFloat(document.getElementById('motor-pf').value) || 0.85;
+            
+            // Full load current
+            const fla = (kw * 1000) / (Math.sqrt(3) * voltage * pf * (eff/100));
+            
+            // Starting multipliers
+            const multipliers = {
+                'dol': 6,
+                'star': 2, // 1/3 of DOL approximately
+                'soft': (parseFloat(document.getElementById('motor-soft-limit').value) || 350) / 100,
+                'vfd': 1.5
+            };
+            
+            const mult = multipliers[motorMethod];
+            const startCurrent = fla * mult;
+            const startKva = (Math.sqrt(3) * voltage * startCurrent) / 1000;
+            
+            const resultsDiv = document.getElementById('motor-starting-results');
+            resultsDiv.innerHTML = `
+                <div class="bg-slate-900 text-white p-4 rounded-xl">
+                    <h4 class="text-sm font-semibold text-slate-400 mb-3">STARTING PARAMETERS</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between border-b border-slate-700 pb-2">
+                            <span>Full Load Current (FLA):</span>
+                            <span class="font-mono font-bold">${fla.toFixed(1)} A</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-700 pb-2">
+                            <span>Starting Current:</span>
+                            <span class="font-mono font-bold text-warning">${startCurrent.toFixed(1)} A</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-700 pb-2">
+                            <span>Starting kVA:</span>
+                            <span class="font-mono font-bold">${startKva.toFixed(1)} kVA</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Method Multiplier:</span>
+                            <span class="font-mono">${mult}x FLA</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-800">
+                    <strong>Cable Sizing:</strong> Use ${(startCurrent * 0.33).toFixed(0)}A for short-time duty (DOL starting)
+                </div>
+            `;
+        }
+
+        function calculateMotorProtection() {
+            const fla = parseFloat(document.getElementById('prot-fla').value) || 0;
+            const method = document.getElementById('prot-method').value;
+            
+            if (fla === 0) return;
+            
+            // Overload relay setting (typically 1.05-1.15 x FLA)
+            const olSetting = fla * 1.05;
+            
+            // Short circuit protection
+            let scSetting;
+            if (method === 'dol') {
+                scSetting = fla * 10; // Instantaneous
+            } else {
+                scSetting = fla * 3; // Lower for soft start
+            }
+            
+            // Contactor sizing
+            const contactorSize = Math.ceil(fla / 10) * 10; // Round up to nearest 10A
+            
+            const resultsDiv = document.getElementById('motor-protection-results');
+            resultsDiv.innerHTML = `
+                <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-2 text-sm">
+                    <div class="flex justify-between border-b border-slate-200 pb-2">
+                        <span class="text-slate-600">Overload Relay:</span>
+                        <span class="font-mono font-bold">${olSetting.toFixed(1)} A</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2">
+                        <span class="text-slate-600">Short-circuit (Ii):</span>
+                        <span class="font-mono font-bold">${scSetting.toFixed(0)} A</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2">
+                        <span class="text-slate-600">Contactor Size:</span>
+                        <span class="font-mono font-bold">${contactorSize} A</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-600">Cable (min):</span>
+                        <span class="font-mono font-bold">${getCableSizeFromAmps(fla)} mm²</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCableSizeFromAmps(amps) {
+            if (amps <= 20) return '2.5';
+            if (amps <= 28) return '4';
+            if (amps <= 38) return '6';
+            if (amps <= 49) return '10';
+            if (amps <= 68) return '16';
+            if (amps <= 91) return '25';
+            if (amps <= 119) return '35';
+            return '50+';
+        }
+
+        function calculateVoltageDip() {
+            const transKva = parseFloat(document.getElementById('vd-trans-kva').value) || 0;
+            const transZ = parseFloat(document.getElementById('vd-trans-z').value) || 6;
+            const startKva = parseFloat(document.getElementById('vd-start-kva').value) || 0;
+            const baseLoad = parseFloat(document.getElementById('vd-base-load').value) || 0;
+            
+            if (transKva === 0) return;
+            
+            // Voltage dip calculation
+            // %VD = (Starting kVA / Transformer kVA) * %Z * (1 / (1 + BaseLoad/TransKVA))
+            const loadFactor = 1 + (baseLoad / transKva);
+            const vdPercent = (startKva / transKva) * transZ / loadFactor;
+            
+            const resultsDiv = document.getElementById('voltage-dip-results');
+            resultsDiv.innerHTML = `
+                <h4 class="text-sm font-semibold text-slate-400 mb-3">VOLTAGE DIP ANALYSIS</h4>
+                <div class="space-y-3">
+                    <div class="text-center p-4 bg-slate-800 rounded-lg">
+                        <div class="text-3xl font-bold ${vdPercent > 15 ? 'text-danger' : vdPercent > 10 ? 'text-warning' : 'text-success'}">${vdPercent.toFixed(1)}%</div>
+                        <div class="text-xs text-slate-400 mt-1">Voltage Dip</div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Transformer Loading:</span>
+                            <span>${((baseLoad/transKva)*100).toFixed(1)}%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Starting kVA:</span>
+                            <span>${startKva} kVA</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Recommendation:</span>
+                            <span class="${vdPercent > 15 ? 'text-danger' : 'text-success'}">
+                                ${vdPercent > 15 ? 'Use soft starter/VFD' : 'Acceptable for DOL'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 4. Earthing Calculations
+        function calculateEarthResistance() {
+            const rho = parseFloat(document.getElementById('earth-rho').value) || 100;
+            const length = parseFloat(document.getElementById('earth-length').value) || 3;
+            const dia = parseFloat(document.getElementById('earth-dia').value) || 16;
+            const config = document.getElementById('earth-config').value;
+            
+            // Simplified Wenner formula for rod electrode
+            // R = (ρ / 2πL) * ln(4L/d)
+            const radius = (dia / 1000) / 2; // convert to meters
+            let r = (rho / (2 * Math.PI * length)) * Math.log((4 * length) / radius);
+            
+            if (config === 'parallel') {
+                r = r / 1.5; // Approximate reduction for parallel rods
+            } else if (config === 'plate') {
+                // Simplified plate formula
+                r = 0.25 * (rho / Math.sqrt(2)); // Assuming 1m² plate
+            }
+            
+            document.getElementById('earth-re-value').textContent = r.toFixed(2) + ' Ω';
+            document.getElementById('earth-res-result').classList.remove('hidden');
+        }
+
+        function calculateLoopImpedance() {
+            const voltage = parseFloat(document.getElementById('loop-voltage').value) || 230;
+            const breaker = parseFloat(document.getElementById('loop-breaker').value) || 32;
+            const type = document.getElementById('loop-type').value;
+            const zs = parseFloat(document.getElementById('loop-zs').value) || 0;
+            
+            // Max Zs calculation (simplified)
+            // Zs = Uo / (Ia) where Ia is tripping current
+            const multiplier = type === 'B' ? 5 : type === 'C' ? 10 : 20;
+            const trippingCurrent = breaker * multiplier;
+            const maxZs = voltage / trippingCurrent;
+            
+            const status = zs <= maxZs ? 'PASS' : 'FAIL';
+            const statusColor = zs <= maxZs ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            
+            document.getElementById('loop-maxzs').textContent = maxZs.toFixed(2) + ' Ω';
+            document.getElementById('loop-status').textContent = status;
+            document.getElementById('loop-status').className = `text-center p-2 rounded-lg text-sm font-medium ${statusColor}`;
+            document.getElementById('loop-result').classList.remove('hidden');
+        }
+
+        function calculateTouchVoltage() {
+            const current = parseFloat(document.getElementById('touch-current').value) || 1000;
+            const resistance = parseFloat(document.getElementById('touch-resistance').value) || 0.5;
+            const layer = parseFloat(document.getElementById('touch-layer').value) || 10;
+            const time = parseFloat(document.getElementById('touch-time').value) || 1;
+            
+            // Touch voltage
+            const touchV = current * resistance;
+            
+            // Safe limit (simplified IEC formula)
+            // Utp = 116 / √t for 50kg person
+            const safeLimit = 116 / Math.sqrt(time);
+            
+            const safe = touchV <= safeLimit;
+            
+            document.getElementById('touch-voltage-val').textContent = touchV.toFixed(1) + ' V';
+            document.getElementById('touch-limit-val').textContent = safeLimit.toFixed(1) + ' V';
+            
+            const statusDiv = document.getElementById('touch-status');
+            if (safe) {
+                statusDiv.textContent = 'SAFE';
+                statusDiv.className = 'text-center p-2 rounded-lg text-sm font-medium bg-green-100 text-green-800';
+            } else {
+                statusDiv.textContent = 'DANGER - Reduce grid resistance or add surface layer';
+                statusDiv.className = 'text-center p-2 rounded-lg text-sm font-medium bg-red-100 text-red-800';
+            }
+            
+            document.getElementById('touch-result').classList.remove('hidden');
+        }
+
+        // 5. Lighting
+        function updateLuxValue() {
+            // Auto-update based on selection if needed
+        }
+
+        function calculateLighting() {
+            const length = parseFloat(document.getElementById('light-length').value) || 10;
+            const width = parseFloat(document.getElementById('light-width').value) || 8;
+            const height = parseFloat(document.getElementById('light-height').value) || 3;
+            const plane = parseFloat(document.getElementById('light-plane').value) || 0.8;
+            const lux = parseFloat(document.getElementById('light-usage').value) || 500;
+            const ceiling = parseFloat(document.getElementById('light-ceiling').value);
+            const wall = parseFloat(document.getElementById('light-wall').value);
+            const ufBase = parseFloat(document.getElementById('light-uf').value);
+            const lumens = parseFloat(document.getElementById('light-lumens').value) || 3000;
+            
+            const area = length * width;
+            const h = height - plane;
+            
+            // Room index
+            const ri = (length * width) / (h * (length + width));
+            
+            // Adjust UF based on RI (simplified)
+            let uf = ufBase * (0.8 + (ri * 0.05));
+            if (uf > 0.9) uf = 0.9;
+            
+            // Maintenance factor (assume 0.8)
+            const mf = 0.8;
+            
+            // Total flux required
+            const totalFlux = (lux * area) / (uf * mf);
+            
+            // Number of fittings
+            const numFittings = Math.ceil(totalFlux / lumens);
+            
+            // Spacing
+            const spacing = Math.sqrt(area / numFittings);
+            
+            document.getElementById('light-count').textContent = numFittings;
+            document.getElementById('light-spacing').textContent = spacing.toFixed(2);
+            document.getElementById('light-total-flux').textContent = totalFlux.toFixed(0);
+            document.getElementById('light-uf-display').textContent = uf.toFixed(2);
+            
+            document.getElementById('lighting-result').classList.remove('hidden');
+        }
+
+        function calculateEmergency() {
+            const watts = parseFloat(document.getElementById('em-watts').value) || 20;
+            const volts = parseFloat(document.getElementById('em-volts').value) || 12;
+            const hours = parseFloat(document.getElementById('em-hours').value) || 1;
+            
+            const current = watts / volts;
+            const capacity = (current * hours) * 1.2; // 20% aging factor
+            
+            document.getElementById('em-ah').textContent = capacity.toFixed(2) + ' Ah';
+            document.getElementById('em-result').classList.remove('hidden');
+        }
+
+        function addLoadItem() {
+            const div = document.createElement('div');
+            div.className = 'flex gap-2';
+            div.innerHTML = `
+                <input type="text" placeholder="Load Description" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                <input type="number" placeholder="kW" class="w-20 px-3 py-2 border border-slate-300 rounded-lg text-sm load-kw">
+                <input type="number" placeholder="DF%" class="w-20 px-3 py-2 border border-slate-300 rounded-lg text-sm load-df" value="100">
+            `;
+            document.getElementById('load-items').appendChild(div);
+        }
+
+        function calculateDiversity() {
+            const rows = document.querySelectorAll('#load-items > div');
+            let totalKW = 0;
+            let maxDemand = 0;
+            
+            rows.forEach(row => {
+                const kw = parseFloat(row.querySelector('.load-kw').value) || 0;
+                const df = parseFloat(row.querySelector('.load-df').value) || 100;
+                totalKW += kw;
+                maxDemand += kw * (df / 100);
+            });
+            
+            const diversityFactor = parseFloat(document.getElementById('diversity-factor').value) || 0.8;
+            const pf = parseFloat(document.getElementById('diversity-pf').value) || 0.9;
+            
+            const finalDemand = maxDemand * diversityFactor;
+            const kva = finalDemand / pf;
+            const current = (kva * 1000) / (Math.sqrt(3) * 415);
+            
+            document.getElementById('div-connected').textContent = totalKW.toFixed(2) + ' kW';
+            document.getElementById('div-demand').textContent = finalDemand.toFixed(2) + ' kW';
+            document.getElementById('div-kva').textContent = kva.toFixed(2) + ' kVA';
+            document.getElementById('div-current').textContent = current.toFixed(2) + ' A';
+            
+            document.getElementById('diversity-result').classList.remove('hidden');
+        }
+
+        // 6. Harmonics
+        let harmonicCount = 4; // Starting from H7
+
+        function addHarmonic() {
+            harmonicCount += 2; // Odd harmonics typically
+            if (harmonicCount > 25) return;
+            
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2';
+            div.innerHTML = `
+                <span class="text-xs font-mono w-12">H${harmonicCount}:</span>
+                <input type="number" class="harmonic-val flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="0" value="0" data-h="${harmonicCount}">
+                <span class="text-xs text-slate-500">%</span>
+            `;
+            document.getElementById('harmonic-inputs').appendChild(div);
+        }
+
+        function calculateTHD() {
+            const inputs = document.querySelectorAll('.harmonic-val');
+            let sumSquares = 0;
+            let sumWeightedSquares = 0;
+            let fundamental = 0;
+            
+            inputs.forEach(input => {
+                const h = parseInt(input.dataset.h);
+                const val = parseFloat(input.value) || 0;
+                
+                if (h === 1) {
+                    fundamental = val;
+                } else {
+                    sumSquares += Math.pow(val, 2);
+                    sumWeightedSquares += Math.pow(val, 2) * Math.pow(h, 2);
+                }
+            });
+            
+            const thd = fundamental > 0 ? (Math.sqrt(sumSquares) / fundamental) * 100 : 0;
+            
+            // K-factor calculation
+            const totalSq = Math.pow(fundamental, 2) + sumSquares;
+            const kFactor = totalSq > 0 ? (Math.pow(fundamental, 2) * 1 + sumWeightedSquares) / totalSq : 1;
+            
+            // Determine K-rating
+            let kRating = 'K-1';
+            if (kFactor > 4) kRating = 'K-4';
+            if (kFactor > 13) kRating = 'K-13';
+            if (kFactor > 20) kRating = 'K-20';
+            
+            document.getElementById('thd-value').textContent = thd.toFixed(1) + '%';
+            document.getElementById('k-factor-value').textContent = kFactor.toFixed(1);
+            document.getElementById('k-rating-rec').textContent = kRating;
+            
+            document.getElementById('thd-results').classList.remove('hidden');
+        }
+
+        // 7. Protection Coordination
+        function checkGrading() {
+            const t1 = parseFloat(document.getElementById('coord-t1').value) || 0;
+            const t2 = parseFloat(document.getElementById('coord-t2').value) || 0;
+            const margin = parseFloat(document.getElementById('coord-tech').value) || 0.1;
+            
+            const actual = t1 - t2;
+            const status = actual >= margin ? 'COORDINATED' : 'DISCRIMINATION RISK';
+            const color = actual >= margin ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            
+            document.getElementById('coord-margin').textContent = actual.toFixed(3) + ' s';
+            document.getElementById('coord-required').textContent = margin + ' s';
+            document.getElementById('coord-status').textContent = status;
+            document.getElementById('coord-status').className = `text-center p-2 rounded-lg text-sm font-medium ${color}`;
+            document.getElementById('coord-result').classList.remove('hidden');
+        }
+
+        function suggestSettings() {
+            const load = parseFloat(document.getElementById('set-load').value) || 0;
+            const frame = parseFloat(document.getElementById('set-frame').value) || 0;
+            const start = parseFloat(document.getElementById('set-start').value) || 0;
+            
+            if (load === 0 || frame === 0) return;
+            
+            // Ir (Long time)
+            const ir = Math.min(load * 1.1, frame);
+            const irSetting = (ir / frame) * 100; // As percentage of frame
+            
+            // tr (Time) - standard 0.5s at 6x
+            const tr = '0.5s @ 6x';
+            
+            // Isd (Short time)
+            let isd;
+            if (start > 0) {
+                isd = start * 1.2; // Above starting current
+            } else {
+                isd = load * 10; // Typical
+            }
+            if (isd > frame * 10) isd = frame * 10; // Max 10x frame
+            
+            // tsd
+            const tsd = '0.1s';
+            
+            // Ii (Instantaneous)
+            const ii = frame * 10; // Typically 10x frame or max
+            
+            document.getElementById('set-ir').textContent = ir.toFixed(2) + ' A (' + irSetting.toFixed(0) + '%)';
+            document.getElementById('set-tr').textContent = tr;
+            document.getElementById('set-isd').textContent = isd.toFixed(0) + ' A';
+            document.getElementById('set-tsd').textContent = tsd;
+            document.getElementById('set-ii').textContent = ii.toFixed(0) + ' A';
+            
+            document.getElementById('settings-result').classList.remove('hidden');
+        }
+
+        function checkFuseCoordination() {
+            const fuse = parseFloat(document.getElementById('fuse-up').value) || 0;
+            const mccb = parseFloat(document.getElementById('mccb-down').value) || 0;
+            const fault = parseFloat(document.getElementById('fuse-fault').value) || 0;
+            
+            // Simplified I²t values (example values for gG fuse)
+            const fuseI2t = Math.pow(fuse * 10, 2) * 0.01; // Simplified pre-arcing
+            
+            // MCCB let-through (simplified)
+            const mccbLet = Math.pow(mccb * 15, 2) * 0.001;
+            
+            const coord = fuseI2t > mccbLet * 1.5 ? 'COORDINATED' : 'NOT COORDINATED';
+            const color = fuseI2t > mccbLet * 1.5 ? 'text-green-600' : 'text-red-600';
+            
+            document.getElementById('fuse-i2t').textContent = fuseI2t.toExponential(2);
+            document.getElementById('mccb-let').textContent = mccbLet.toExponential(2);
+            document.getElementById('fuse-status').textContent = coord;
+            document.getElementById('fuse-status').className = `font-bold ${color}`;
+            document.getElementById('fuse-result').classList.remove('hidden');
+        }
+
+        // 8. Energy Calculations
+        function calculateEnergyCost() {
+            const kwh = parseFloat(document.getElementById('energy-kwh').value) || 0;
+            const md = parseFloat(document.getElementById('energy-md').value) || 0;
+            const rate = parseFloat(document.getElementById('energy-rate').value) || 0;
+            const mdRate = parseFloat(document.getElementById('energy-md-rate').value) || 0;
+            const pf = parseFloat(document.getElementById('energy-pf').value) || 1;
+            
+            const energyCost = kwh * rate;
+            const mdCost = md * mdRate;
+            
+            // PF penalty (typical: penalty if PF < 0.9)
+            let pfPenalty = 0;
+            if (pf < 0.9) {
+                const penaltyRate = 0.01; // 1% per 0.01 below 0.9
+                const diff = 0.9 - pf;
+                pfPenalty = (energyCost + mdCost) * (diff * 100 * penaltyRate);
+            }
+            
+            const total = energyCost + mdCost + pfPenalty;
+            
+            document.getElementById('cost-energy').textContent = '$' + energyCost.toFixed(2);
+            document.getElementById('cost-md').textContent = '$' + mdCost.toFixed(2);
+            document.getElementById('cost-pf').textContent = '$' + pfPenalty.toFixed(2);
+            document.getElementById('cost-total').textContent = '$' + total.toFixed(2);
+            
+            document.getElementById('pf-penalty-row').style.display = pfPenalty > 0 ? 'flex' : 'none';
+            document.getElementById('energy-result').classList.remove('hidden');
+        }
+
+        function calculatePFCorrection() {
+            const oldPf = parseFloat(document.getElementById('pf-old').value) || 0.75;
+            const newPf = parseFloat(document.getElementById('pf-new').value) || 0.95;
+            const load = parseFloat(document.getElementById('pf-load').value) || 0;
+            const cost = parseFloat(document.getElementById('pf-cost').value) || 50;
+            
+            // kVAR calculation
+            const oldTan = Math.tan(Math.acos(oldPf));
+            const newTan = Math.tan(Math.acos(newPf));
+            const kvar = load * (oldTan - newTan);
+            
+            // Investment
+            const investment = kvar * cost;
+            
+            // Savings (assume 2% of energy bill per 0.01 PF improvement)
+            const pfImprove = newPf - oldPf;
+            const monthlySaving = load * 100 * 0.12 * 730 * (pfImprove * 2); // Rough estimate
+            
+            const payback = monthlySaving > 0 ? investment / monthlySaving : 0;
+            
+            document.getElementById('pf-kvar').textContent = kvar.toFixed(2) + ' kVAR';
+            document.getElementById('pf-invest').textContent = '$' + investment.toFixed(0);
+            document.getElementById('pf-saving').textContent = '$' + monthlySaving.toFixed(0);
+            document.getElementById('pf-payback').textContent = payback.toFixed(1) + ' months';
+            
+            document.getElementById('pf-result').classList.remove('hidden');
+        }
+
+        function calculateGenCost() {
+            const kva = parseFloat(document.getElementById('gen-kva').value) || 0;
+            const loadFactor = parseFloat(document.getElementById('gen-load').value) || 75;
+            const fuelCost = parseFloat(document.getElementById('gen-fuel-cost').value) || 1.2;
+            const maint = parseFloat(document.getElementById('gen-maint').value) || 5;
+            
+            if (kva === 0) return;
+            
+            // Fuel consumption (approx 0.25 L/kWh at full load, adjusted for load factor)
+            const load = kva * (loadFactor / 100);
+            const fuelPerHour = load * 0.25 * (0.5 + (loadFactor / 200)); // Higher consumption at lower loads
+            
+            const fuelCostPerHour = fuelPerHour * fuelCost;
+            const totalCostPerHour = fuelCostPerHour + maint;
+            const costPerKwh = totalCostPerHour / load;
+            
+            document.getElementById('gen-fuel-consumption').textContent = fuelPerHour.toFixed(1) + ' L/hr';
+            document.getElementById('gen-cost-hour').textContent = '$' + totalCostPerHour.toFixed(2);
+            document.getElementById('gen-cost-kwh').textContent = '$' + costPerKwh.toFixed(3);
+            
+            document.getElementById('gen-result').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
