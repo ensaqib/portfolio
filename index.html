@@ -239,7 +239,8 @@
         </button>
         <div class="absolute top-full left-0 mt-0 w-56 glass-strong border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
             <div class="py-2">
-                <a href="electrical-calculations.html" class="block px-4 py-2 text-sm text-gray-300 hover:text-electric-blue hover:bg-white/5 transition-colors">Electrical Calculations</a>
+                <a href="electrical-calculations.html" class="block px-4 py-2 text-sm text-gray-300 hover:text-electric-blue hover:bg-white/5 transition-colors">LV Electrical Design Suite</a>
+                <a href="EEToolkit.html" class="block px-4 py-2 text-sm text-gray-300 hover:text-electric-blue hover:bg-white/5 transition-colors">Calculation tools</a>
             </div>
         </div>
     </div>
@@ -264,7 +265,8 @@
                 <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="tools-chevron"></i>
             </button>
             <div id="tools-dropdown" class="hidden pl-4 mt-1 space-y-1 border-l-2 border-electric-blue/30 ml-3">
-                <a href="electrical-calculations.html" class="block px-3 py-2 text-sm text-gray-400 hover:text-electric-blue">Electrical Calculations</a>
+                <a href="electrical-calculations.html" class="block px-3 py-2 text-sm text-gray-400 hover:text-electric-blue">LV Electrical Design Suite</a>
+<a href="EEToolkit.html" class="block px-4 py-2 text-sm text-gray-300 hover:text-electric-blue hover:bg-white/5 transition-colors">Calculation tools</a>
             </div>
         </div>
                 <a href="#contact" class="block px-3 py-2 text-electric-blue font-semibold">Contact</a>
@@ -1162,7 +1164,7 @@
     function toggleToolsDropdown() {
         const dropdown = document.getElementById('tools-dropdown');
         const chevron = document.getElementById('tools-chevron');
-
+        
         dropdown.classList.toggle('hidden');
         chevron.style.transform = dropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
     }
