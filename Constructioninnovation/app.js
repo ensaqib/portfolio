@@ -119,7 +119,7 @@ function generatePDF(options) {
 
   const kpiHTML = kpis.length ? `<div style="display:grid;grid-template-columns:repeat(${Math.min(kpis.length,4)},1fr);gap:8px;margin-bottom:14px">${kpis.map(k=>`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px;text-align:center;border-top:3px solid ${k.color||'#1e3a5f'}"><div style="font-size:7.5pt;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:4px">${k.label}</div><div style="font-family:'Barlow Condensed',Arial;font-size:22pt;font-weight:800;color:${k.color||'#1e3a5f'}">${k.value}</div></div>`).join('')}</div>` : '';
 
-  const chartsHTML = charts.length ? `<div style="display:grid;grid-template-columns:repeat(${charts.length},1fr);gap:8px;margin-bottom:14px">${charts.map(c=>`<img src="${c.data}" style="width:100%;border:1px solid #ddd;">`).join('')}</div>` : '';
+  const chartsHTML = charts.length ? `<div style="display:grid;grid-template-columns:repeat(${charts.length},1fr);gap:8px;margin-bottom:14px">${charts.map(c=>`<img src="${c.data}" style="width:100%;display:block;border:1px solid #ddd;border-radius:3px;">`).join('')}</div>` : '';
 
   const tableHTML = tableHeaders.length ? `<table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:16px"><thead><tr>${tableHeaders.map(h=>`<th style="background:#1e3a5f;color:#fff;padding:7px 9px;text-align:left;font-weight:700;font-size:8pt;text-transform:uppercase;letter-spacing:0.5px">${h}</th>`).join('')}</tr></thead><tbody>${tableRows.map((row,i)=>`<tr style="background:${i%2===0?'#f8f9fa':'#fff'}">${row.map(cell=>`<td style="padding:6px 9px;border-bottom:1px solid #e9ecef;vertical-align:middle">${cell??'—'}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '';
 
@@ -156,11 +156,15 @@ body{font-family:'Plus Jakarta Sans',Arial,sans-serif;background:#fff;color:#1a1
 .badge-o{background:#ffedd5;color:#c2410c;padding:2px 6px;border-radius:10px;font-size:7.5pt;font-weight:700}
 .badge-c{background:#f3f4f6;color:#374151;padding:2px 6px;border-radius:10px;font-size:7.5pt;font-weight:700}
 .badge-cr{background:#fee2e2;color:#7f1d1d;padding:2px 6px;border-radius:10px;font-size:7.5pt;font-weight:700;border:1px solid #fca5a5}
+.chart-pair{display:table;width:100%;border-collapse:separate;border-spacing:8px 0;margin-bottom:10px}
+.chart-cell{display:table-cell;width:50%;vertical-align:top}
+.chart-cell img{width:100%;height:200px;display:block;border:1px solid #ddd;border-radius:3px}
+.chart-label{font-family:'Barlow Condensed',Arial;font-size:9.5pt;font-weight:800;color:#1e3a5f;border-left:3px solid #f59e0b;padding-left:6px;margin-bottom:4px;text-transform:uppercase}
 @media print{body{background:#fff}.page{margin:0;padding:12mm 13mm 26mm}}
 </style></head><body>
 <div class="page">
 <div class="hdr">
-  ${logo?`<img class="logo" src="${logo}" alt="CI Logo" mix-blend-mode:multiply;background:transparent;">`:'<div style="width:70px"></div>'}
+  ${logo?`<img class="logo" src="${logo}" alt="CI Logo">`:'<div style="width:70px"></div>'}
   <div class="hdr-mid"><div class="ptitle">${title}</div>${subtitle?`<div class="psub">${subtitle}</div>`:''}</div>
   <div class="hdr-r"><strong>Construction Innovation</strong><br>Date: ${today}<br>Project: ${proj.code||''}<br>Ref: CI-${module.toUpperCase()}-2026</div>
 </div>
@@ -178,7 +182,7 @@ ${extraHTML}
 ${tableHTML}
 <div class="footer">
   <div class="fl"><strong>Construction Innovation Platform</strong> | Generated: ${today}<br>Computer-generated record — valid for reference purposes only</div>
-  <div class="sig-blk">${sig?`<img class="sig-img" src="${sig}" alt="Sig" mix-blend-mode:multiply;background:transparent;">`:''}
+  <div class="sig-blk">${sig?`<img class="sig-img" src="${sig}" alt="Sig">`:''}
     <div class="sig-inf"><div class="sig-name">Engr. Saqib Hussain (PE)</div><div class="sig-role">Lead Electrical Engineer</div><div style="font-size:7pt;color:#6b7280">Construction Innovation</div></div>
   </div>
   <div class="pno">Page 1 of 1</div>
@@ -377,29 +381,78 @@ async function printDashboardPDF() {
   const D=window.APP_DATA, KPIs=D.computeKPIs();
   const scurveCanvas = document.getElementById('scurve-chart');
   const disciplineCanvas = document.getElementById('discipline-chart');
-  const charts = [];
-  if (scurveCanvas) charts.push({ data: scurveCanvas.toDataURL('image/png') });
-  if (disciplineCanvas) charts.push({ data: disciplineCanvas.toDataURL('image/png') });
+
+  // Redraw both canvases into identical 900x380 white-background images
+  function captureFixed(canvas) {
+    if (!canvas) return '';
+    const tmp = document.createElement('canvas');
+    tmp.width  = 900;
+    tmp.height = 380;
+    const ctx = tmp.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 900, 380);
+    ctx.drawImage(canvas, 0, 0, 900, 380);
+    return tmp.toDataURL('image/png');
+  }
+
+  const scurveImg     = captureFixed(scurveCanvas);
+  const disciplineImg = captureFixed(disciplineCanvas);
+
+  const milestones = D.mockProgressData.milestones;
+
+  const chartsBlock = `
+    <div class="chart-pair">
+      <div class="chart-cell" style="padding-right:4px">
+        <div class="chart-label">S-Curve — Planned vs Actual</div>
+        <img src="${scurveImg}">
+      </div>
+      <div class="chart-cell" style="padding-left:4px">
+        <div class="chart-label">Discipline Progress</div>
+        <img src="${disciplineImg}">
+      </div>
+    </div>`;
+
+  const msTable = `
+    <div class="chart-label" style="margin-bottom:5px">Key Milestones</div>
+    <table style="width:100%;border-collapse:collapse;font-size:7.5pt;margin-bottom:10px">
+      <thead><tr>
+        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Milestone</th>
+        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Planned</th>
+        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Actual</th>
+        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Status</th>
+        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Delay</th>
+      </tr></thead>
+      <tbody>${milestones.map((m,i)=>`
+        <tr style="background:${i%2===0?'#f8f9fa':'#fff'}">
+          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef;font-size:7.5pt">${m.name}</td>
+          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef;font-family:monospace;font-size:7pt">${m.planned}</td>
+          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef;font-family:monospace;font-size:7pt">${m.actual||'—'}</td>
+          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef">${pdfBadge(m.status)}</td>
+          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef;font-family:monospace;font-size:7pt;color:${m.delay>0?'#dc2626':'#059669'}">${m.delay>0?'+'+m.delay+'d':'On time'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+
   generatePDF({
     title:'DASHBOARD OVERVIEW',
     subtitle:'Live Project KPIs & Progress Summary',
     module:'DASH',
     kpis:[
-      {label:'Overall Progress',value:KPIs.overallProgress+'%',color:'#1d4ed8'},
-      {label:'Active Workers',value:KPIs.activeWorkers,color:'#059669'},
-      {label:'Open NCRs',value:KPIs.openNCRs+KPIs.openRFIs+KPIs.openSIs,color:'#f59e0b'},
-      {label:'Cost Variance',value:(KPIs.costVariance>0?'+':'')+KPIs.costVariance+'%',color:'#dc2626'},
-      {label:'Safe Man Hours',value:(KPIs.safeManHours/1000).toFixed(0)+'K',color:'#059669'},
-      {label:'LTIR Score',value:KPIs.ltir,color:'#f59e0b'},
-      {label:'Drawings Pending',value:KPIs.drawingsPending,color:'#6366f1'},
-      {label:'Schedule Variance',value:KPIs.scheduleVariance+'%',color:'#dc2626'},
+      {label:'Overall Progress',  value:KPIs.overallProgress+'%',                        color:'#1d4ed8'},
+      {label:'Active Workers',    value:KPIs.activeWorkers,                               color:'#059669'},
+      {label:'Open NCRs',         value:KPIs.openNCRs+KPIs.openRFIs+KPIs.openSIs,        color:'#f59e0b'},
+      {label:'Cost Variance',     value:(KPIs.costVariance>0?'+':'')+KPIs.costVariance+'%',color:'#dc2626'},
+      {label:'Safe Man Hours',    value:(KPIs.safeManHours/1000).toFixed(0)+'K',          color:'#059669'},
+      {label:'LTIR Score',        value:KPIs.ltir,                                        color:'#f59e0b'},
+      {label:'Drawings Pending',  value:KPIs.drawingsPending,                             color:'#6366f1'},
+      {label:'Schedule Variance', value:KPIs.scheduleVariance+'%',                        color:'#dc2626'},
     ],
-    tableHeaders:['Milestone','Planned Date','Actual Date','Status','Delay (days)'],
-    tableRows: D.mockProgressData.milestones.map(m=>[m.name,m.planned,m.actual||'—',pdfBadge(m.status),m.delay>0?'+'+m.delay+'d':'On time']),
-    charts: charts
+    extraHTML: chartsBlock + msTable,
+    tableHeaders: [],
+    tableRows:    [],
+    charts:       []
   });
 }
-
 // ── DRAWINGS ──────────────────────────────────────────────────
 function renderDrawings() {
   const D=window.APP_DATA;
