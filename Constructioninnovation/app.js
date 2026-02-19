@@ -130,7 +130,7 @@ function generatePDF(options) {
 body{font-family:'Plus Jakarta Sans',Arial,sans-serif;background:#fff;color:#1a1a2e;font-size:11pt}
 .page{width:210mm;min-height:270mm;margin:0 auto;padding:14mm 14mm 28mm;position:relative}
 .hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1e3a5f;padding-bottom:12px;margin-bottom:14px}
-.logo{height:60px;width:auto;object-fit:contain}
+.logo{height:100px;width:auto;object-fit:contain}
 .hdr-mid{text-align:center;flex:1;padding:0 16px}
 .ptitle{font-family:'Barlow Condensed',Arial;font-size:20pt;font-weight:800;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px}
 .psub{font-size:9.5pt;color:#f59e0b;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
@@ -145,7 +145,7 @@ body{font-family:'Plus Jakarta Sans',Arial,sans-serif;background:#fff;color:#1a1
 .fl{font-size:8pt;color:#6b7280}
 .fl strong{color:#1e3a5f}
 .sig-blk{display:flex;align-items:center;gap:10px}
-.sig-img{height:44px;width:auto;object-fit:contain}
+.sig-img{height:90px;width:auto;object-fit:contain}
 .sig-inf{font-size:8pt;text-align:right}
 .sig-name{font-weight:700;color:#1e3a5f}
 .sig-role{color:#f59e0b;font-weight:600}
