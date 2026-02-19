@@ -261,17 +261,18 @@
                 <a href="#expertise" class="block px-3 py-2 text-gray-300 hover:text-electric-blue">Expertise</a>
                 <a href="#experience" class="block px-3 py-2 text-gray-300 hover:text-electric-blue">Experience</a>
 <div class="relative">
-            <button onclick="toggleToolsDropdown()" class="w-full text-left px-3 py-2 text-gray-300 hover:text-electric-blue flex items-center justify-between">
-                Tools
-                <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="tools-chevron"></i>
-            </button>
-            <div id="tools-dropdown" class="hidden pl-4 mt-1 space-y-1 border-l-2 border-electric-blue/30 ml-3">
-                <a href="electrical-calculations.html" class="block px-3 py-2 text-sm text-gray-400 hover:text-electric-blue">LV Electrical Design Suite</a>
-<a href="EEToolkit.html" class="block px-4 py-2 text-sm text-gray-300 hover:text-electric-blue hover:bg-white/5 transition-colors">Calculation tools</a>
-<a href="./Constructioninnovation/constructioninnovation.html" class="block px-4 py-2 text-sm text-gray-300 hover:text-electric-blue hover:bg-white/5 transition-colors">Construction innovation</a>
-            </div>
-        </div>
-                <a href="#contact" class="block px-3 py-2 text-electric-blue font-semibold">Contact</a>
+    <button onclick="toggleToolsDropdown()" class="w-full text-left px-3 py-2 text-gray-300 hover:text-electric-blue flex items-center justify-between">
+        Tools
+        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="tools-chevron"></i>
+    </button>
+    <!-- FIXED: Add these classes -->
+    <div id="tools-dropdown" class="hidden absolute top-full left-0 mt-1 w-64 bg-glass-strong border border-white/10 rounded-lg shadow-xl z-20 py-2">
+        <a href="electrical-calculations.html" class="block px-4 py-2 text-sm text-gray-300 hover:text-electric-blue hover:bg-white/5 transition-colors">LV Electrical Design Suite</a>
+        <a href="EEToolkit.html" class="block px-4 py-2 text-sm text-gray-300 hover:text-electric-blue hover:bg-white/5 transition-colors">Calculation tools</a>
+        <a href="./Constructioninnovation/constructioninnovation.html" class="block px-4 py-2 text-sm text-gray-300 hover:text-electric-blue hover:bg-white/5 transition-colors">Construction innovation</a>
+    </div>
+</div>
+        <a href="#contact" class="block px-3 py-2 text-electric-blue font-semibold">Contact</a>
             </div>
         </div>
     </nav>
@@ -1174,3 +1175,4 @@
 
 </body>
 </html>
+
