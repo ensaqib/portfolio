@@ -7,7 +7,7 @@
 const STATE = {
   currentPage: 'dashboard',
   currentUser: { id:'U001', name:'Engr. Saqib Hussain (PE)', role:'admin', avatar:'SH' },
-  userRole: 'admin', // 'admin' or 'operator'
+  userRole: 'operator', // 'admin' or 'operator'
   darkMode: true,
   drawingMEPFilter: 'all',
   ncrTab: 'ncr',
