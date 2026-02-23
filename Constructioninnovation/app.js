@@ -7,6 +7,7 @@
 const STATE = {
   currentPage: 'dashboard',
   currentUser: { id:'U001', name:'Engr. Saqib Hussain (PE)', role:'admin', avatar:'SH' },
+  userRole: 'admin', // 'admin' or 'operator'
   darkMode: true,
   drawingMEPFilter: 'all',
   ncrTab: 'ncr',
@@ -70,7 +71,10 @@ function navigateTo(page) {
   const el = document.getElementById('header-page-title');
   if (el) el.textContent = titles[page] || 'Dashboard';
   renderPage(page);
-  document.querySelector('.sidebar')?.classList.remove('open');
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar?.classList.remove('open');
+  if(overlay){ overlay.style.opacity='0'; setTimeout(()=>overlay.style.display='none',200); }
 }
 
 function renderPage(page) {
@@ -88,14 +92,21 @@ function setupHeaderActions() {
   });
   document.getElementById('notif-btn').addEventListener('click', e => { e.stopPropagation(); document.getElementById('notif-panel').classList.toggle('open'); });
   document.addEventListener('click', e => { if (!e.target.closest('#notif-panel') && !e.target.closest('#notif-btn')) document.getElementById('notif-panel').classList.remove('open'); });
-  document.getElementById('mobile-menu-btn')?.addEventListener('click', () => document.querySelector('.sidebar').classList.toggle('open'));
+  document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.toggle('open');
+    if(sidebar.classList.contains('open')) { overlay.style.display='block'; setTimeout(()=>overlay.style.opacity='1',10); }
+    else { overlay.style.opacity='0'; setTimeout(()=>overlay.style.display='none',200); }
+  });
   // Top search bar removed; no listener needed
 }
 
 function setupNotifications(notifs) {
   const panel = document.getElementById('notif-list');
   const unread = notifs.filter(n=>!n.read).length;
-  document.getElementById('notif-badge-count').textContent = unread;
+  const badgeEl = document.getElementById('notif-badge-count');
+  if(badgeEl) badgeEl.textContent = unread;
   document.getElementById('notif-dot').style.display = unread > 0 ? 'block' : 'none';
   panel.innerHTML = notifs.map(n => `
     <div class="notif-item ${n.read?'':'unread'}" onclick="markNotifRead(${n.id})">
@@ -108,6 +119,120 @@ function setupNotifications(notifs) {
 }
 
 function markNotifRead(id) { const n=window.APP_DATA.NOTIFICATIONS.find(x=>x.id===id); if(n){n.read=true;setupNotifications(window.APP_DATA.NOTIFICATIONS);} }
+
+// ── ADMIN PASSWORD ─────────────────────────────────────────────
+let ADMIN_PASSWORD = 'admin2026';
+
+function isAdmin() { return STATE.userRole === 'admin'; }
+
+function applyRoleUI() {
+  const role = STATE.userRole;
+  // Update sidebar badge
+  document.getElementById('sidebar-user-role').textContent = role === 'admin' ? 'ADMIN' : 'OPERATOR';
+  document.getElementById('sidebar-user-role').style.color = role === 'admin' ? 'var(--accent-amber)' : 'var(--accent-cyan)';
+  // Toggle body class to show/hide admin-only elements via CSS
+  document.body.classList.toggle('operator-mode', role === 'operator');
+  // Update NCR actions if on that page
+  if(window.updateNCRActions) window.updateNCRActions(STATE.ncrTab);
+  // Re-render current page so action buttons in tables update
+  renderPage(STATE.currentPage);
+}
+
+function openSettings() {
+  const role = STATE.userRole;
+  openModal('⚙️ Settings & Access Control','',`
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Current Mode</div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <div style="flex:1;padding:14px;border-radius:10px;border:2px solid ${role==='admin'?'var(--accent-amber)':'rgba(255,255,255,0.08)'};background:${role==='admin'?'rgba(245,158,11,0.08)':'var(--bg-surface)'};cursor:pointer;text-align:center" onclick="selectRoleCard('admin')" id="card-admin">
+          <div style="font-size:24px;margin-bottom:6px">🛡️</div>
+          <div style="font-weight:700;font-size:13px;color:var(--accent-amber)">Admin Mode</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Full access — Edit, Delete, Add</div>
+        </div>
+        <div style="flex:1;padding:14px;border-radius:10px;border:2px solid ${role==='operator'?'var(--accent-cyan)':'rgba(255,255,255,0.08)'};background:${role==='operator'?'rgba(6,182,212,0.08)':'var(--bg-surface)'};cursor:pointer;text-align:center" onclick="selectRoleCard('operator')" id="card-operator">
+          <div style="font-size:24px;margin-bottom:6px">👁️</div>
+          <div style="font-weight:700;font-size:13px;color:var(--accent-cyan)">Operator Mode</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">View & Open only</div>
+        </div>
+      </div>
+      <div id="admin-pwd-section" style="display:none">
+        <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Admin Password Required</div>
+        <input class="form-control" id="settings-pwd" type="password" placeholder="Enter admin password…" style="margin-bottom:8px">
+        <div id="pwd-error" style="color:var(--accent-rose);font-size:11px;display:none">❌ Incorrect password</div>
+      </div>
+    </div>
+    <div style="padding:12px;background:var(--bg-surface);border-radius:8px;font-size:11px;color:var(--text-muted)">
+      <strong style="color:var(--text-secondary)">Operator restrictions:</strong> Drawing Register, Material Submittals, Method Statements, Test & Commissioning, NCR/RFI/SI, HSE Register, Manpower & Equipment, Procurement, Cost Control, Subcontractors, Project Closeout — <em>View & Open only</em>
+    </div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn btn-sm btn-secondary" onclick="changeAdminPassword()" style="font-size:11px">🔑 Change Admin Password</button>
+    </div>`,
+  ()=>{
+    const selected = window._pendingRole || role;
+    if(selected === 'operator') {
+      STATE.userRole = 'operator';
+      applyRoleUI();
+      showToast('Operator Mode','Switched to Operator — View & Open only','info');
+    } else if(selected === 'admin') {
+      if(STATE.userRole === 'admin') {
+        applyRoleUI();
+        showToast('Admin Mode','Already in Admin mode','success');
+      } else {
+        const pwd = document.getElementById('settings-pwd')?.value;
+        if(pwd === ADMIN_PASSWORD) {
+          STATE.userRole = 'admin';
+          applyRoleUI();
+          showToast('Admin Mode','Admin access granted ✓','success');
+        } else {
+          document.getElementById('pwd-error').style.display='block';
+          return false; // prevent modal close
+        }
+      }
+    }
+    window._pendingRole = null;
+  }, 'Apply');
+}
+
+window.selectRoleCard = function(role) {
+  window._pendingRole = role;
+  const cardAdmin = document.getElementById('card-admin');
+  const cardOp = document.getElementById('card-operator');
+  const pwdSection = document.getElementById('admin-pwd-section');
+  if(cardAdmin && cardOp) {
+    cardAdmin.style.border = role==='admin' ? '2px solid var(--accent-amber)' : '2px solid rgba(255,255,255,0.08)';
+    cardAdmin.style.background = role==='admin' ? 'rgba(245,158,11,0.08)' : 'var(--bg-surface)';
+    cardOp.style.border = role==='operator' ? '2px solid var(--accent-cyan)' : '2px solid rgba(255,255,255,0.08)';
+    cardOp.style.background = role==='operator' ? 'rgba(6,182,212,0.08)' : 'var(--bg-surface)';
+  }
+  // Show password field only when switching TO admin FROM operator
+  if(pwdSection) pwdSection.style.display = (role==='admin' && STATE.userRole!=='admin') ? 'block' : 'none';
+  if(document.getElementById('pwd-error')) document.getElementById('pwd-error').style.display='none';
+};
+
+function changeAdminPassword() {
+  openModal('🔒 Change Admin Password','',`
+    <div class="form-group"><label class="form-label">Current Password</label>
+      <input class="form-control" id="cp-current" type="password" placeholder="Enter current password">
+    </div>
+    <div class="form-group"><label class="form-label">New Password</label>
+      <input class="form-control" id="cp-new" type="password" placeholder="Enter new password (min 6 chars)">
+    </div>
+    <div class="form-group"><label class="form-label">Confirm New Password</label>
+      <input class="form-control" id="cp-confirm" type="password" placeholder="Confirm new password">
+    </div>
+    <div id="cp-error" style="color:var(--accent-rose);font-size:11px;display:none;margin-top:4px"></div>`,
+  ()=>{
+    const current = document.getElementById('cp-current').value;
+    const newPwd  = document.getElementById('cp-new').value;
+    const confirm = document.getElementById('cp-confirm').value;
+    const errEl   = document.getElementById('cp-error');
+    if(current !== ADMIN_PASSWORD){ errEl.textContent='❌ Current password is incorrect'; errEl.style.display='block'; return false; }
+    if(newPwd.length < 6){          errEl.textContent='❌ New password must be at least 6 characters'; errEl.style.display='block'; return false; }
+    if(newPwd !== confirm){         errEl.textContent='❌ Passwords do not match'; errEl.style.display='block'; return false; }
+    ADMIN_PASSWORD = newPwd;
+    showToast('Password Changed','Admin password updated successfully ✓','success');
+  }, 'Change Password');
+}
 
 // ── PDF ENGINE (with chart embedding) ──────────────────────────
 function generatePDF(options) {
@@ -488,8 +613,9 @@ function renderDrawings() {
         <div style="display:flex;gap:4px">
           <a class="drive-link" href="${D.LOCAL_DRIVE.drawings}${encodeURIComponent(d.file)}" target="_blank" title="Open file from local drive">Open</a>
           <button class="btn btn-sm btn-secondary" onclick="viewDrawing('${d.id}')">View</button>
-          <button class="btn btn-sm btn-secondary" onclick="editDrawingStatus('${d.id}')">Edit</button>
-          <button class="btn btn-sm btn-secondary" onclick="triggerImport('drawings')">Import</button>
+          ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editDrawingStatus('${d.id}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteDrawing('${d.id}')">Delete</button>
+          <button class="btn btn-sm btn-secondary" onclick="triggerImport('drawings')">Import</button>`:''}
         </div>
       </td>
     </tr>`);
@@ -524,8 +650,11 @@ function viewDrawing(id) {
 
 function editDrawingStatus(id) {
   const d=window.APP_DATA.mockDrawingsData.find(x=>x.id===id); if(!d)return;
-  openModal('Update Drawing Status','',`
-    <div class="form-group"><label class="form-label">Drawing: ${d.title}</label></div>
+  openModal('Edit Drawing','',`
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Drawing ID</label><input class="form-control" id="edit-dwg-id" value="${d.id}"></div>
+      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="edit-dwg-title" value="${d.title}"></div>
+    </div>
     <div class="form-group"><label class="form-label">Status</label>
       <select class="form-control" id="edit-status-select">${['submitted','under-review','approved','rejected'].map(s=>`<option value="${s}"${s===d.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
     </div>
@@ -536,11 +665,19 @@ function editDrawingStatus(id) {
       <textarea class="form-control" id="edit-comments" rows="3">${d.comments}</textarea>
     </div>`,
   ()=>{
+    d.id=document.getElementById('edit-dwg-id').value||d.id;
+    d.title=document.getElementById('edit-dwg-title').value||d.title;
     d.status=document.getElementById('edit-status-select').value;
     d.rev=parseInt(document.getElementById('edit-rev').value)||d.rev;
     d.comments=document.getElementById('edit-comments').value;
     renderDrawings(); showToast('Updated',`${d.id} updated to Rev ${d.rev} — ${d.status}`,'success');
   });
+}
+
+function deleteDrawing(id) {
+  const data=window.APP_DATA.mockDrawingsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
+  openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Drawing <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
+  ()=>{ data.splice(idx,1); renderDrawings(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddDrawingModal() {
@@ -612,8 +749,9 @@ function renderMaterials() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.materials}${encodeURIComponent(m.id+'-Rev'+m.rev+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewMaterial('${m.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editMaterial('${m.id}')">Edit</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('materials')">Import</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editMaterial('${m.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteMaterial('${m.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('materials')">Import</button>`:''}
       </td>
     </tr>`);
   setupTableFilter('material-filter-input','materials-table-body');
@@ -635,7 +773,10 @@ function viewMaterial(id) {
 function editMaterial(id) {
   const m=window.APP_DATA.mockMaterialsData.find(x=>x.id===id); if(!m)return;
   openModal('Edit Material Submittal','',`
-    <div class="form-group"><label class="form-label">Material: ${m.item}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="em-id" value="${m.id}"></div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="em-item" value="${m.item}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-control" id="em-status">${['submitted','under-review','approved','rejected'].map(s=>`<option value="${s}"${s===m.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
@@ -650,6 +791,8 @@ function editMaterial(id) {
     </div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="em-remarks" rows="2">${m.remarks||''}</textarea></div>`,
   ()=>{
+    m.id=document.getElementById('em-id').value||m.id;
+    m.item=document.getElementById('em-item').value||m.item;
     m.status=document.getElementById('em-status').value;
     m.rev=parseInt(document.getElementById('em-rev').value)||m.rev;
     m.poNo=document.getElementById('em-po').value;
@@ -657,6 +800,12 @@ function editMaterial(id) {
     m.remarks=document.getElementById('em-remarks').value;
     renderMaterials(); showToast('Updated',`${m.id} updated`,'success');
   });
+}
+
+function deleteMaterial(id) {
+  const data=window.APP_DATA.mockMaterialsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
+  openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Material <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
+  ()=>{ data.splice(idx,1); renderMaterials(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddMaterialModal() {
@@ -712,8 +861,9 @@ function renderMethods() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.methods}${encodeURIComponent(m.file)}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewMethod('${m.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editMethod('${m.id}')">Edit</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('methods')">Import</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editMethod('${m.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteMethod('${m.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('methods')">Import</button>`:''}
       </td>
     </tr>`);
   setupTableFilter('method-filter-input','methods-table-body');
@@ -734,7 +884,10 @@ function viewMethod(id) {
 function editMethod(id) {
   const m=window.APP_DATA.mockMethodsData.find(x=>x.id===id); if(!m)return;
   openModal('Edit Method Statement','',`
-    <div class="form-group"><label class="form-label">Title: ${m.title}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">MS ID</label><input class="form-control" id="ems-id" value="${m.id}"></div>
+      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="ems-title" value="${m.title}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-control" id="ems-status">${['submitted','under-review','approved','rejected'].map(s=>`<option value="${s}"${s===m.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
@@ -745,12 +898,20 @@ function editMethod(id) {
       <select class="form-control" id="ems-hse"><option${m.hseReview==='Pending'?' selected':''}>Pending</option><option${m.hseReview==='Approved'?' selected':''}>Approved</option><option${m.hseReview==='Rejected'?' selected':''}>Rejected</option></select>
     </div>`,
   ()=>{
+    m.id=document.getElementById('ems-id').value||m.id;
+    m.title=document.getElementById('ems-title').value||m.title;
     m.status=document.getElementById('ems-status').value;
     m.rev=parseInt(document.getElementById('ems-rev').value)||m.rev;
     m.hseReview=document.getElementById('ems-hse').value;
     m.file=`${m.id}-Rev${m.rev}.pdf`;
     renderMethods(); showToast('Updated',`${m.id} updated to Rev ${m.rev}`,'success');
   });
+}
+
+function deleteMethod(id) {
+  const data=window.APP_DATA.mockMethodsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
+  openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Method Statement <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
+  ()=>{ data.splice(idx,1); renderMethods(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddMethodModal() {
@@ -813,8 +974,9 @@ function renderTesting() {
       <td>
         ${t.file?`<a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.testing}${encodeURIComponent(t.file)}" target="_blank">Open</a>`:'<span style="color:var(--text-muted);font-size:11px">No file</span>'}
         <button class="btn btn-sm btn-secondary" onclick="viewTest('${t.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editTesting('${t.id}')">Edit</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('testing')">Import</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editTesting('${t.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteTesting('${t.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('testing')">Import</button>`:''}
       </td>
     </tr>`);
 }
@@ -834,7 +996,10 @@ function viewTest(id) {
 function editTesting(id) {
   const t=window.APP_DATA.mockTestingData.find(x=>x.id===id); if(!t)return;
   openModal('Edit Test Record','',`
-    <div class="form-group"><label class="form-label">System: ${t.system}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Test ID</label><input class="form-control" id="et-id" value="${t.id}"></div>
+      <div class="form-group"><label class="form-label">System / Test</label><input class="form-control" id="et-sys" value="${t.system}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-control" id="et-status"><option value="pending"${t.status==='pending'?' selected':''}>Pending</option><option value="passed"${t.status==='passed'?' selected':''}>Passed</option><option value="failed"${t.status==='failed'?' selected':''}>Failed</option></select>
@@ -847,6 +1012,8 @@ function editTesting(id) {
     </div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="et-remarks" rows="2">${t.remarks}</textarea></div>`,
   ()=>{
+    t.id=document.getElementById('et-id').value||t.id;
+    t.system=document.getElementById('et-sys').value||t.system;
     t.status=document.getElementById('et-status').value;
     t.rev=parseInt(document.getElementById('et-rev').value)||t.rev;
     t.cert=document.getElementById('et-cert').value;
@@ -855,6 +1022,12 @@ function editTesting(id) {
     t.file=t.cert?`${t.id}-Rev${t.rev}.pdf`:'';
     renderTesting(); showToast('Updated',`${t.id} updated`,'success');
   });
+}
+
+function deleteTesting(id) {
+  const data=window.APP_DATA.mockTestingData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
+  openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Test <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
+  ()=>{ data.splice(idx,1); renderTesting(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddTestModal() {
@@ -924,9 +1097,10 @@ function renderNCR() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.ncr}${encodeURIComponent(n.file)}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewNCR('${n.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editNCR('${n.id}')">Edit</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editNCR('${n.id}')">Edit</button>
         ${n.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeNCR('${n.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('ncr')">Import</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteNCR('${n.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('ncr')">Import</button>`:''}
       </td>
     </tr>`);
   setupTableFilter('ncr-filter-input','ncr-table-body');
@@ -948,7 +1122,10 @@ function viewNCR(id) {
 function editNCR(id) {
   const n=window.APP_DATA.mockNCRData.find(x=>x.id===id); if(!n)return;
   openModal('Edit NCR','',`
-    <div class="form-group"><label class="form-label">NCR: ${n.id} — ${n.title}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">NCR ID</label><input class="form-control" id="en-id" value="${n.id}"></div>
+      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="en-title" value="${n.title}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Priority</label>
         <select class="form-control" id="en-pri"><option value="low"${n.priority==='low'?' selected':''}>Low</option><option value="medium"${n.priority==='medium'?' selected':''}>Medium</option><option value="high"${n.priority==='high'?' selected':''}>High</option><option value="critical"${n.priority==='critical'?' selected':''}>Critical</option></select>
@@ -963,13 +1140,15 @@ function editNCR(id) {
     </div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="en-rem" rows="2">${n.remarks||''}</textarea></div>`,
   ()=>{
+    n.id=document.getElementById('en-id').value||n.id;
+    n.title=document.getElementById('en-title').value||n.title;
     n.priority=document.getElementById('en-pri').value;
     n.status=document.getElementById('en-status').value;
     n.location=document.getElementById('en-loc').value;
     n.assignedTo=document.getElementById('en-assign').value;
     n.remarks=document.getElementById('en-rem').value;
     if(n.status==='closed'&&!n.closureDate) n.closureDate=new Date().toISOString().split('T')[0];
-    renderNCR(); showToast('Updated',`${id} updated`,'success');
+    renderNCR(); showToast('Updated',`${n.id} updated`,'success');
   });
 }
 
@@ -988,9 +1167,10 @@ function renderRFI() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.rfi}${encodeURIComponent(r.file)}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewRFI('${r.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editRFI('${r.id}')">Edit</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editRFI('${r.id}')">Edit</button>
         ${r.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeRFI('${r.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('rfi')">Import</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRFI('${r.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('rfi')">Import</button>`:''}
       </td>
     </tr>`);
 }
@@ -1010,7 +1190,10 @@ function viewRFI(id) {
 function editRFI(id) {
   const r=window.APP_DATA.mockRFIData.find(x=>x.id===id); if(!r)return;
   openModal('Edit RFI','',`
-    <div class="form-group"><label class="form-label">RFI: ${r.id} — ${r.title}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">RFI ID</label><input class="form-control" id="er-id" value="${r.id}"></div>
+      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="er-title" value="${r.title}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Priority</label>
         <select class="form-control" id="er-pri"><option value="low"${r.priority==='low'?' selected':''}>Low</option><option value="medium"${r.priority==='medium'?' selected':''}>Medium</option><option value="high"${r.priority==='high'?' selected':''}>High</option><option value="critical"${r.priority==='critical'?' selected':''}>Critical</option></select>
@@ -1022,12 +1205,14 @@ function editRFI(id) {
     <div class="form-group"><label class="form-label">Discipline</label><input class="form-control" id="er-disc" value="${r.discipline||''}"></div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="er-rem" rows="2">${r.remarks||''}</textarea></div>`,
   ()=>{
+    r.id=document.getElementById('er-id').value||r.id;
+    r.title=document.getElementById('er-title').value||r.title;
     r.priority=document.getElementById('er-pri').value;
     r.status=document.getElementById('er-status').value;
     r.discipline=document.getElementById('er-disc').value;
     r.remarks=document.getElementById('er-rem').value;
     if(r.status==='closed'&&!r.closureDate) r.closureDate=new Date().toISOString().split('T')[0];
-    renderRFI(); showToast('Updated',`${id} updated`,'success');
+    renderRFI(); showToast('Updated',`${r.id} updated`,'success');
   });
 }
 
@@ -1046,9 +1231,10 @@ function renderSI() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.si}${encodeURIComponent(s.file)}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewSI('${s.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editSI('${s.id}')">Edit</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editSI('${s.id}')">Edit</button>
         ${s.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeSI('${s.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('si')">Import</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteSI('${s.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('si')">Import</button>`:''}
       </td>
     </tr>`);
 }
@@ -1068,7 +1254,10 @@ function viewSI(id) {
 function editSI(id) {
   const s=window.APP_DATA.mockSIData.find(x=>x.id===id); if(!s)return;
   openModal('Edit Site Instruction','',`
-    <div class="form-group"><label class="form-label">SI: ${s.id} — ${s.title}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">SI ID</label><input class="form-control" id="esi-id" value="${s.id}"></div>
+      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="esi-title" value="${s.title}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Priority</label>
         <select class="form-control" id="esi-pri"><option value="low"${s.priority==='low'?' selected':''}>Low</option><option value="medium"${s.priority==='medium'?' selected':''}>Medium</option><option value="high"${s.priority==='high'?' selected':''}>High</option><option value="critical"${s.priority==='critical'?' selected':''}>Critical</option></select>
@@ -1083,18 +1272,23 @@ function editSI(id) {
     </div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="esi-rem" rows="2">${s.remarks||''}</textarea></div>`,
   ()=>{
+    s.id=document.getElementById('esi-id').value||s.id;
+    s.title=document.getElementById('esi-title').value||s.title;
     s.priority=document.getElementById('esi-pri').value;
     s.status=document.getElementById('esi-status').value;
     s.ref=document.getElementById('esi-ref').value;
     s.costImpact=document.getElementById('esi-cost').value;
     s.remarks=document.getElementById('esi-rem').value;
-    renderSI(); showToast('Updated',`${id} updated`,'success');
+    renderSI(); showToast('Updated',`${s.id} updated`,'success');
   });
 }
 
-function setNCRTab(tab) { STATE.ncrTab=tab; renderNCRPage(); }
+function setNCRTab(tab) { STATE.ncrTab=tab; renderNCRPage(); if(window.updateNCRActions) window.updateNCRActions(tab); }
+function deleteNCR(id) { const data=window.APP_DATA.mockNCRData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete NCR <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderNCR(); showToast('Deleted',`${id} deleted`,'success'); }); }
 function closeNCR(id) { const n=window.APP_DATA.mockNCRData.find(x=>x.id===id); if(n){n.status='closed';n.closureDate=new Date().toISOString().split('T')[0];renderNCR();showToast('Closed',`${id} closed`,'success');} }
+function deleteRFI(id) { const data=window.APP_DATA.mockRFIData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete RFI <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderRFI(); showToast('Deleted',`${id} deleted`,'success'); }); }
 function closeRFI(id) { const r=window.APP_DATA.mockRFIData.find(x=>x.id===id); if(r){r.status='closed';r.closureDate=new Date().toISOString().split('T')[0];renderRFI();showToast('Closed',`${id} closed`,'success');} }
+function deleteSI(id)  { const data=window.APP_DATA.mockSIData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete SI <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderSI(); showToast('Deleted',`${id} deleted`,'success'); }); }
 function closeSI(id)  { const s=window.APP_DATA.mockSIData.find(x=>x.id===id);  if(s){s.status='closed';renderSI();showToast('Closed',`${id} closed`,'success');} }
 
 function openAddNCRModal() {
@@ -1167,8 +1361,9 @@ function renderProcurement() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.procurement||'file:///C:/CI-Platform/Procurement/'}${encodeURIComponent(p.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewPO('${p.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editPO('${p.id}')">Edit</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('procurement')">Import</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editPO('${p.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deletePO('${p.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('procurement')">Import</button>`:''}
       </td>
     </tr>`;
   });
@@ -1195,10 +1390,15 @@ function viewPO(id) {
     <div style="margin-top:14px">${inf('Remarks',p.remarks||'—')}</div>`);
 }
 
+function deletePO(id) { const data=window.APP_DATA.mockProcurementData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete PO <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderProcurement(); showToast('Deleted',`${id} deleted`,'success'); }); }
+
 function editPO(id) {
   const p=window.APP_DATA.mockProcurementData.find(x=>x.id===id); if(!p)return;
   openModal('Edit Purchase Order','',`
-    <div class="form-group"><label class="form-label">Description: ${p.item}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">PO No.</label><input class="form-control" id="ep-id" value="${p.id}"></div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="ep-item" value="${p.item}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-control" id="ep-status">${['pending','active','partially-delivered','delivered'].map(s=>`<option value="${s}"${s===p.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
@@ -1211,6 +1411,8 @@ function editPO(id) {
     </div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="ep-remarks" rows="2">${p.remarks||''}</textarea></div>`,
   ()=>{
+    p.id=document.getElementById('ep-id').value||p.id;
+    p.item=document.getElementById('ep-item').value||p.item;
     p.status=document.getElementById('ep-status').value;
     p.performance=parseInt(document.getElementById('ep-perf').value)||0;
     p.deliveryDate=document.getElementById('ep-deldate').value;
@@ -1368,9 +1570,10 @@ function renderHSE() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.hse||'file:///C:/CI-Platform/HSE/'}${encodeURIComponent(i.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewHSE('${i.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editHSE('${i.id}')">Edit</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editHSE('${i.id}')">Edit</button>
         ${i.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeHSE('${i.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('hse')">Import</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteHSE('${i.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('hse')">Import</button>`:''}
       </td>
     </tr>`);
   renderHSEChart();
@@ -1407,24 +1610,14 @@ function openAddHSEModal() {
 }
 
 function closeHSE(id) { const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(i){i.status='closed';renderHSE();showToast('Closed',`${id} closed`,'success');} }
-function viewHSE(id) {
-  const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(!i)return;
-  openModal('HSE Incident Detail','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('ID',i.id)}${inf('Type',i.type)}
-      ${inf('Date',i.date)}${inf('Location',i.location||'—')}
-      ${inf('Severity',severityBadge(i.severity))}${inf('Status','<span class="badge badge-'+i.status+'">'+i.status.toUpperCase()+'</span>')}
-      ${inf('Casualties',i.casualties)}${inf('Investigator',i.investigator||'—')}
-    </div>
-    <div style="margin-top:14px">${inf('Description',i.desc)}</div>
-    <div style="margin-top:10px">${inf('Root Cause',i.rootCause||'—')}</div>
-    <div style="margin-top:10px">${inf('Corrective Action',i.correctiveAction||'—')}</div>`);
-}
-
+function deleteHSE(id) { const data=window.APP_DATA.mockHSEData.incidents; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete HSE <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderHSE(); showToast('Deleted',`${id} deleted`,'success'); }); }
 function editHSE(id) {
   const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(!i)return;
   openModal('Edit HSE Incident','',`
-    <div class="form-group"><label class="form-label">Incident: ${i.id}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">HSE ID</label><input class="form-control" id="eh-id" value="${i.id}"></div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="eh-desc" value="${i.desc||''}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Severity</label>
         <select class="form-control" id="eh-sev"><option value="low"${i.severity==='low'?' selected':''}>Low</option><option value="medium"${i.severity==='medium'?' selected':''}>Medium</option><option value="high"${i.severity==='high'?' selected':''}>High</option><option value="critical"${i.severity==='critical'?' selected':''}>Critical</option></select>
@@ -1440,14 +1633,30 @@ function editHSE(id) {
     <div class="form-group"><label class="form-label">Root Cause</label><input class="form-control" id="eh-root" value="${i.rootCause||''}"></div>
     <div class="form-group"><label class="form-label">Corrective Action</label><textarea class="form-control" id="eh-action" rows="2">${i.correctiveAction||''}</textarea></div>`,
   ()=>{
+    i.id=document.getElementById('eh-id').value||i.id;
+    i.desc=document.getElementById('eh-desc').value||i.desc;
     i.severity=document.getElementById('eh-sev').value;
     i.status=document.getElementById('eh-status').value;
     i.location=document.getElementById('eh-loc').value;
     i.casualties=parseInt(document.getElementById('eh-cas').value)||0;
     i.rootCause=document.getElementById('eh-root').value;
     i.correctiveAction=document.getElementById('eh-action').value;
-    renderHSE(); showToast('Updated',`${id} updated`,'success');
+    renderHSE(); showToast('Updated',`${i.id} updated`,'success');
   });
+}
+
+function viewHSE(id) {
+  const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(!i)return;
+  openModal('HSE Incident Detail','',`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      ${inf('ID',i.id)}${inf('Type',i.type)}
+      ${inf('Date',i.date)}${inf('Location',i.location||'—')}
+      ${inf('Severity',severityBadge(i.severity))}${inf('Status','<span class="badge badge-'+i.status+'">'+i.status.toUpperCase()+'</span>')}
+      ${inf('Casualties',i.casualties)}${inf('Investigator',i.investigator||'—')}
+    </div>
+    <div style="margin-top:14px">${inf('Description',i.desc)}</div>
+    <div style="margin-top:10px">${inf('Root Cause',i.rootCause||'—')}</div>
+    <div style="margin-top:10px">${inf('Corrective Action',i.correctiveAction||'—')}</div>`);
 }
 
 function printHSEPDF() {
@@ -1480,8 +1689,9 @@ function renderSubcontractors() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.subcontractors||'file:///C:/CI-Platform/Subcontractors/'}${encodeURIComponent(s.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewSub('${s.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editSub('${s.id}')">Edit</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('subcontractors')">Import</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editSub('${s.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteSub('${s.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('subcontractors')">Import</button>`:''}
       </td>
     </tr>`;
   });
@@ -1504,10 +1714,15 @@ function viewSub(id) {
     </div>`);
 }
 
+function deleteSub(id) { const data=window.APP_DATA.mockSubcontractorData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderSubcontractors(); showToast('Deleted',`${id} deleted`,'success'); }); }
+
 function editSub(id) {
   const s=window.APP_DATA.mockSubcontractorData.find(x=>x.id===id); if(!s)return;
   openModal('Edit Subcontractor','',`
-    <div class="form-group"><label class="form-label">Company: ${s.name}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="es-id" value="${s.id}"></div>
+      <div class="form-group"><label class="form-label">Company Name</label><input class="form-control" id="es-name" value="${s.name}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-control" id="es-status">
@@ -1526,6 +1741,8 @@ function editSub(id) {
     <div class="form-group"><label class="form-label">Contact Person</label><input class="form-control" id="es-contact" value="${s.contactPerson||''}"></div>
     <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="es-phone" value="${s.phone||''}"></div>`,
   ()=>{
+    s.id=document.getElementById('es-id').value||s.id;
+    s.name=document.getElementById('es-name').value||s.name;
     s.status=document.getElementById('es-status').value;
     s.workers=parseInt(document.getElementById('es-workers').value)||0;
     s.paidToDate=parseFloat(document.getElementById('es-paid').value)||0;
@@ -1592,8 +1809,9 @@ function renderCost() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.cost||'file:///C:/CI-Platform/Cost/'}${encodeURIComponent(c.name.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewCostCategory('${c.name}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editCostCategory('${c.name}')">Edit</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('cost')">Import</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCostCategory('${c.name}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCostCategory('${c.name}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('cost')">Import</button>`:''}
       </td>
     </tr>`;
   });
@@ -1619,10 +1837,12 @@ function viewCostCategory(name) {
     </div>`);
 }
 
+function deleteCostCategory(name) { const data=window.APP_DATA.mockCostData.categories; const idx=data.findIndex(x=>x.name===name); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete category <span style="color:var(--accent-rose)">${name}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderCost(); showToast('Deleted',`${name} deleted`,'success'); }); }
+
 function editCostCategory(name) {
   const c=window.APP_DATA.mockCostData.categories.find(x=>x.name===name); if(!c)return;
   openModal('Edit Cost Category','',`
-    <div class="form-group"><label class="form-label">Category: ${c.name}</label></div>
+    <div class="form-group"><label class="form-label">Category Name</label><input class="form-control" id="ec-name" value="${c.name}"></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Budget (SAR)</label><input class="form-control" id="ec-budget" type="number" value="${c.budget}"></div>
       <div class="form-group"><label class="form-label">Committed (SAR)</label><input class="form-control" id="ec-committed" type="number" value="${c.committed}"></div>
@@ -1632,11 +1852,44 @@ function editCostCategory(name) {
       <div class="form-group"><label class="form-label">Forecast (SAR)</label><input class="form-control" id="ec-forecast" type="number" value="${c.forecast}"></div>
     </div>`,
   ()=>{
+    c.name=document.getElementById('ec-name').value||c.name;
     c.budget=parseFloat(document.getElementById('ec-budget').value)||c.budget;
     c.committed=parseFloat(document.getElementById('ec-committed').value)||c.committed;
     c.actual=parseFloat(document.getElementById('ec-actual').value)||c.actual;
     c.forecast=parseFloat(document.getElementById('ec-forecast').value)||c.forecast;
-    renderCost(); showToast('Updated',`${name} updated`,'success');
+    renderCost(); showToast('Updated',`${c.name} updated`,'success');
+  });
+}
+
+function openAddVariationOrderModal() {
+  const D=window.APP_DATA.mockCostData;
+  openModal('📝 Add Variation Order','',`
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">VO Reference</label><input class="form-control" id="vo-ref" placeholder="VO-001"></div>
+      <div class="form-group"><label class="form-label">Category</label>
+        <select class="form-control" id="vo-cat">${D.categories.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="vo-desc" placeholder="Variation order description"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Budget Adjustment (SAR)</label><input class="form-control" id="vo-budget" type="number" placeholder="0" value="0"></div>
+      <div class="form-group"><label class="form-label">Forecast Adjustment (SAR)</label><input class="form-control" id="vo-forecast" type="number" placeholder="0" value="0"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="vo-remarks" rows="2" placeholder="Reason for variation"></textarea></div>`,
+  ()=>{
+    const catName=document.getElementById('vo-cat').value;
+    const cat=D.categories.find(x=>x.name===catName);
+    if(cat){
+      const budgetAdj=parseFloat(document.getElementById('vo-budget').value)||0;
+      const forecastAdj=parseFloat(document.getElementById('vo-forecast').value)||0;
+      cat.budget+=budgetAdj;
+      cat.forecast+=forecastAdj;
+      D.revisedBudget+=budgetAdj;
+      D.forecastFinalCost+=forecastAdj;
+      D.costVariance=D.forecastFinalCost-D.revisedBudget;
+    }
+    const ref=document.getElementById('vo-ref').value||'VO-'+Date.now();
+    renderCost(); showToast('Variation Order Added',`${ref} applied to ${catName}`,'success');
   });
 }
 
@@ -1666,11 +1919,11 @@ function renderManpower() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.manpower||'file:///C:/CI-Platform/Manpower/'}${encodeURIComponent(w.week.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewManpowerWeek('${w.week}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editManpowerWeek('${w.week}')">Edit</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('manpower')">Import</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editManpowerWeek('${w.week}')">Edit</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('manpower')">Import</button>`:''}
       </td>
     </tr>`);
-  const ec=document.getElementById('equipment-list');
+ const ec=document.getElementById('equipment-list');
   if(ec) ec.innerHTML=equipment.map(e=>{
     const uc=e.utilization>80?'var(--accent-emerald)':e.utilization>40?'var(--accent-amber)':e.utilization>0?'var(--accent-rose)':'var(--text-muted)';
     return `<div class="equip-item">
@@ -1678,17 +1931,12 @@ function renderManpower() {
       <div class="equip-name">${e.type}</div>
       <div class="equip-bar"><div class="equip-fill" style="width:${e.utilization}%;background:${uc}"></div></div>
       <div class="equip-pct" style="color:${uc}">${e.utilization}%</div>
-      <div style="display:flex;gap:3px;margin-left:4px">
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.manpower||'file:///C:/CI-Platform/Manpower/'}${encodeURIComponent(e.type.replace(/\s+/g,'-')+'.pdf')}" target="_blank" style="font-size:10px">Open</a>
-        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;font-size:10px" onclick="viewEquipment('${e.type}')">View</button>
-        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;font-size:10px" onclick="editEquipment('${e.type}')">Edit</button>
-        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;font-size:10px" onclick="triggerImport('manpower')">Import</button>
-      </div>
-    </div>`;
+      ${isAdmin()?`<button class="btn btn-sm btn-secondary" style="padding:2px 7px;font-size:10px;margin-left:4px;" onclick="editEquipment('${e.id}')">Edit</button>
+      <button class="btn btn-sm btn-secondary" style="padding:2px 7px;font-size:10px;color:var(--accent-rose);" onclick="deleteEquipment('${e.id}')">Delete</button>`:''}
+     </div>`;
   }).join('');
   renderManpowerChart();
 }
-
 function renderManpowerChart() {
   const ctx=document.getElementById('manpower-chart'); if(!ctx)return;
   if(STATE.charts.manpower) STATE.charts.manpower.destroy();
@@ -1730,37 +1978,94 @@ function editManpowerWeek(week) {
   });
 }
 
-function viewEquipment(type) {
-  const e=window.APP_DATA.mockManpowerData.equipment.find(x=>x.type===type); if(!e)return;
-  openModal('Equipment Details','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('Equipment',e.type)}${inf('Status',e.status)}
-      ${inf('Utilization',e.utilization+'%')}${inf('Operator',e.operator||'—')}
-      ${inf('Location',e.location||'—')}
-    </div>`);
-}
-
-function editEquipment(type) {
-  const e=window.APP_DATA.mockManpowerData.equipment.find(x=>x.type===type); if(!e)return;
-  openModal('Edit Equipment','',`
-    <div class="form-group"><label class="form-label">Equipment: ${e.type}</label></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="ee-status"><option value="active"${e.status==='active'?' selected':''}>Active</option><option value="standby"${e.status==='standby'?' selected':''}>Standby</option><option value="breakdown"${e.status==='breakdown'?' selected':''}>Breakdown</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Utilization %</label><input class="form-control" id="ee-util" type="number" min="0" max="100" value="${e.utilization}"></div>
+function addEquipment() {
+  const eq = window.APP_DATA.mockManpowerData.equipment;
+  openModal('Add New Equipment','',`
+    <div class="form-group"><label class="form-label">Equipment Name</label>
+      <input class="form-control" id="ae-name" placeholder="e.g. Excavator CAT 320">
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Operator</label><input class="form-control" id="ee-op" value="${e.operator||''}"></div>
-      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="ee-loc" value="${e.location||''}"></div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-control" id="ae-status">
+          <option value="active">Active</option>
+          <option value="standby">Standby</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="breakdown">Breakdown</option>
+          <option value="off-hired">Off-Hired</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Utilization %</label>
+        <input class="form-control" id="ae-util" type="number" min="0" max="100" value="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Operator</label>
+        <input class="form-control" id="ae-op" placeholder="Operator name">
+      </div>
+      <div class="form-group"><label class="form-label">Location / Zone</label>
+        <input class="form-control" id="ae-loc" placeholder="e.g. Zone A, Level 3">
+      </div>
     </div>`,
   ()=>{
+    const name = document.getElementById('ae-name').value.trim();
+    if(!name){ showToast('Error','Equipment name is required','error'); return; }
+    const newId = 'EQ-' + String(eq.length + 1).padStart(3,'0');
+    eq.push({ id:newId, type:name, status:document.getElementById('ae-status').value, utilization:parseInt(document.getElementById('ae-util').value)||0, operator:document.getElementById('ae-op').value||'—', location:document.getElementById('ae-loc').value||'—' });
+    renderManpower();
+    showToast('Added', `${name} added`, 'success');
+  });
+}
+
+function editEquipment(id) {
+  const e=window.APP_DATA.mockManpowerData.equipment.find(x=>x.id===id); if(!e)return;
+  openModal('Edit Equipment','',`
+    <div class="form-group"><label class="form-label">Equipment Name</label>
+      <input class="form-control" id="ee-name" value="${e.type}">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-control" id="ee-status">
+          <option value="active"${e.status==='active'?' selected':''}>Active</option>
+          <option value="standby"${e.status==='standby'?' selected':''}>Standby</option>
+          <option value="maintenance"${e.status==='maintenance'?' selected':''}>Maintenance</option>
+          <option value="breakdown"${e.status==='breakdown'?' selected':''}>Breakdown</option>
+          <option value="off-hired"${e.status==='off-hired'?' selected':''}>Off-Hired</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Utilization %</label>
+        <input class="form-control" id="ee-util" type="number" min="0" max="100" value="${e.utilization}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Operator</label>
+        <input class="form-control" id="ee-op" value="${e.operator||''}">
+      </div>
+      <div class="form-group"><label class="form-label">Location / Zone</label>
+        <input class="form-control" id="ee-loc" value="${e.location||''}">
+      </div>
+    </div>`,
+  ()=>{
+    e.type=document.getElementById('ee-name').value.trim()||e.type;
     e.status=document.getElementById('ee-status').value;
     e.utilization=parseInt(document.getElementById('ee-util').value)||0;
     e.operator=document.getElementById('ee-op').value;
     e.location=document.getElementById('ee-loc').value;
-    renderManpower(); showToast('Updated',`${type} updated`,'success');
+    renderManpower();
+    showToast('Updated',`${e.type} updated`,'success');
   });
+}
+
+function deleteEquipment(id) {
+  const eq=window.APP_DATA.mockManpowerData.equipment;
+  const idx=eq.findIndex(x=>x.id===id); if(idx===-1)return;
+  const name=eq[idx].type;
+  openModal('Confirm Delete','',`
+    <div style="text-align:center;padding:16px 0;">
+      <div style="font-size:32px;margin-bottom:12px;">🗑️</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Remove <span style="color:var(--accent-rose)">${name}</span>?</div>
+      <div style="font-size:12px;color:var(--text-muted);">This cannot be undone.</div>
+    </div>`,
+  ()=>{ eq.splice(idx,1); renderManpower(); showToast('Deleted',`${name} removed`,'success'); });
 }
 
 function openAddDailyLogModal() {
@@ -1818,9 +2123,10 @@ function renderCloseout() {
       <td>
         <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.closeout||'file:///C:/CI-Platform/Closeout/'}${encodeURIComponent(c.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewCloseout('${c.id}')">View</button>
-        <button class="btn btn-sm btn-secondary" onclick="editCloseout('${c.id}')">Edit</button>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCloseout('${c.id}')">Edit</button>
         ${c.status!=='complete'?`<button class="btn btn-sm btn-success" onclick="completeCloseout('${c.id}')">✓ Complete</button>`:'<span style="color:var(--accent-emerald);font-size:12px">✓ Done</span>'}
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('closeout')">Import</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCloseout('${c.id}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('closeout')">Import</button>`:c.status==='complete'?'<span style="color:var(--accent-emerald);font-size:12px">✓ Done</span>':''}
       </td>
     </tr>`);
 }
@@ -1836,10 +2142,15 @@ function viewCloseout(id) {
     <div style="margin-top:14px">${inf('Remarks',c.remarks||'—')}</div>`);
 }
 
+function deleteCloseout(id) { const data=window.APP_DATA.mockCloseoutData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderCloseout(); showToast('Deleted',`${id} deleted`,'success'); }); }
+
 function editCloseout(id) {
   const c=window.APP_DATA.mockCloseoutData.find(x=>x.id===id); if(!c)return;
   openModal('Edit Closeout Item','',`
-    <div class="form-group"><label class="form-label">Item: ${c.item}</label></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="ecl-id" value="${c.id}"></div>
+      <div class="form-group"><label class="form-label">Closeout Item</label><input class="form-control" id="ecl-item" value="${c.item}"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-control" id="ecl-status"><option value="not-started"${c.status==='not-started'?' selected':''}>Not Started</option><option value="in-progress"${c.status==='in-progress'?' selected':''}>In Progress</option><option value="complete"${c.status==='complete'?' selected':''}>Complete</option></select>
@@ -1852,12 +2163,14 @@ function editCloseout(id) {
     <div class="form-group"><label class="form-label">Category</label><input class="form-control" id="ecl-cat" value="${c.category||''}"></div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="ecl-rem" rows="2">${c.remarks||''}</textarea></div>`,
   ()=>{
+    c.id=document.getElementById('ecl-id').value||c.id;
+    c.item=document.getElementById('ecl-item').value||c.item;
     c.status=document.getElementById('ecl-status').value;
     c.due=document.getElementById('ecl-due').value;
     c.assignedTo=document.getElementById('ecl-assign').value;
     c.category=document.getElementById('ecl-cat').value;
     c.remarks=document.getElementById('ecl-rem').value;
-    renderCloseout(); showToast('Updated',`${id} updated`,'success');
+    renderCloseout(); showToast('Updated',`${c.id} updated`,'success');
   });
 }
 
@@ -2018,15 +2331,17 @@ const exp={navigateTo,openModal,closeModal,showToast,generatePDF,
   openAddProjectModal,openAddDrawingModal,openAddMaterialModal,openAddSubModal,openAddNCRModal,openAddHSEModal,
   openAddMethodModal,openAddTestModal,openAddPOModal,openAddDailyLogModal,openAddCloseoutItemModal,
   openUpdateProgressModal,openEditProjectModal,confirmDeleteProject,exportProjectsCSV,printProjectsPDF,
-  editDrawingStatus,viewDrawing,editMaterial,viewMaterial,editMethod,viewMethod,editTesting,viewTest,
-  viewPO,editPO,viewSub,editSub,viewHSE,editHSE,viewNCR,editNCR,viewRFI,editRFI,viewSI,editSI,viewCloseout,editCloseout,
-  viewCostCategory,editCostCategory,viewManpowerWeek,editManpowerWeek,viewEquipment,editEquipment,
+  openSettings,
+  editDrawingStatus,viewDrawing,deleteDrawing,editMaterial,viewMaterial,deleteMaterial,editMethod,viewMethod,deleteMethod,editTesting,viewTest,deleteTesting,
+  viewPO,editPO,deletePO,viewSub,editSub,deleteSub,viewHSE,editHSE,deleteHSE,viewNCR,editNCR,deleteNCR,viewRFI,editRFI,deleteRFI,viewSI,editSI,deleteSI,viewCloseout,editCloseout,deleteCloseout,
+  viewCostCategory,editCostCategory,deleteCostCategory,viewManpowerWeek,editManpowerWeek,
   closeNCR,closeRFI,closeSI,closeHSE,completeCloseout,
-  setNCRTab,markNotifRead,triggerImport,
+  setNCRTab,markNotifRead,triggerImport,openAddVariationOrderModal,
   printDashboardPDF,printDrawingsPDF,printMaterialsPDF,printMethodsPDF,
   printTestingPDF,printNCRPDF,printRFIPDF,printSIPDF,
   printProcurementPDF,printProgressPDF,printHSEPDF,
-  printSubPDF,printCostPDF,printManpowerPDF,printCloseoutPDF,
+ printSubPDF,printCostPDF,printManpowerPDF,printCloseoutPDF,addEquipment,deleteEquipment,
   exportCurrentModule:(m)=>{const map={drawings:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockDrawingsData,'Drawing-Register'),materials:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMaterialsData,'Material-Submittals'),methods:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMethodsData,'Method-Statements'),ncr:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockNCRData,'NCR-Register'),rfi:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockRFIData,'RFI-Register'),si:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSIData,'SI-Register'),procurement:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockProcurementData,'Procurement-Tracker'),hse:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockHSEData.incidents,'HSE-Register'),subcontractors:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSubcontractorData,'Subcontractor-Register'),testing:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockTestingData,'Test-Commissioning'),cost:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCostData.categories,'Cost-Control'),closeout:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCloseoutData,'Project-Closeout')};if(map[m]){map[m]();showToast('Exported',m+' data exported as CSV','success');}},
 };
 Object.assign(window,exp);
+window.STATE = STATE; // expose for HTML inline access
