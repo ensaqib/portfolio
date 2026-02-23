@@ -7,7 +7,7 @@
 const STATE = {
   currentPage: 'dashboard',
   currentUser: { id:'U001', name:'Engr. Saqib Hussain (PE)', role:'admin', avatar:'SH' },
-  userRole: 'operator', // 'admin' or 'operator'
+  userRole: 'operator', // 'admin' or 'operator' — default operator for security
   darkMode: true,
   drawingMEPFilter: 'all',
   ncrTab: 'ncr',
@@ -121,7 +121,12 @@ function setupNotifications(notifs) {
 function markNotifRead(id) { const n=window.APP_DATA.NOTIFICATIONS.find(x=>x.id===id); if(n){n.read=true;setupNotifications(window.APP_DATA.NOTIFICATIONS);} }
 
 // ── ADMIN PASSWORD ─────────────────────────────────────────────
-let ADMIN_PASSWORD = 'admin2026';
+let ADMIN_PASSWORD_HASH = '6051fc84a7a0d74c225fb18a496b09952da5642e60723ecae543298edd7d82d6';
+
+async function hashPassword(input) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2,'0')).join('');
+}
 
 function isAdmin() { return STATE.userRole === 'admin'; }
 
@@ -167,7 +172,7 @@ function openSettings() {
     <div style="margin-top:12px;text-align:right">
       <button class="btn btn-sm btn-secondary" onclick="changeAdminPassword()" style="font-size:11px">🔑 Change Admin Password</button>
     </div>`,
-  ()=>{
+  async ()=>{
     const selected = window._pendingRole || role;
     if(selected === 'operator') {
       STATE.userRole = 'operator';
@@ -179,7 +184,7 @@ function openSettings() {
         showToast('Admin Mode','Already in Admin mode','success');
       } else {
         const pwd = document.getElementById('settings-pwd')?.value;
-        if(pwd === ADMIN_PASSWORD) {
+        if(await hashPassword(pwd) === ADMIN_PASSWORD_HASH) {
           STATE.userRole = 'admin';
           applyRoleUI();
           showToast('Admin Mode','Admin access granted ✓','success');
@@ -221,15 +226,16 @@ function changeAdminPassword() {
       <input class="form-control" id="cp-confirm" type="password" placeholder="Confirm new password">
     </div>
     <div id="cp-error" style="color:var(--accent-rose);font-size:11px;display:none;margin-top:4px"></div>`,
-  ()=>{
+  async ()=>{
     const current = document.getElementById('cp-current').value;
     const newPwd  = document.getElementById('cp-new').value;
     const confirm = document.getElementById('cp-confirm').value;
     const errEl   = document.getElementById('cp-error');
-    if(current !== ADMIN_PASSWORD){ errEl.textContent='❌ Current password is incorrect'; errEl.style.display='block'; return false; }
-    if(newPwd.length < 6){          errEl.textContent='❌ New password must be at least 6 characters'; errEl.style.display='block'; return false; }
-    if(newPwd !== confirm){         errEl.textContent='❌ Passwords do not match'; errEl.style.display='block'; return false; }
-    ADMIN_PASSWORD = newPwd;
+    const currentHash = await hashPassword(current);
+    if(currentHash !== ADMIN_PASSWORD_HASH){ errEl.textContent='❌ Current password is incorrect'; errEl.style.display='block'; return false; }
+    if(newPwd.length < 6){                  errEl.textContent='❌ New password must be at least 6 characters'; errEl.style.display='block'; return false; }
+    if(newPwd !== confirm){                 errEl.textContent='❌ Passwords do not match'; errEl.style.display='block'; return false; }
+    ADMIN_PASSWORD_HASH = await hashPassword(newPwd);
     showToast('Password Changed','Admin password updated successfully ✓','success');
   }, 'Change Password');
 }
