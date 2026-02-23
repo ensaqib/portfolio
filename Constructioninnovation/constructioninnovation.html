@@ -77,7 +77,7 @@
           <div class="user-name" id="sidebar-user-name">Engr. Saqib Hussain (PE)</div>
           <div class="user-role" id="sidebar-user-role">ADMIN</div>
         </div>
-        <button class="btn btn-sm btn-secondary btn-icon" onclick="showToast('Settings','Settings coming soon','info')">⚙️</button>
+        <button class="btn btn-sm btn-secondary btn-icon" onclick="openSettings()">⚙️</button>
       </div>
     </div>
   </aside>
@@ -88,10 +88,8 @@
     <div class="header-page-title" id="header-page-title">Dashboard Overview</div>
     <!-- TOP SEARCH BAR REMOVED per user request -->
     <div class="header-actions">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);padding:0 8px;border-right:1px solid var(--border)" id="project-ref">NXT-2026</div>
       <button class="header-btn" id="theme-toggle" data-tooltip="Toggle Theme">☀️</button>
       <button class="header-btn" id="notif-btn" style="position:relative">🔔<span class="notif-dot" id="notif-dot" style="display:none"></span></button>
-      <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);background:rgba(59,130,246,0.1);padding:3px 7px;border-radius:4px;border:1px solid rgba(59,130,246,0.2)" id="notif-badge-count">3</span>
     </div>
   </header>
 
@@ -182,10 +180,10 @@
       <div class="page-header">
         <div><div class="page-title">📐 Drawing Register</div><div class="page-subtitle">MEP Split: Mechanical | Electrical | Plumbing | HVAC — Rev 1, Rev 2 format</div></div>
         <div class="page-actions">
-          <button class="btn btn-secondary" onclick="triggerImport('drawings')">📂 Import CSV</button>
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('drawings')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('drawings')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printDrawingsPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="openAddDrawingModal()">➕ Add Drawing</button>
+          <button class="btn btn-primary admin-only" onclick="openAddDrawingModal()">➕ Add Drawing</button>
         </div>
       </div>
       <div class="kpi-grid" id="drawings-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -220,10 +218,10 @@
       <div class="page-header">
         <div><div class="page-title">🧱 Material Submittal Register</div><div class="page-subtitle">BOQ-linked approvals | PO References | Rev 1, Rev 2 format</div></div>
         <div class="page-actions">
-          <button class="btn btn-secondary" onclick="triggerImport('materials')">📂 Import CSV</button>
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('materials')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('materials')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printMaterialsPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="openAddMaterialModal()">➕ New Submittal</button>
+          <button class="btn btn-primary admin-only" onclick="openAddMaterialModal()">➕ New Submittal</button>
         </div>
       </div>
       <div class="kpi-grid" id="materials-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -241,7 +239,7 @@
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="exportCurrentModule('methods')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printMethodsPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="openAddMethodModal()">➕ New MS</button>
+          <button class="btn btn-primary admin-only" onclick="openAddMethodModal()">➕ New MS</button>
         </div>
       </div>
       <div class="kpi-grid" id="methods-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -259,7 +257,7 @@
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="exportCurrentModule('testing')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printTestingPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="openAddTestModal()">➕ Add Test Record</button>
+          <button class="btn btn-primary admin-only" onclick="openAddTestModal()">➕ Add Test Record</button>
         </div>
       </div>
       <div class="kpi-grid" id="testing-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -352,7 +350,7 @@
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="exportCurrentModule('hse')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printHSEPDF()">🖨 Print PDF</button>
-          <button class="btn btn-warning" onclick="openAddHSEModal()">🚨 Log Incident</button>
+          <button class="btn btn-warning admin-only" onclick="openAddHSEModal()">🚨 Log Incident</button>
         </div>
       </div>
       <div class="kpi-grid" id="hse-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -378,7 +376,7 @@
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="exportCurrentModule('subcontractors')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printSubPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="openAddSubModal()">➕ Add Subcontractor</button>
+          <button class="btn btn-primary admin-only" onclick="openAddSubModal()">➕ Add Subcontractor</button>
         </div>
       </div>
       <div class="kpi-grid" id="sub-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -395,7 +393,7 @@
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="exportCurrentModule('cost')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printCostPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="showToast('Variation','Opening variation order form','info')">📝 Variation Order</button>
+          <button class="btn btn-primary admin-only" onclick="openAddVariationOrderModal()">📝 Variation Order</button>
         </div>
       </div>
       <div class="kpi-grid" id="cost-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -418,7 +416,8 @@
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="exportCurrentModule('manpower')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printManpowerPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="openAddDailyLogModal()">➕ Daily Log Entry</button>
+          <button class="btn admin-only" onclick="openAddDailyLogModal()">➕ Daily Log Entry</button>
+          <button class="btn btn-success admin-only" onclick="addEquipment()">➕ Add Equipment</button>
         </div>
       </div>
       <div class="kpi-grid" id="manpower-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -439,7 +438,7 @@
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="exportCurrentModule('closeout')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printCloseoutPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="openAddCloseoutItemModal()">➕ Add Item</button>
+          <button class="btn btn-primary admin-only" onclick="openAddCloseoutItemModal()">➕ Add Item</button>
         </div>
       </div>
       <div class="kpi-grid" id="closeout-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -462,6 +461,7 @@
 </div>
 
 <!-- ── MODAL ──────────────────────────────────────────────────── -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('active');" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199;"></div>
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <div class="modal-header">
@@ -498,10 +498,14 @@
     const labels = { ncr:'NCR', rfi:'RFI', si:'SI' };
     const printFns = { ncr:'printNCRPDF', rfi:'printRFIPDF', si:'printSIPDF' };
     const exportKeys = { ncr:'ncr', rfi:'rfi', si:'si' };
+    const isAdminMode = window.STATE && window.STATE.userRole === 'admin';
     actions.innerHTML = `
       <button class="btn btn-secondary" onclick="exportCurrentModule('${exportKeys[tab]}')">📥 Export ${labels[tab]} CSV</button>
       <button class="btn btn-pdf" onclick="${printFns[tab]}()">🖨 Print ${labels[tab]} PDF</button>
-      <button class="btn btn-danger" onclick="openAddNCRModal()">🚨 Raise ${labels[tab]}</button>`;
+      ${isAdminMode ? `<button class="btn btn-danger" onclick="openAddNCRModal()">🚨 Raise ${labels[tab]}</button>` : ''}`;
+  }
+  updateNCRActions('ncr');
+  window.updateNCRActions = updateNCRActions;
   }
   updateNCRActions('ncr');
 
