@@ -18,7 +18,7 @@
   <div class="sidebar-brand">
     <a class="brand-logo" href="#" onclick="navigateTo('dashboard');return false;">
       <div id="brand-logo-wrap" style="width:100px;height:100px;overflow:hidden;border-radius:8px;background:transparent;">
-        <img id="sidebar-logo" style="width:100px;height:100px;object-fit:contain;margin-left:-20px;margin-top:-10px;" alt="CI">
+        <img id="sidebar-logo" style="width:100px;height:100px;object-fit:contain;margin-left:-20px;margin-top:-10px;" alt="CI" onerror="this.style.display='none'">
       </div>
       <div class="brand-text">
         <div class="brand-name">CONSTRUCTION INNOVATION</div>
@@ -88,6 +88,7 @@
     <div class="header-page-title" id="header-page-title">Dashboard Overview</div>
     <!-- TOP SEARCH BAR REMOVED per user request -->
     <div class="header-actions">
+      <button class="header-btn lang-toggle" id="lang-toggle" onclick="toggleLanguage()" data-tooltip="Switch Language" style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px;min-width:44px">EN</button>
       <button class="header-btn" id="theme-toggle" data-tooltip="Toggle Theme">☀️</button>
       <button class="header-btn" id="notif-btn" style="position:relative">🔔<span class="notif-dot" id="notif-dot" style="display:none"></span></button>
     </div>
@@ -113,7 +114,7 @@
 
       <div class="page-actions" style="margin-bottom:16px">
         <button class="btn btn-pdf" onclick="printDashboardPDF()">🖨 Print Dashboard PDF</button>
-        <button class="btn btn-secondary" onclick="openAddProjectModal()">➕ New Project</button>
+        <button class="btn btn-secondary admin-only" onclick="openAddProjectModal()">➕ New Project</button>
       </div>
 
       <div class="kpi-grid">
@@ -152,8 +153,10 @@
         <div><div class="page-title">📁 Project Management</div><div class="page-subtitle">All projects – edit, delete, switch active</div></div>
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="exportProjectsCSV()">📥 Export CSV</button>
+          <button class="btn btn-secondary" onclick="saveAndExportProjectData()">💾 Save Project Data</button>
+          <button class="btn btn-secondary" onclick="importProjectDataFromFile()">📂 Import Project Data</button>
           <button class="btn btn-pdf" onclick="printProjectsPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="openAddProjectModal()">➕ New Project</button>
+          <button class="btn btn-primary admin-only" onclick="openAddProjectModal()">➕ New Project</button>
         </div>
       </div>
       <div class="filter-bar">
@@ -485,33 +488,40 @@
 <script src="app.js"></script>
 
 <script>
-  // Set logo in sidebar once images.js loads
-  window.addEventListener('load', () => {
-    if (window.LOGO_B64) {
-      document.getElementById('sidebar-logo').src = window.LOGO_B64;
-    }
-  });
-
-  // NCR action buttons update on tab switch
-  function updateNCRActions(tab) {
-    const actions = document.getElementById('ncr-page-actions');
-    const labels = { ncr:'NCR', rfi:'RFI', si:'SI' };
-    const printFns = { ncr:'printNCRPDF', rfi:'printRFIPDF', si:'printSIPDF' };
-    const exportKeys = { ncr:'ncr', rfi:'rfi', si:'si' };
-    const isAdminMode = window.STATE && window.STATE.userRole === 'admin';
-    actions.innerHTML = `
-      <button class="btn btn-secondary" onclick="exportCurrentModule('${exportKeys[tab]}')">📥 Export ${labels[tab]} CSV</button>
-      <button class="btn btn-pdf" onclick="${printFns[tab]}()">🖨 Print ${labels[tab]} PDF</button>
-      ${isAdminMode ? `<button class="btn btn-danger" onclick="openAddNCRModal()">🚨 Raise ${labels[tab]}</button>` : ''}`;
+// Logo function - FIXED
+function applySidebarLogo() {
+  const img = document.getElementById('sidebar-logo');
+  if (img && window.LOGO_B64) {
+    img.src = window.LOGO_B64;
+    img.style.display = 'block';
   }
-  updateNCRActions('ncr');
-  window.updateNCRActions = updateNCRActions;
-  }
-  updateNCRActions('ncr');
+}
+// Try immediately (images.js may already be loaded)
+applySidebarLogo();
+// Also try on full load in case images.js loads late
+window.addEventListener('load', applySidebarLogo);
 
-  // Keyboard shortcut removed because top search bar is gone
-  // document.addEventListener('keydown', e => { ... }); // removed
+// NCR action buttons update on tab switch - FIXED
+function updateNCRActions(tab) {
+  const actions = document.getElementById('ncr-page-actions');
+  const labels = { ncr:'NCR', rfi:'RFI', si:'SI' };
+  const printFns = { ncr:'printNCRPDF', rfi:'printRFIPDF', si:'printSIPDF' };
+  const exportKeys = { ncr:'ncr', rfi:'rfi', si:'si' };
+  const isAdminMode = window.STATE && window.STATE.userRole === 'admin';
+  
+  actions.innerHTML = `
+    <button class="btn btn-secondary" onclick="exportCurrentModule('${exportKeys[tab]}')">📥 Export ${labels[tab]} CSV</button>
+    <button class="btn btn-pdf" onclick="${printFns[tab]}()">🖨 Print ${labels[tab]} PDF</button>
+    ${isAdminMode ? `<button class="btn btn-danger" onclick="openAddNCRModal()">🚨 Raise ${labels[tab]}</button>` : ''}
+  `;
+}
+
+// Expose and initialize ONCE only
+window.updateNCRActions = updateNCRActions;
+updateNCRActions('ncr');
+
+// Keyboard shortcut removed because top search bar is gone
+// document.addEventListener('keydown', e => { ... }); // removed
 </script>
-
 </body>
 </html>
