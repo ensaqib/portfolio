@@ -5,17 +5,21 @@
 'use strict';
 const PLATFORM={name:'Construction Innovation',version:'2026.2',admin:'Engr. Saqib Hussain (PE)',adminTitle:'Lead Electrical Engineer',company:'Construction Innovation'};
 
-// LOCAL DRIVE PATHS – point to your local file system
+// LOCAL DRIVE PATHS – Construction Innovation project folders on D:\
 const LOCAL_DRIVE={
-  drawings:'file:///Z:/Projects/Drawings/',
-  materials:'file:///Z:/Projects/Materials/',
-  methods:'file:///Z:/Projects/Methods/',
-  testing:'file:///Z:/Projects/Testing/',
-  ncr:'file:///Z:/Projects/NCR/',
-  rfi:'file:///Z:/Projects/RFI/',
-  si:'file:///Z:/Projects/SI/',
-  hse:'file:///Z:/Projects/HSE/',
-  procurement:'file:///Z:/Projects/Procurement/'
+  root:      'file:///D:/Construction%20Innovation/Projects/',
+  drawings:  'file:///D:/Construction%20Innovation/Projects/Drawings/',
+  materials: 'file:///D:/Construction%20Innovation/Projects/Materials/',
+  methods:   'file:///D:/Construction%20Innovation/Projects/Methods/',
+  testing:   'file:///D:/Construction%20Innovation/Projects/Testing/',
+  ncr:       'file:///D:/Construction%20Innovation/Projects/NCR/',
+  rfi:       'file:///D:/Construction%20Innovation/Projects/RFI/',
+  si:        'file:///D:/Construction%20Innovation/Projects/SI/',
+  hse:       'file:///D:/Construction%20Innovation/Projects/HSE/',
+  procurement:'file:///D:/Construction%20Innovation/Projects/Procurement/',
+  subcontractors:'file:///D:/Construction%20Innovation/Projects/Subcontractors/',
+  closeout:  'file:///D:/Construction%20Innovation/Projects/Closeout/',
+  progress:  'file:///D:/Construction%20Innovation/Projects/Progress/'
 };
 
 function openLocalFile(folder,filename){const path=(LOCAL_DRIVE[folder]||'')+encodeURIComponent(filename);window.open(path,'_blank');}
@@ -73,4 +77,134 @@ function computeKPIs(){return{drawingsPending:mockDrawingsData.filter(d=>d.statu
 
 function exportToCSV(data,filename){if(!data||!data.length){return;}const headers=Object.keys(data[0]).join(',');const rows=data.map(row=>Object.values(row).map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));const csv=[headers,...rows].join('\n');const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename+'.csv';a.click();URL.revokeObjectURL(url);}
 
-window.APP_DATA={PLATFORM,PROJECTS,get ACTIVE_PROJECT(){return ACTIVE_PROJECT;},set ACTIVE_PROJECT(v){ACTIVE_PROJECT=v;},USERS,NOTIFICATIONS,DISCIPLINES,LOCAL_DRIVE,openLocalFile,mockDrawingsData,mockMaterialsData,mockMethodsData,mockNCRData,mockRFIData,mockSIData,mockProcurementData,mockProgressData,mockHSEData,mockSubcontractorData,mockCostData,mockManpowerData,mockTestingData,mockCloseoutData,computeKPIs,exportToCSV};
+// ── PROJECT DATA PERSISTENCE ──────────────────────────────────
+const PROJECT_STORAGE_KEY = 'ci_project_data';
+
+function saveProjectData() {
+  const snapshot = {
+    version: '2026.2',
+    savedAt: new Date().toISOString(),
+    PROJECTS: window.APP_DATA ? window.APP_DATA.PROJECTS : PROJECTS,
+    activeProjectId: window.APP_DATA ? window.APP_DATA.ACTIVE_PROJECT.id : ACTIVE_PROJECT.id,
+    mockDrawingsData, mockMaterialsData, mockMethodsData, mockNCRData,
+    mockRFIData, mockSIData, mockProcurementData, mockProgressData,
+    mockHSEData, mockSubcontractorData, mockCostData, mockManpowerData,
+    mockTestingData, mockCloseoutData
+  };
+  try {
+    localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(snapshot));
+    return true;
+  } catch(e) { console.error('saveProjectData error:', e); return false; }
+}
+
+function exportProjectData() {
+  const snapshot = {
+    version: '2026.2',
+    savedAt: new Date().toISOString(),
+    PROJECTS: window.APP_DATA ? window.APP_DATA.PROJECTS : PROJECTS,
+    activeProjectId: window.APP_DATA ? window.APP_DATA.ACTIVE_PROJECT.id : ACTIVE_PROJECT.id,
+    mockDrawingsData, mockMaterialsData, mockMethodsData, mockNCRData,
+    mockRFIData, mockSIData, mockProcurementData, mockProgressData,
+    mockHSEData, mockSubcontractorData, mockCostData, mockManpowerData,
+    mockTestingData, mockCloseoutData
+  };
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'CI-ProjectData-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importProjectData(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.PROJECTS || !Array.isArray(data.PROJECTS)) throw new Error('Invalid project data file');
+        // Restore all data arrays in-place
+        if (data.PROJECTS)            { PROJECTS.length=0; data.PROJECTS.forEach(p=>PROJECTS.push(p)); }
+        if (data.mockDrawingsData)    { mockDrawingsData.length=0; data.mockDrawingsData.forEach(x=>mockDrawingsData.push(x)); }
+        if (data.mockMaterialsData)   { mockMaterialsData.length=0; data.mockMaterialsData.forEach(x=>mockMaterialsData.push(x)); }
+        if (data.mockMethodsData)     { mockMethodsData.length=0; data.mockMethodsData.forEach(x=>mockMethodsData.push(x)); }
+        if (data.mockNCRData)         { mockNCRData.length=0; data.mockNCRData.forEach(x=>mockNCRData.push(x)); }
+        if (data.mockRFIData)         { mockRFIData.length=0; data.mockRFIData.forEach(x=>mockRFIData.push(x)); }
+        if (data.mockSIData)          { mockSIData.length=0; data.mockSIData.forEach(x=>mockSIData.push(x)); }
+        if (data.mockProcurementData) { mockProcurementData.length=0; data.mockProcurementData.forEach(x=>mockProcurementData.push(x)); }
+        if (data.mockHSEData)         { Object.assign(mockHSEData, data.mockHSEData); }
+        if (data.mockSubcontractorData){ mockSubcontractorData.length=0; data.mockSubcontractorData.forEach(x=>mockSubcontractorData.push(x)); }
+        if (data.mockTestingData)     { mockTestingData.length=0; data.mockTestingData.forEach(x=>mockTestingData.push(x)); }
+        if (data.mockCloseoutData)    { mockCloseoutData.length=0; data.mockCloseoutData.forEach(x=>mockCloseoutData.push(x)); }
+        if (data.mockManpowerData)    { Object.assign(mockManpowerData, data.mockManpowerData); }
+        if (data.mockProgressData)    { Object.assign(mockProgressData, data.mockProgressData); }
+        if (data.mockCostData)        { Object.assign(mockCostData, data.mockCostData); }
+        // Restore active project
+        if (data.activeProjectId) {
+          const ap = PROJECTS.find(p => p.id === data.activeProjectId) || PROJECTS[0];
+          if (ap) ACTIVE_PROJECT = ap;
+        }
+        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(data));
+        resolve(data);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = () => reject(new Error('File read failed'));
+    reader.readAsText(file);
+  });
+}
+
+function loadProjectDataFromStorage() {
+  try {
+    const raw = localStorage.getItem(PROJECT_STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data.PROJECTS) return false;
+    if (data.PROJECTS)            { PROJECTS.length=0; data.PROJECTS.forEach(p=>PROJECTS.push(p)); }
+    if (data.mockDrawingsData)    { mockDrawingsData.length=0; data.mockDrawingsData.forEach(x=>mockDrawingsData.push(x)); }
+    if (data.mockMaterialsData)   { mockMaterialsData.length=0; data.mockMaterialsData.forEach(x=>mockMaterialsData.push(x)); }
+    if (data.mockMethodsData)     { mockMethodsData.length=0; data.mockMethodsData.forEach(x=>mockMethodsData.push(x)); }
+    if (data.mockNCRData)         { mockNCRData.length=0; data.mockNCRData.forEach(x=>mockNCRData.push(x)); }
+    if (data.mockRFIData)         { mockRFIData.length=0; data.mockRFIData.forEach(x=>mockRFIData.push(x)); }
+    if (data.mockSIData)          { mockSIData.length=0; data.mockSIData.forEach(x=>mockSIData.push(x)); }
+    if (data.mockProcurementData) { mockProcurementData.length=0; data.mockProcurementData.forEach(x=>mockProcurementData.push(x)); }
+    if (data.mockHSEData)         { Object.assign(mockHSEData, data.mockHSEData); }
+    if (data.mockSubcontractorData){ mockSubcontractorData.length=0; data.mockSubcontractorData.forEach(x=>mockSubcontractorData.push(x)); }
+    if (data.mockTestingData)     { mockTestingData.length=0; data.mockTestingData.forEach(x=>mockTestingData.push(x)); }
+    if (data.mockCloseoutData)    { mockCloseoutData.length=0; data.mockCloseoutData.forEach(x=>mockCloseoutData.push(x)); }
+    if (data.mockManpowerData)    { Object.assign(mockManpowerData, data.mockManpowerData); }
+    if (data.mockProgressData)    { Object.assign(mockProgressData, data.mockProgressData); }
+    if (data.mockCostData)        { Object.assign(mockCostData, data.mockCostData); }
+    if (data.activeProjectId) {
+      const ap = PROJECTS.find(p => p.id === data.activeProjectId) || PROJECTS[0];
+      if (ap) ACTIVE_PROJECT = ap;
+    }
+    return true;
+  } catch(e) { console.error('loadProjectDataFromStorage error:', e); return false; }
+}
+
+// Auto-load from localStorage on script parse
+loadProjectDataFromStorage();
+
+// ── ENTRY STORAGE (localStorage) ─────────────────────────────
+const ENTRIES_KEY = 'myEntries';
+function loadEntries() {
+  try { const raw=localStorage.getItem(ENTRIES_KEY); return raw?JSON.parse(raw):[]; } catch(e){return [];}
+}
+function saveEntries(entries) {
+  try { localStorage.setItem(ENTRIES_KEY,JSON.stringify(entries)); return true; } catch(e){return false;}
+}
+function exportEntries() {
+  const blob=new Blob([JSON.stringify(loadEntries(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='entries-backup.json'; a.click(); URL.revokeObjectURL(url);
+}
+function importEntries(file) {
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{ try{ const data=JSON.parse(e.target.result); if(!Array.isArray(data))throw new Error('Expected array'); saveEntries(data); resolve(data); }catch(err){reject(err);} };
+    reader.onerror=()=>reject(new Error('Read failed')); reader.readAsText(file);
+  });
+}
+
+window.APP_DATA={PLATFORM,PROJECTS,get ACTIVE_PROJECT(){return ACTIVE_PROJECT;},set ACTIVE_PROJECT(v){ACTIVE_PROJECT=v;},USERS,NOTIFICATIONS,DISCIPLINES,LOCAL_DRIVE,openLocalFile,mockDrawingsData,mockMaterialsData,mockMethodsData,mockNCRData,mockRFIData,mockSIData,mockProcurementData,mockProgressData,mockHSEData,mockSubcontractorData,mockCostData,mockManpowerData,mockTestingData,mockCloseoutData,computeKPIs,exportToCSV,saveProjectData,exportProjectData,importProjectData,loadEntries,saveEntries,exportEntries,importEntries};
