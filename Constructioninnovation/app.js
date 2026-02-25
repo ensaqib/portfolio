@@ -361,9 +361,9 @@ function renderProjects() {
       <td><div class="progress-bar" style="width:60px"><div class="progress-fill" style="width:${p.currentProgress}%"></div></div> ${p.currentProgress}%</td>
       <td>${statusBadge(p.status)}</td>
       <td>
-        <button class="btn btn-sm btn-secondary" onclick="openEditProjectModal('${p.id}')">✎ Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="confirmDeleteProject('${p.id}')">🗑 Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('projects')">Import</button>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.root}${encodeURIComponent(p.code)}/" target="_blank" title="Open project folder">📂 Open</a>
+        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="openEditProjectModal('${p.id}')">✎ Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="confirmDeleteProject('${p.id}')">🗑 Delete</button>`:''}
       </td>
     </tr>`).join('');
   setupTableFilter('projects-filter-input', 'projects-table-body');
@@ -676,14 +676,14 @@ function editDrawingStatus(id) {
     d.status=document.getElementById('edit-status-select').value;
     d.rev=parseInt(document.getElementById('edit-rev').value)||d.rev;
     d.comments=document.getElementById('edit-comments').value;
-    renderDrawings(); showToast('Updated',`${d.id} updated to Rev ${d.rev} — ${d.status}`,'success');
+    renderDrawings(); saveProjectDataAuto(); showToast('Updated',`${d.id} updated to Rev ${d.rev} — ${d.status}`,'success');
   });
 }
 
 function deleteDrawing(id) {
   const data=window.APP_DATA.mockDrawingsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Drawing <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderDrawings(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderDrawings(); saveProjectDataAuto(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddDrawingModal() {
@@ -705,7 +705,7 @@ function openAddDrawingModal() {
   ()=>{
     const id=document.getElementById('nd-id').value||('DWG-0'+String(window.APP_DATA.mockDrawingsData.length+1).padStart(2,'0'));
     window.APP_DATA.mockDrawingsData.unshift({id,title:document.getElementById('nd-title').value||'New Drawing',discipline:document.getElementById('nd-disc').value,rev:parseInt(document.getElementById('nd-rev').value)||1,status:'submitted',submittedBy:'U001',date:document.getElementById('nd-date').value,consultant:document.getElementById('nd-cons').value,file:document.getElementById('nd-file').value||(id+'-Rev1.pdf'),comments:document.getElementById('nd-comments').value});
-    renderDrawings(); showToast('Added',`${id} added to Drawing Register`,'success');
+    renderDrawings(); saveProjectDataAuto(); showToast('Added',`${id} added to Drawing Register`,'success');
   });
 }
 
@@ -804,14 +804,14 @@ function editMaterial(id) {
     m.poNo=document.getElementById('em-po').value;
     m.approveDate=document.getElementById('em-adate').value;
     m.remarks=document.getElementById('em-remarks').value;
-    renderMaterials(); showToast('Updated',`${m.id} updated`,'success');
+    renderMaterials(); saveProjectDataAuto(); showToast('Updated',`${m.id} updated`,'success');
   });
 }
 
 function deleteMaterial(id) {
   const data=window.APP_DATA.mockMaterialsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Material <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderMaterials(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderMaterials(); saveProjectDataAuto(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddMaterialModal() {
@@ -837,7 +837,7 @@ function openAddMaterialModal() {
   ()=>{
     const id=document.getElementById('nm-id').value||('MAT-0'+String(window.APP_DATA.mockMaterialsData.length+1).padStart(2,'0'));
     window.APP_DATA.mockMaterialsData.unshift({id,item:document.getElementById('nm-item').value||'New Material',boqRef:document.getElementById('nm-boq').value,poNo:document.getElementById('nm-po').value,supplier:document.getElementById('nm-supplier').value,rev:parseInt(document.getElementById('nm-rev').value)||1,status:'submitted',submitDate:new Date().toISOString().split('T')[0],approveDate:'',deliveryDate:document.getElementById('nm-del').value,qty:parseFloat(document.getElementById('nm-qty').value)||0,unit:document.getElementById('nm-unit').value,remarks:document.getElementById('nm-remarks').value});
-    renderMaterials(); showToast('Added',`${id} added to Material Register`,'success');
+    renderMaterials(); saveProjectDataAuto(); showToast('Added',`${id} added to Material Register`,'success');
   });
 }
 
@@ -910,14 +910,14 @@ function editMethod(id) {
     m.rev=parseInt(document.getElementById('ems-rev').value)||m.rev;
     m.hseReview=document.getElementById('ems-hse').value;
     m.file=`${m.id}-Rev${m.rev}.pdf`;
-    renderMethods(); showToast('Updated',`${m.id} updated to Rev ${m.rev}`,'success');
+    renderMethods(); saveProjectDataAuto(); showToast('Updated',`${m.id} updated to Rev ${m.rev}`,'success');
   });
 }
 
 function deleteMethod(id) {
   const data=window.APP_DATA.mockMethodsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Method Statement <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderMethods(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderMethods(); saveProjectDataAuto(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddMethodModal() {
@@ -950,7 +950,7 @@ function openAddMethodModal() {
       hseReview: document.getElementById('nm-hse').value,
       file: document.getElementById('nm-file').value || (id+'-Rev1.pdf')
     });
-    renderMethods(); showToast('Added',`${id} added to Method Statements`,'success');
+    renderMethods(); saveProjectDataAuto(); showToast('Added',`${id} added to Method Statements`,'success');
   });
 }
 
@@ -1365,7 +1365,7 @@ function renderProcurement() {
       <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${p.performance}%;background:${pc};transition:width 1s"></div></div><span style="font-family:'DM Mono',monospace;font-size:10px;color:${pc}">${p.performance||'—'}${p.performance?'%':''}</span></div></td>
       <td style="font-size:11px;color:var(--text-secondary)">${p.remarks||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.procurement||'file:///C:/CI-Platform/Procurement/'}${encodeURIComponent(p.id+'.pdf')}" target="_blank">Open</a>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.procurement}${encodeURIComponent(p.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewPO('${p.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editPO('${p.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deletePO('${p.id}')">Delete</button>
@@ -1574,7 +1574,7 @@ function renderHSE() {
       <td style="font-size:11px;color:var(--text-secondary)">${i.location||'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${i.correctiveAction||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.hse||'file:///C:/CI-Platform/HSE/'}${encodeURIComponent(i.id+'.pdf')}" target="_blank">Open</a>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.hse}${encodeURIComponent(i.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewHSE('${i.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editHSE('${i.id}')">Edit</button>
         ${i.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeHSE('${i.id}')">Close</button>`:''}
@@ -1693,7 +1693,7 @@ function renderSubcontractors() {
       <td class="td-mono">${formatCurrency(s.paidToDate)}</td>
       <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${s.performance}%;background:${pc}"></div></div><span style="font-family:'DM Mono',monospace;font-size:11px;color:${pc}">${s.performance||'—'}${s.performance?'%':''}</span></div></td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.subcontractors||'file:///C:/CI-Platform/Subcontractors/'}${encodeURIComponent(s.id+'.pdf')}" target="_blank">Open</a>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.subcontractors}${encodeURIComponent(s.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewSub('${s.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editSub('${s.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteSub('${s.id}')">Delete</button>
@@ -1813,7 +1813,7 @@ function renderCost() {
       <td class="td-mono" style="color:${vc}">${fv>0?'+':''}${formatCurrency(fv)}</td>
       <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,(c.actual/c.budget*100)).toFixed(0)}%"></div></div></td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.cost||'file:///C:/CI-Platform/Cost/'}${encodeURIComponent(c.name.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.cost}${encodeURIComponent(c.name.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewCostCategory('${c.name}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCostCategory('${c.name}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCostCategory('${c.name}')">Delete</button>
@@ -1923,7 +1923,7 @@ function renderManpower() {
       <td>${w.actual?`<div class="progress-bar"><div class="progress-fill ${w.actual<w.target*0.9?'amber':''}" style="width:${Math.min(100,w.actual/w.target*100).toFixed(0)}%"></div></div>`:'—'}</td>
       <td>${w.actual?`<span style="font-family:'DM Mono',monospace;font-size:11px;color:${w.actual>=w.target*0.95?'var(--accent-emerald)':'var(--accent-amber)'}">${(w.actual/w.target*100).toFixed(0)}%</span>`:'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.manpower||'file:///C:/CI-Platform/Manpower/'}${encodeURIComponent(w.week.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.manpower}${encodeURIComponent(w.week.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewManpowerWeek('${w.week}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editManpowerWeek('${w.week}')">Edit</button>
         <button class="btn btn-sm btn-secondary" onclick="triggerImport('manpower')">Import</button>`:''}
@@ -2127,7 +2127,7 @@ function renderCloseout() {
       <td class="td-mono">${c.assignedTo}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${c.remarks||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.closeout||'file:///C:/CI-Platform/Closeout/'}${encodeURIComponent(c.id+'.pdf')}" target="_blank">Open</a>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.closeout}${encodeURIComponent(c.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewCloseout('${c.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCloseout('${c.id}')">Edit</button>
         ${c.status!=='complete'?`<button class="btn btn-sm btn-success" onclick="completeCloseout('${c.id}')">✓ Complete</button>`:'<span style="color:var(--accent-emerald);font-size:12px">✓ Done</span>'}
@@ -2253,6 +2253,7 @@ function openAddProjectModal() {
     const switcher=document.getElementById('project-switcher');
     if(switcher){ const opt=document.createElement('option'); opt.value=proj.id; opt.textContent=proj.code+' — '+proj.name.substring(0,28)+'…'; switcher.appendChild(opt); }
     renderProjects();
+    saveProjectDataAuto();
     showToast('Project Added',proj.name,'success');
   });
 }
@@ -2332,6 +2333,132 @@ function chartDefaults(o={}){
   return {...base,...o};
 }
 
+// ── LANGUAGE TOGGLE (EN / AR) ──────────────────────────────────
+const TRANSLATIONS = {
+  en: {
+    'Dashboard Overview': 'Dashboard Overview',
+    'Project Management': 'Project Management',
+    'Drawing Register': 'Drawing Register',
+    'Material Submittal Register': 'Material Submittal Register',
+    'Method Statement Register': 'Method Statement Register',
+    'Test & Commissioning Register': 'Test & Commissioning Register',
+    'NCR / RFI / Site Instructions': 'NCR / RFI / Site Instructions',
+    'Procurement Tracker': 'Procurement Tracker',
+    'Progress Tracker': 'Progress Tracker',
+    'HSE Register': 'HSE Register',
+    'Subcontractor Management': 'Subcontractor Management',
+    'Cost Control': 'Cost Control',
+    'Manpower & Equipment': 'Manpower & Equipment',
+    'Project Closeout': 'Project Closeout',
+    'Active Project': 'Active Project',
+    'ADMIN': 'ADMIN', 'OPERATOR': 'OPERATOR',
+    'Overview': 'Overview',
+    'Document Control': 'Document Control',
+    'Site Management': 'Site Management',
+    'Commercial': 'Commercial',
+    'Closeout': 'Closeout',
+  },
+  ar: {
+    'Dashboard Overview': 'نظرة عامة على لوحة القيادة',
+    'Project Management': 'إدارة المشاريع',
+    'Drawing Register': 'سجل الرسومات',
+    'Material Submittal Register': 'سجل تقديم المواد',
+    'Method Statement Register': 'سجل بيانات الطريقة',
+    'Test & Commissioning Register': 'سجل الاختبار والتشغيل',
+    'NCR / RFI / Site Instructions': 'تقارير عدم المطابقة / استفسارات المعلومات',
+    'Procurement Tracker': 'متابعة المشتريات',
+    'Progress Tracker': 'متابعة التقدم',
+    'HSE Register': 'سجل الصحة والسلامة والبيئة',
+    'Subcontractor Management': 'إدارة المقاولين من الباطن',
+    'Cost Control': 'التحكم في التكاليف',
+    'Manpower & Equipment': 'القوى العاملة والمعدات',
+    'Project Closeout': 'إغلاق المشروع',
+    'Active Project': 'المشروع النشط',
+    'ADMIN': 'مسؤول', 'OPERATOR': 'مشغّل',
+    'Overview': 'نظرة عامة',
+    'Document Control': 'التحكم في الوثائق',
+    'Site Management': 'إدارة الموقع',
+    'Commercial': 'التجاري',
+    'Closeout': 'الإغلاق',
+  }
+};
+
+STATE.language = 'en';
+
+function toggleLanguage() {
+  STATE.language = STATE.language === 'en' ? 'ar' : 'en';
+  const isAr = STATE.language === 'ar';
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = isAr ? 'AR' : 'EN';
+  document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('lang', isAr ? 'ar' : 'en');
+  // Translate nav section labels
+  document.querySelectorAll('.nav-section-label').forEach(el => {
+    const t = TRANSLATIONS[STATE.language][el.textContent.trim()];
+    if (t) el.textContent = t;
+  });
+  // Translate nav items (text nodes, not the icon/badge)
+  document.querySelectorAll('.nav-item').forEach(el => {
+    const icon = el.querySelector('.nav-icon');
+    const badge = el.querySelector('.nav-badge');
+    const pageTitles = { dashboard: isAr?'لوحة القيادة':'Dashboard', projects: isAr?'المشاريع':'Projects', drawings: isAr?'سجل الرسومات':'Drawing Register', materials: isAr?'تقديم المواد':'Material Submittals', methods: isAr?'بيانات الطريقة':'Method Statements', testing: isAr?'الاختبار والتشغيل':'Test & Commissioning', ncr: isAr?'تقارير عدم المطابقة':'NCR / RFI / SI', procurement: isAr?'المشتريات':'Procurement Tracker', progress: isAr?'التقدم':'Progress Tracker', hse: isAr?'سجل HSE':'HSE Register', subcontractors: isAr?'المقاولون':'Subcontractors', cost: isAr?'التكاليف':'Cost Control', manpower: isAr?'القوى العاملة':'Manpower & Equipment', closeout: isAr?'الإغلاق':'Project Closeout' };
+    const page = el.dataset.page;
+    if (page && pageTitles[page]) {
+      el.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) n.textContent = ' ' + pageTitles[page]; });
+    }
+  });
+  // Translate sidebar labels
+  const projLabel = document.querySelector('.proj-label');
+  if (projLabel) projLabel.textContent = isAr ? 'المشروع النشط' : 'Active Project';
+  // Translate header title
+  const titleMap = TRANSLATIONS[STATE.language];
+  const hTitle = document.getElementById('header-page-title');
+  if (hTitle) { const t = titleMap[hTitle.textContent]; if(t) hTitle.textContent = t; }
+  // Re-render page for table labels update
+  renderPage(STATE.currentPage);
+  showToast(isAr ? 'اللغة' : 'Language', isAr ? 'تم التبديل إلى العربية' : 'Switched to English', 'info');
+}
+
+// ── PROJECT DATA SAVE / IMPORT (UI wrappers) ───────────────────
+function saveAndExportProjectData() {
+  // First auto-save to localStorage
+  const lsOk = window.APP_DATA.saveProjectData();
+  // Then download JSON file
+  window.APP_DATA.exportProjectData();
+  showToast('Project Data Saved', lsOk ? 'Saved to local storage & downloaded as JSON backup' : 'Downloaded backup (localStorage save failed)', lsOk ? 'success' : 'warning');
+}
+
+function importProjectDataFromFile() {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.json';
+  fileInput.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      await window.APP_DATA.importProjectData(file);
+      // Reload entire app UI
+      const proj = window.APP_DATA.ACTIVE_PROJECT;
+      updateProjectDisplay(proj);
+      const switcher = document.getElementById('project-switcher');
+      if (switcher) {
+        switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===proj.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
+      }
+      renderPage(STATE.currentPage);
+      showToast('Project Data Imported', `All data loaded from ${file.name}`, 'success');
+    } catch (err) {
+      showToast('Import Error', err.message, 'error');
+    }
+  };
+  fileInput.click();
+}
+
+// Auto-save to localStorage whenever any data changes
+// Call saveProjectDataAuto() from key mutation points
+function saveProjectDataAuto() {
+  window.APP_DATA.saveProjectData();
+}
+
 // ── EXPOSE ────────────────────────────────────────────────────
 const exp={navigateTo,openModal,closeModal,showToast,generatePDF,
   openAddProjectModal,openAddDrawingModal,openAddMaterialModal,openAddSubModal,openAddNCRModal,openAddHSEModal,
@@ -2348,6 +2475,7 @@ const exp={navigateTo,openModal,closeModal,showToast,generatePDF,
   printProcurementPDF,printProgressPDF,printHSEPDF,
  printSubPDF,printCostPDF,printManpowerPDF,printCloseoutPDF,addEquipment,deleteEquipment,
   exportCurrentModule:(m)=>{const map={drawings:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockDrawingsData,'Drawing-Register'),materials:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMaterialsData,'Material-Submittals'),methods:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMethodsData,'Method-Statements'),ncr:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockNCRData,'NCR-Register'),rfi:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockRFIData,'RFI-Register'),si:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSIData,'SI-Register'),procurement:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockProcurementData,'Procurement-Tracker'),hse:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockHSEData.incidents,'HSE-Register'),subcontractors:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSubcontractorData,'Subcontractor-Register'),testing:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockTestingData,'Test-Commissioning'),cost:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCostData.categories,'Cost-Control'),closeout:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCloseoutData,'Project-Closeout')};if(map[m]){map[m]();showToast('Exported',m+' data exported as CSV','success');}},
+  saveAndExportProjectData, importProjectDataFromFile, toggleLanguage,
 };
 Object.assign(window,exp);
 window.STATE = STATE; // expose for HTML inline access
