@@ -32,10 +32,20 @@ function initApp() {
   // Populate project switcher
   const switcher = document.getElementById('project-switcher');
   if (switcher) {
-    switcher.innerHTML = D.PROJECTS.map(p => `<option value="${p.id}" ${p.id===proj.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
+    switcher.innerHTML = D.PROJECTS.map(p => `<option value="${p.id}" ${p.id===proj.id?'selected':''}>${p.code} — ${p.name.length>28?p.name.substring(0,28)+'…':p.name}</option>`).join('');
     switcher.addEventListener('change', () => {
       const p = D.PROJECTS.find(x => x.id === switcher.value);
-      if (p) { D.ACTIVE_PROJECT = p; updateProjectDisplay(p); renderPage(STATE.currentPage); showToast('Project Switched', p.name, 'info'); }
+      if (p) {
+        // Destroy ALL charts so they redraw cleanly for new project data
+        Object.keys(STATE.charts).forEach(k => { if(STATE.charts[k]){STATE.charts[k].destroy();STATE.charts[k]=null;} });
+        // Switch all data to new project
+        window.APP_DATA.switchProjectData(p.id);
+        updateProjectDisplay(p);
+        updateNavBadges();
+        // Always navigate to dashboard so user sees fresh data
+        navigateTo('dashboard');
+        showToast('Project Switched ✓', p.name, 'info');
+      }
     });
   }
 
@@ -43,6 +53,7 @@ function initApp() {
   setupHeaderActions();
   setupNotifications(D.NOTIFICATIONS);
   navigateTo('dashboard');
+  setTimeout(() => { if(window.APP_DATA && window.APP_DATA.updateNavBadges) window.APP_DATA.updateNavBadges(); }, 400);
 }
 
 function updateProjectDisplay(proj) {
@@ -70,7 +81,20 @@ function navigateTo(page) {
   const titles = { dashboard:'Dashboard Overview', projects:'Project Management', drawings:'Drawing Register', materials:'Material Submittal Register', methods:'Method Statement Register', testing:'Test & Commissioning Register', ncr:'NCR / RFI / Site Instructions', procurement:'Procurement Tracker', progress:'Progress Tracker', hse:'HSE Register', subcontractors:'Subcontractor Management', cost:'Cost Control', manpower:'Manpower & Equipment', closeout:'Project Closeout' };
   const el = document.getElementById('header-page-title');
   if (el) el.textContent = titles[page] || 'Dashboard';
+  // Map page → chart keys to destroy before re-render (ensures clean redraw on project switch)
+  const pageCharts = {
+    dashboard: ['scurve','discipline'],
+    progress:  ['progressScurve'],
+    cost:      ['cost'],
+    procurement:['procurement'],
+    hse:       ['hse'],
+    manpower:  ['manpower'],
+  };
+  if (pageCharts[page]) {
+    pageCharts[page].forEach(k => { if(STATE.charts[k]){STATE.charts[k].destroy();STATE.charts[k]=null;} });
+  }
   renderPage(page);
+  if(window.APP_DATA && window.APP_DATA.updateNavBadges) window.APP_DATA.updateNavBadges();
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
   sidebar?.classList.remove('open');
@@ -79,7 +103,7 @@ function navigateTo(page) {
 
 function renderPage(page) {
   const map = { dashboard:renderDashboard, projects:renderProjects, drawings:renderDrawings, materials:renderMaterials, methods:renderMethods, testing:renderTesting, ncr:renderNCRPage, procurement:renderProcurement, progress:renderProgress, hse:renderHSE, subcontractors:renderSubcontractors, cost:renderCost, manpower:renderManpower, closeout:renderCloseout };
-  if (map[page]) setTimeout(() => map[page](), 50);
+  if (map[page]) map[page]();
 }
 
 // ── HEADER ────────────────────────────────────────────────────
@@ -361,9 +385,9 @@ function renderProjects() {
       <td><div class="progress-bar" style="width:60px"><div class="progress-fill" style="width:${p.currentProgress}%"></div></div> ${p.currentProgress}%</td>
       <td>${statusBadge(p.status)}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.root}${encodeURIComponent(p.code)}/" target="_blank" title="Open project folder">📂 Open</a>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="openEditProjectModal('${p.id}')">✎ Edit</button>
         <button class="btn btn-sm btn-danger" onclick="confirmDeleteProject('${p.id}')">🗑 Delete</button>`:''}
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('projects')">Import</button>
       </td>
     </tr>`).join('');
   setupTableFilter('projects-filter-input', 'projects-table-body');
@@ -413,7 +437,7 @@ function openEditProjectModal(id) {
       // Update switcher
       const switcher = document.getElementById('project-switcher');
       if (switcher) {
-        switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
+        switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.length>28?p.name.substring(0,28)+'…':p.name}</option>`).join('');
       }
       showToast('Project Updated', p.name, 'success');
     }
@@ -427,13 +451,13 @@ function confirmDeleteProject(id) {
   if (index !== -1) {
     const deleted = window.APP_DATA.PROJECTS.splice(index, 1)[0];
     if (window.APP_DATA.ACTIVE_PROJECT.id === id && window.APP_DATA.PROJECTS.length > 0) {
-      window.APP_DATA.ACTIVE_PROJECT = window.APP_DATA.PROJECTS[0];
+      window.APP_DATA.switchProjectData(window.APP_DATA.PROJECTS[0].id);
       updateProjectDisplay(window.APP_DATA.ACTIVE_PROJECT);
     }
     renderProjects();
     const switcher = document.getElementById('project-switcher');
     if (switcher) {
-      switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
+      switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.length>28?p.name.substring(0,28)+'…':p.name}</option>`).join('');
     }
     showToast('Project Deleted', deleted.name, 'warning');
   }
@@ -461,51 +485,120 @@ function printProjectsPDF() {
 // ── DASHBOARD ─────────────────────────────────────────────────
 function renderDashboard() {
   const D = window.APP_DATA, KPIs = D.computeKPIs(), proj = D.ACTIVE_PROJECT;
+  // Always sync sidebar display when rendering dashboard
+  updateProjectDisplay(proj);
   document.getElementById('wb-project').textContent = proj.name;
   document.getElementById('wb-progress').textContent = KPIs.overallProgress + '%';
   document.getElementById('wb-workers').textContent = KPIs.activeWorkers;
   document.getElementById('wb-contract').textContent = formatMillions(proj.contractValue);
   document.getElementById('kpi-drawings-pending').textContent = KPIs.drawingsPending;
   document.getElementById('kpi-open-ncrs').textContent = KPIs.openNCRs + KPIs.openRFIs + KPIs.openSIs;
-  document.getElementById('kpi-schedule-var').textContent = KPIs.scheduleVariance + '%';
-  document.getElementById('kpi-cost-var').textContent = (KPIs.costVariance>0?'+':'') + KPIs.costVariance + '%';
+  // Schedule variance: prefix + for positive (ahead), - for negative (behind)
+  const svEl = document.getElementById('kpi-schedule-var');
+  if (svEl) {
+    svEl.textContent = (KPIs.scheduleVariance > 0 ? '+' : '') + KPIs.scheduleVariance + '%';
+    // Color: green = on/ahead, red = behind
+    const svCard = svEl.closest('.kpi-card');
+    if (svCard) {
+      svCard.className = 'kpi-card ' + (KPIs.scheduleVariance >= 0 ? 'emerald' : 'amber');
+    }
+  }
+  // Cost variance: show red if over budget, green if under
+  const cvEl = document.getElementById('kpi-cost-var');
+  if (cvEl) {
+    cvEl.textContent = (KPIs.costVariance > 0 ? '+' : '') + KPIs.costVariance + '%';
+    const cvCard = cvEl.closest('.kpi-card');
+    if (cvCard) {
+      cvCard.className = 'kpi-card ' + (KPIs.costVariance <= 0 ? 'emerald' : 'rose');
+    }
+  }
   document.getElementById('kpi-progress').textContent = KPIs.overallProgress + '%';
   document.getElementById('kpi-workers').textContent = KPIs.activeWorkers;
-  document.getElementById('kpi-safe-hours').textContent = (KPIs.safeManHours/1000).toFixed(0) + 'K';
+  document.getElementById('kpi-safe-hours').textContent = KPIs.safeManHours > 0 ? (KPIs.safeManHours/1000).toFixed(0) + 'K' : '0K';
   document.getElementById('kpi-ltir').textContent = KPIs.ltir;
   renderSCurveChart(); renderDisciplineChart(); renderMilestoneList(); renderDashboardActivity();
 }
 
 function renderSCurveChart() {
   const ctx = document.getElementById('scurve-chart'); if (!ctx) return;
-  if (STATE.charts.scurve) STATE.charts.scurve.destroy();
-  const d = window.APP_DATA.mockProgressData.sCurveData;
-  STATE.charts.scurve = new Chart(ctx, { type:'line', data:{ labels:d.map(x=>x.month), datasets:[{ label:'Planned', data:d.map(x=>x.planned), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin' },{ label:'Actual', data:d.map(x=>x.actual), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin', spanGaps:false }] }, options:chartDefaults({ scales:{ y:{ min:0, suggestedMax:55, ticks:{ callback:v=>v+'%' } } } }) });
+  if (STATE.charts.scurve) { STATE.charts.scurve.destroy(); STATE.charts.scurve = null; }
+  const d = (window.APP_DATA.mockProgressData && window.APP_DATA.mockProgressData.sCurveData) || [];
+  if (!d.length) {
+    // Draw empty state
+    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+    const parent = ctx.parentElement;
+    const msg = parent.querySelector('.empty-chart-msg');
+    if (!msg) { const e=document.createElement('div'); e.className='empty-chart-msg'; e.style.cssText='text-align:center;padding:40px;color:var(--text-muted);font-size:12px'; e.textContent='No progress data yet — update progress to see S-Curve'; parent.appendChild(e); }
+    return;
+  }
+  const emptyMsg = ctx.parentElement.querySelector('.empty-chart-msg');
+  if (emptyMsg) emptyMsg.remove();
+  const allVals = d.flatMap(x=>[x.planned,x.actual]).filter(v=>v!=null);
+  const dataMax = allVals.length ? Math.max(...allVals) : 100;
+  const yMax = Math.ceil(Math.min(100, dataMax * 1.15) / 10) * 10; // 15% headroom, rounded to 10
+  STATE.charts.scurve = new Chart(ctx, { type:'line', data:{ labels:d.map(x=>x.month), datasets:[{ label:'Planned', data:d.map(x=>x.planned), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin' },{ label:'Actual', data:d.map(x=>x.actual), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin', spanGaps:false }] }, options:chartDefaults({ scales:{ y:{ min:0, max:yMax, ticks:{ callback:v=>v+'%' } } } }) });
 }
 
 function renderDisciplineChart() {
   const ctx = document.getElementById('discipline-chart'); if (!ctx) return;
-  if (STATE.charts.discipline) STATE.charts.discipline.destroy();
-  const d = window.APP_DATA.mockProgressData.disciplineProgress;
+  if (STATE.charts.discipline) { STATE.charts.discipline.destroy(); STATE.charts.discipline = null; }
+  const d = (window.APP_DATA.mockProgressData && window.APP_DATA.mockProgressData.disciplineProgress) || [];
+  if (!d.length) {
+    const parent=ctx.parentElement;
+    const existing=parent.querySelector('.empty-chart-msg');
+    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No discipline data yet — update progress to populate this chart';parent.appendChild(e);}
+    ctx.style.display='none'; return;
+  }
+  ctx.style.display='';
+  const parent=ctx.parentElement;
+  const existing=parent.querySelector('.empty-chart-msg');
+  if(existing) existing.remove();
   STATE.charts.discipline = new Chart(ctx, { type:'bar', data:{ labels:d.map(x=>x.name), datasets:[{ label:'Planned %', data:d.map(x=>x.planned), backgroundColor:'rgba(59,130,246,0.3)', borderColor:'#3b82f6', borderWidth:1, borderRadius:4 },{ label:'Actual %', data:d.map(x=>x.progress), backgroundColor:'rgba(16,185,129,0.7)', borderColor:'#10b981', borderWidth:1, borderRadius:4 }] }, options:chartDefaults({ scales:{ y:{ max:100, ticks:{ callback:v=>v+'%' } } } }) });
 }
 
 function renderMilestoneList() {
-  const container = document.getElementById('milestone-list'); if (!container) return;
+  // Update both dashboard and progress page milestone lists
+  ['milestone-list','progress-milestone-list'].forEach(id => {
+  const container = document.getElementById(id); if (!container) return;
+  const milestones = window.APP_DATA.mockProgressData.milestones;
+  if (!milestones || !milestones.length) {
+    container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">No milestones yet — click ➕ Update Progress to add milestones</div>';
+    return;
+  }
   const icons={completed:'✓','on-track':'►','at-risk':'⚠',delayed:'✗'};
-  container.innerHTML = window.APP_DATA.mockProgressData.milestones.slice(0,6).map(ms=>`
+  container.innerHTML = milestones.slice(0,6).map(ms=>`
     <div class="milestone-item">
       <div class="ms-icon ${ms.status}">${icons[ms.status]||'●'}</div>
       <div class="ms-info"><div class="ms-name">${ms.name}</div><div class="ms-date">Planned: ${ms.planned}${ms.actual?' | Actual: '+ms.actual:''}</div></div>
       <span class="badge badge-${ms.status==='completed'?'completed':ms.status==='on-track'?'approved':ms.status==='at-risk'?'pending':'rejected'}">${ms.status.replace('-',' ')}</span>
       ${ms.delay>0?`<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent-rose)">+${ms.delay}d</span>`:''}
     </div>`).join('');
+  }); // end forEach
 }
 
 function renderDashboardActivity() {
-  const activities=[{color:'var(--accent-emerald)',text:'DWG-010 Fire Suppression approved by consultant',time:'1h ago'},{color:'var(--accent-rose)',text:'NCR-003 raised: Improper Curing Procedure – Critical',time:'3h ago'},{color:'var(--accent-blue)',text:'MAT-003 Curtain Wall submitted for review',time:'6h ago'},{color:'var(--accent-amber)',text:'HSE-003 Near Miss: Crane swing logged',time:'1d ago'},{color:'var(--accent-violet)',text:'PO-004 HVAC Equipment partial delivery (60%)',time:'2d ago'}];
   const c = document.getElementById('activity-feed'); if(!c)return;
-  c.innerHTML = activities.map(a=>`<div class="activity-item"><div class="activity-dot" style="background:${a.color}"></div><div style="flex:1"><div style="font-size:12.5px;color:var(--text-primary)">${a.text}</div><div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:2px">${a.time}</div></div></div>`).join('');
+  const D = window.APP_DATA;
+  const pd = D.getPD ? D.getPD() : null;
+  const activities = [];
+  if (pd) {
+    // Pull latest real data as activity items
+    const latestDwg = [...(pd.drawings||[])].sort((a,b)=>b.date>a.date?1:-1)[0];
+    if(latestDwg) activities.push({color:'var(--accent-blue)',text:`${latestDwg.id} — ${latestDwg.title} (${latestDwg.status})`,time:latestDwg.date});
+    const openNCRs = (pd.ncr||[]).filter(n=>n.status==='open');
+    if(openNCRs.length) activities.push({color:'var(--accent-rose)',text:`${openNCRs.length} open NCR${openNCRs.length>1?'s':''} — ${openNCRs[0].title}`,time:openNCRs[0].date});
+    const pendingMat = (pd.materials||[]).filter(m=>m.status==='under-review'||m.status==='submitted');
+    if(pendingMat.length) activities.push({color:'var(--accent-amber)',text:`${pendingMat.length} material submittal${pendingMat.length>1?'s':''} pending approval`,time:pendingMat[0].submitDate});
+    const openHSE = (pd.hse?.incidents||[]).filter(i=>i.status==='open');
+    if(openHSE.length) activities.push({color:'var(--accent-orange)',text:`HSE: ${openHSE[0].desc}`,time:openHSE[0].date});
+    const activePO = (pd.procurement||[]).filter(p=>p.status==='active'||p.status==='partially-delivered');
+    if(activePO.length) activities.push({color:'var(--accent-violet)',text:`${activePO[0].item} — ${activePO[0].status}`,time:activePO[0].deliveryDate});
+  }
+  if(!activities.length) {
+    c.innerHTML='<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">No recent activity — add drawings, NCRs or materials to see activity here.</div>';
+    return;
+  }
+  c.innerHTML = activities.map(a=>`<div class="activity-item"><div class="activity-dot" style="background:${a.color}"></div><div style="flex:1"><div style="font-size:12.5px;color:var(--text-primary)">${a.text}</div><div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:2px">${a.time||''}</div></div></div>`).join('');
 }
 
 async function printDashboardPDF() {
@@ -617,7 +710,7 @@ function renderDrawings() {
       <td style="font-size:11px;color:var(--text-secondary);max-width:150px">${d.comments||'—'}</td>
       <td>
         <div style="display:flex;gap:4px">
-          <a class="drive-link" href="${D.LOCAL_DRIVE.drawings}${encodeURIComponent(d.file)}" target="_blank" title="Open file from local drive">Open</a>
+          <button class="drive-link" onclick="openDriveFile('drawings','${d.file}')">📂 Open</button>
           <button class="btn btn-sm btn-secondary" onclick="viewDrawing('${d.id}')">View</button>
           ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editDrawingStatus('${d.id}')">Edit</button>
           <button class="btn btn-sm btn-danger" onclick="deleteDrawing('${d.id}')">Delete</button>
@@ -650,7 +743,7 @@ function viewDrawing(id) {
     </div>
     <div style="margin-top:14px">${inf('Comments',d.comments||'No comments')}</div>
     <div style="margin-top:14px">
-      <a class="drive-link" style="font-size:12px" href="${window.APP_DATA.LOCAL_DRIVE.drawings}${encodeURIComponent(d.file)}" target="_blank">📂 ${d.file}</a>
+      <button class="drive-link" style="font-size:12px" onclick="openDriveFile('drawings','${d.file}')">📂 ${d.file}</button>
     </div>`);
 }
 
@@ -676,14 +769,14 @@ function editDrawingStatus(id) {
     d.status=document.getElementById('edit-status-select').value;
     d.rev=parseInt(document.getElementById('edit-rev').value)||d.rev;
     d.comments=document.getElementById('edit-comments').value;
-    renderDrawings(); saveProjectDataAuto(); showToast('Updated',`${d.id} updated to Rev ${d.rev} — ${d.status}`,'success');
+    renderDrawings(); showToast('Updated',`${d.id} updated to Rev ${d.rev} — ${d.status}`,'success');
   });
 }
 
 function deleteDrawing(id) {
   const data=window.APP_DATA.mockDrawingsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Drawing <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderDrawings(); saveProjectDataAuto(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderDrawings(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddDrawingModal() {
@@ -705,7 +798,7 @@ function openAddDrawingModal() {
   ()=>{
     const id=document.getElementById('nd-id').value||('DWG-0'+String(window.APP_DATA.mockDrawingsData.length+1).padStart(2,'0'));
     window.APP_DATA.mockDrawingsData.unshift({id,title:document.getElementById('nd-title').value||'New Drawing',discipline:document.getElementById('nd-disc').value,rev:parseInt(document.getElementById('nd-rev').value)||1,status:'submitted',submittedBy:'U001',date:document.getElementById('nd-date').value,consultant:document.getElementById('nd-cons').value,file:document.getElementById('nd-file').value||(id+'-Rev1.pdf'),comments:document.getElementById('nd-comments').value});
-    renderDrawings(); saveProjectDataAuto(); showToast('Added',`${id} added to Drawing Register`,'success');
+    renderDrawings(); showToast('Added',`${id} added to Drawing Register`,'success');
   });
 }
 
@@ -753,7 +846,7 @@ function renderMaterials() {
       <td class="td-mono">${m.deliveryDate}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${m.remarks||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.materials}${encodeURIComponent(m.id+'-Rev'+m.rev+'.pdf')}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('materials','${m.id}-Rev${m.rev}.pdf')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewMaterial('${m.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editMaterial('${m.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteMaterial('${m.id}')">Delete</button>
@@ -804,14 +897,14 @@ function editMaterial(id) {
     m.poNo=document.getElementById('em-po').value;
     m.approveDate=document.getElementById('em-adate').value;
     m.remarks=document.getElementById('em-remarks').value;
-    renderMaterials(); saveProjectDataAuto(); showToast('Updated',`${m.id} updated`,'success');
+    renderMaterials(); showToast('Updated',`${m.id} updated`,'success');
   });
 }
 
 function deleteMaterial(id) {
   const data=window.APP_DATA.mockMaterialsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Material <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderMaterials(); saveProjectDataAuto(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderMaterials(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddMaterialModal() {
@@ -837,7 +930,7 @@ function openAddMaterialModal() {
   ()=>{
     const id=document.getElementById('nm-id').value||('MAT-0'+String(window.APP_DATA.mockMaterialsData.length+1).padStart(2,'0'));
     window.APP_DATA.mockMaterialsData.unshift({id,item:document.getElementById('nm-item').value||'New Material',boqRef:document.getElementById('nm-boq').value,poNo:document.getElementById('nm-po').value,supplier:document.getElementById('nm-supplier').value,rev:parseInt(document.getElementById('nm-rev').value)||1,status:'submitted',submitDate:new Date().toISOString().split('T')[0],approveDate:'',deliveryDate:document.getElementById('nm-del').value,qty:parseFloat(document.getElementById('nm-qty').value)||0,unit:document.getElementById('nm-unit').value,remarks:document.getElementById('nm-remarks').value});
-    renderMaterials(); saveProjectDataAuto(); showToast('Added',`${id} added to Material Register`,'success');
+    renderMaterials(); showToast('Added',`${id} added to Material Register`,'success');
   });
 }
 
@@ -865,7 +958,7 @@ function renderMethods() {
       <td><span class="badge badge-${m.hseReview==='Approved'?'approved':'pending'}">${m.hseReview}</span></td>
       <td class="td-mono">${m.date}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.methods}${encodeURIComponent(m.file)}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('methods','${m.file}')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewMethod('${m.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editMethod('${m.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteMethod('${m.id}')">Delete</button>
@@ -910,14 +1003,14 @@ function editMethod(id) {
     m.rev=parseInt(document.getElementById('ems-rev').value)||m.rev;
     m.hseReview=document.getElementById('ems-hse').value;
     m.file=`${m.id}-Rev${m.rev}.pdf`;
-    renderMethods(); saveProjectDataAuto(); showToast('Updated',`${m.id} updated to Rev ${m.rev}`,'success');
+    renderMethods(); showToast('Updated',`${m.id} updated to Rev ${m.rev}`,'success');
   });
 }
 
 function deleteMethod(id) {
   const data=window.APP_DATA.mockMethodsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Method Statement <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderMethods(); saveProjectDataAuto(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderMethods(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddMethodModal() {
@@ -950,7 +1043,7 @@ function openAddMethodModal() {
       hseReview: document.getElementById('nm-hse').value,
       file: document.getElementById('nm-file').value || (id+'-Rev1.pdf')
     });
-    renderMethods(); saveProjectDataAuto(); showToast('Added',`${id} added to Method Statements`,'success');
+    renderMethods(); showToast('Added',`${id} added to Method Statements`,'success');
   });
 }
 
@@ -978,7 +1071,7 @@ function renderTesting() {
       <td>${t.cert?`<span class="td-mono" style="color:var(--accent-emerald)">${t.cert}</span>`:'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${t.remarks}</td>
       <td>
-        ${t.file?`<a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.testing}${encodeURIComponent(t.file)}" target="_blank">Open</a>`:'<span style="color:var(--text-muted);font-size:11px">No file</span>'}
+        ${t.file?`<button class="drive-link" onclick="openDriveFile('testing','${t.file}')">📂 Open</button>`:'<span style="color:var(--text-muted);font-size:11px">No file</span>'}
         <button class="btn btn-sm btn-secondary" onclick="viewTest('${t.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editTesting('${t.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteTesting('${t.id}')">Delete</button>
@@ -1101,7 +1194,7 @@ function renderNCR() {
       <td style="font-size:11px;color:var(--text-secondary)">${n.location||'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${n.remarks||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.ncr}${encodeURIComponent(n.file)}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('ncr','${n.file}')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewNCR('${n.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editNCR('${n.id}')">Edit</button>
         ${n.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeNCR('${n.id}')">Close</button>`:''}
@@ -1171,7 +1264,7 @@ function renderRFI() {
       <td class="td-mono">${r.closureDate||'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${r.remarks||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.rfi}${encodeURIComponent(r.file)}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('rfi','${r.file}')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewRFI('${r.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editRFI('${r.id}')">Edit</button>
         ${r.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeRFI('${r.id}')">Close</button>`:''}
@@ -1235,7 +1328,7 @@ function renderSI() {
       <td style="color:var(--accent-amber);font-family:'DM Mono',monospace">${s.costImpact||'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${s.remarks||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.si}${encodeURIComponent(s.file)}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('si','${s.file}')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewSI('${s.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editSI('${s.id}')">Edit</button>
         ${s.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeSI('${s.id}')">Close</button>`:''}
@@ -1365,7 +1458,7 @@ function renderProcurement() {
       <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${p.performance}%;background:${pc};transition:width 1s"></div></div><span style="font-family:'DM Mono',monospace;font-size:10px;color:${pc}">${p.performance||'—'}${p.performance?'%':''}</span></div></td>
       <td style="font-size:11px;color:var(--text-secondary)">${p.remarks||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.procurement}${encodeURIComponent(p.id+'.pdf')}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('procurement','${p.id}.pdf')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewPO('${p.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editPO('${p.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deletePO('${p.id}')">Delete</button>
@@ -1379,8 +1472,18 @@ function renderProcurement() {
 
 function renderProcurementChart() {
   const ctx=document.getElementById('procurement-chart'); if(!ctx)return;
-  if(STATE.charts.procurement) STATE.charts.procurement.destroy();
+  if(STATE.charts.procurement){STATE.charts.procurement.destroy();STATE.charts.procurement=null;}
   const data=window.APP_DATA.mockProcurementData;
+  if(!data||!data.length){
+    const parent=ctx.parentElement;
+    const existing=parent.querySelector('.empty-chart-msg');
+    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No purchase orders yet';parent.appendChild(e);}
+    ctx.style.display='none'; return;
+  }
+  ctx.style.display='';
+  const parent=ctx.parentElement;
+  const existing=parent.querySelector('.empty-chart-msg');
+  if(existing) existing.remove();
   STATE.charts.procurement=new Chart(ctx,{type:'doughnut',data:{labels:data.map(p=>p.id),datasets:[{data:data.map(p=>p.poValue),backgroundColor:['#3b82f6','#10b981','#f59e0b','#f43f5e','#8b5cf6','#06b6d4'],borderWidth:0}]},options:{...chartDefaults(),cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#8a9bb8',font:{size:10}}}}}});
 }
 
@@ -1480,10 +1583,22 @@ function renderProgress() {
 
 function renderFullSCurve() {
   const ctx=document.getElementById('progress-scurve-chart'); if(!ctx)return;
-  if(STATE.charts.progressScurve) STATE.charts.progressScurve.destroy();
+  if(STATE.charts.progressScurve) { STATE.charts.progressScurve.destroy(); STATE.charts.progressScurve=null; }
   const d=window.APP_DATA.mockProgressData.sCurveData;
+  if(!d || !d.length) {
+    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+    const parent=ctx.parentElement;
+    const existing=parent.querySelector('.empty-chart-msg');
+    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:40px;color:var(--text-muted);font-size:12px';e.textContent='No S-Curve data yet — update progress milestones to see chart';parent.appendChild(e);}
+    return;
+  }
+  const emptyMsg=ctx.parentElement.querySelector('.empty-chart-msg');
+  if(emptyMsg) emptyMsg.remove();
+  const pvAll = d.flatMap(x=>[x.planned,x.actual]).filter(v=>v!=null);
+  const pvMax = pvAll.length ? Math.max(...pvAll) : 100;
+  const pvYMax = Math.ceil(Math.min(100, pvMax * 1.15) / 10) * 10;
   // Use same options as dashboard for consistency
-  STATE.charts.progressScurve=new Chart(ctx,{type:'line',data:{labels:d.map(x=>x.month),datasets:[{label:'Planned %',data:d.map(x=>x.planned),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true},{label:'Actual %',data:d.map(x=>x.actual),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.08)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true,spanGaps:false}]},options:chartDefaults({scales:{y:{max:60,ticks:{callback:v=>v+'%'}}}})});
+  STATE.charts.progressScurve=new Chart(ctx,{type:'line',data:{labels:d.map(x=>x.month),datasets:[{label:'Planned %',data:d.map(x=>x.planned),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true},{label:'Actual %',data:d.map(x=>x.actual),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.08)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true,spanGaps:false}]},options:chartDefaults({scales:{y:{min:0,max:pvYMax,ticks:{callback:v=>v+'%'}}}})});
 }
 
 function renderDisciplineProgressBars() {
@@ -1500,6 +1615,13 @@ function renderDisciplineProgressBars() {
 
 function openUpdateProgressModal() {
   const data = window.APP_DATA.mockProgressData;
+  // Seed default disciplines for brand new projects
+  if (data.disciplineProgress.length === 0) {
+    data.disciplineProgress = window.APP_DATA.DISCIPLINES.slice(0,8).map(n=>({name:n,progress:0,planned:0}));
+  }
+  if (data.milestones.length === 0) {
+    data.milestones = [{id:'MS01',name:'Project Start',planned:window.APP_DATA.ACTIVE_PROJECT.startDate||'',actual:'',status:'on-track',delay:0},{id:'MS02',name:'Practical Completion',planned:window.APP_DATA.ACTIVE_PROJECT.plannedEnd||'',actual:'',status:'on-track',delay:0}];
+  }
   const milestonesHTML = data.milestones.map((m, i) => `
     <div class="form-row" style="margin-bottom:8px">
       <div class="form-group"><label>${m.name}</label><input class="form-control" id="ms-${i}" type="date" value="${m.actual || ''}" placeholder="Actual date"></div>
@@ -1537,10 +1659,21 @@ function openUpdateProgressModal() {
       });
       data.disciplineProgress.forEach((d, i) => {
         const input = document.getElementById(`disc-${i}`);
-        if (input) d.progress = parseInt(input.value) || 0;
+        if (input) d.progress = Math.min(100, Math.max(0, parseInt(input.value) || 0));
       });
+      // Recalculate overall project progress as weighted average of discipline progress
+      if (data.disciplineProgress.length > 0) {
+        const avg = Math.round(data.disciplineProgress.reduce((s,d)=>s+d.progress,0) / data.disciplineProgress.length);
+        window.APP_DATA.ACTIVE_PROJECT.currentProgress = avg;
+        // Persist updated progress on project record
+        const pRec = window.APP_DATA.PROJECTS.find(p=>p.id===window.APP_DATA.ACTIVE_PROJECT.id);
+        if (pRec) pRec.currentProgress = avg;
+      }
+      if (window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
       renderProgress();
       renderDashboard();
+      updateProjectDisplay(window.APP_DATA.ACTIVE_PROJECT);
+      updateNavBadges();
       showToast('Progress Updated', 'All progress values have been refreshed', 'success');
     });
 }
@@ -1560,8 +1693,35 @@ async function printProgressPDF() {
 
 // ── HSE ───────────────────────────────────────────────────────
 function renderHSE() {
-  const {incidents,stats}=window.APP_DATA.mockHSEData;
-  renderRegisterStats('hse-stats',[{label:'Safe Man Hours',value:(stats.safeManHours/1000).toFixed(0)+'K',color:'emerald'},{label:'LTIR',value:stats.ltir,color:'amber'},{label:'Near Misses',value:stats.nearMiss,color:'rose'},{label:'Toolbox Talks',value:stats.toolboxTalks,color:'blue'}]);
+  // Always read directly from getPD() — never from any cached reference
+  const pd = window.APP_DATA.getPD();
+  const hseData = pd.hse || { incidents:[], stats:{lti:0,nearMiss:0,toolboxTalks:0,safeManHours:0,ltir:0} };
+  const incidents = Array.isArray(hseData.incidents) ? hseData.incidents : [];
+  const stats = hseData.stats || {lti:0,nearMiss:0,toolboxTalks:0,safeManHours:0,ltir:0};
+  // Compute ALL counts live from incidents — no fallback to old stored totals
+  const liveNearMiss = incidents.filter(i=>i.type==='near-miss').length;
+  const liveLTIs     = incidents.filter(i=>i.type==='incident' && (i.casualties||0)>0).length;
+  // safeManHours and ltir are manually logged — read from stats but default strictly to 0
+  const liveSafeHours = (typeof stats.safeManHours === 'number') ? stats.safeManHours : 0;
+  const liveLTIR      = (typeof stats.ltir === 'number') ? stats.ltir : 0;
+  const liveToolboxTalks = (typeof stats.toolboxTalks === 'number') ? stats.toolboxTalks : 0;
+  const liveLTICount  = (typeof stats.lti === 'number') ? stats.lti : 0;
+  const safeHoursDisplay = liveSafeHours >= 1000 ? (liveSafeHours/1000).toFixed(0)+'K' : liveSafeHours.toString();
+  renderRegisterStats('hse-stats',[
+    {label:'Safe Man Hours', value:safeHoursDisplay, color:'emerald'},
+    {label:'LTIR Score',     value:liveLTIR,          color:'amber'},
+    {label:'Toolbox Talks',  value:liveToolboxTalks,  color:'blue'},
+    {label:'LTIs Recorded',  value:liveLTICount,      color:'rose'}
+  ]);
+  // Update the HSE Performance panel (these have IDs, not hardcoded anymore)
+  const ph=document.getElementById('hse-perf-hours');
+  const pl=document.getElementById('hse-perf-ltir');
+  const pt=document.getElementById('hse-perf-toolbox');
+  const pi=document.getElementById('hse-perf-lti');
+  if(ph) ph.textContent = safeHoursDisplay;
+  if(pl) pl.textContent = liveLTIR.toFixed ? liveLTIR.toFixed(2) : liveLTIR;
+  if(pt) pt.textContent = liveToolboxTalks;
+  if(pi) pi.textContent = liveLTICount;
   renderTable('hse-table-body',incidents,i=>`
     <tr>
       <td class="td-mono">${i.id}</td>
@@ -1574,7 +1734,7 @@ function renderHSE() {
       <td style="font-size:11px;color:var(--text-secondary)">${i.location||'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${i.correctiveAction||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.hse}${encodeURIComponent(i.id+'.pdf')}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('hse','${i.id}.pdf')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewHSE('${i.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editHSE('${i.id}')">Edit</button>
         ${i.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeHSE('${i.id}')">Close</button>`:''}
@@ -1587,8 +1747,25 @@ function renderHSE() {
 
 function renderHSEChart() {
   const ctx=document.getElementById('hse-chart'); if(!ctx)return;
-  if(STATE.charts.hse) STATE.charts.hse.destroy();
-  STATE.charts.hse=new Chart(ctx,{type:'doughnut',data:{labels:['Near Miss','Incident','LTI'],datasets:[{data:[15,3,1],backgroundColor:['#f59e0b','#f43f5e','#8b5cf6'],borderWidth:0}]},options:{...chartDefaults(),cutout:'60%',plugins:{legend:{labels:{color:'#8a9bb8',font:{size:11}}}}}});
+  if(STATE.charts.hse){STATE.charts.hse.destroy();STATE.charts.hse=null;}
+  const pd=window.APP_DATA.getPD();
+  const incidents = (pd.hse && Array.isArray(pd.hse.incidents)) ? pd.hse.incidents : [];
+  const nearMiss = incidents.filter(i=>i.type==='near-miss').length;
+  const incident  = incidents.filter(i=>i.type==='incident').length;
+  const lti       = incidents.filter(i=>i.type==='incident' && i.casualties>0).length;
+  const data = [nearMiss, incident, lti];
+  const hasData = data.some(v=>v>0);
+  if(!hasData){
+    const parent=ctx.parentElement;
+    const existing=parent.querySelector('.empty-chart-msg');
+    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No HSE incidents logged yet';parent.appendChild(e);}
+    ctx.style.display='none'; return;
+  }
+  ctx.style.display='';
+  const parent=ctx.parentElement;
+  const existing=parent.querySelector('.empty-chart-msg');
+  if(existing) existing.remove();
+  STATE.charts.hse=new Chart(ctx,{type:'doughnut',data:{labels:['Near Miss','Incident','LTI'],datasets:[{data,backgroundColor:['#f59e0b','#f43f5e','#8b5cf6'],borderWidth:0}]},options:{...chartDefaults(),cutout:'60%',plugins:{legend:{labels:{color:'#8a9bb8',font:{size:11}}}}}});
 }
 
 function openAddHSEModal() {
@@ -1609,16 +1786,17 @@ function openAddHSEModal() {
     <div class="form-group"><label class="form-label">Root Cause</label><input class="form-control" id="nh-root" placeholder="Root cause analysis"></div>
     <div class="form-group"><label class="form-label">Corrective Action</label><textarea class="form-control" id="nh-action" rows="2" placeholder="Corrective actions taken"></textarea></div>`,
   ()=>{
-    const id='HSE-0'+String(window.APP_DATA.mockHSEData.incidents.length+1).padStart(2,'0');
-    window.APP_DATA.mockHSEData.incidents.unshift({id,type:document.getElementById('nh-type').value,desc:document.getElementById('nh-desc').value||'HSE Event',date:new Date().toISOString().split('T')[0],severity:document.getElementById('nh-sev').value,status:'open',casualties:parseInt(document.getElementById('nh-cas').value)||0,location:document.getElementById('nh-loc').value,rootCause:document.getElementById('nh-root').value,correctiveAction:document.getElementById('nh-action').value,investigator:'U001'});
+    const hseInc=window.APP_DATA.getPD().hse.incidents;
+    const id='HSE-0'+String(hseInc.length+1).padStart(2,'0');
+    hseInc.unshift({id,type:document.getElementById('nh-type').value,desc:document.getElementById('nh-desc').value||'HSE Event',date:new Date().toISOString().split('T')[0],severity:document.getElementById('nh-sev').value,status:'open',casualties:parseInt(document.getElementById('nh-cas').value)||0,location:document.getElementById('nh-loc').value,rootCause:document.getElementById('nh-root').value,correctiveAction:document.getElementById('nh-action').value,investigator:'U001'});
     renderHSE(); showToast('Logged',`${id} has been logged`,'warning');
   });
 }
 
-function closeHSE(id) { const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(i){i.status='closed';renderHSE();showToast('Closed',`${id} closed`,'success');} }
-function deleteHSE(id) { const data=window.APP_DATA.mockHSEData.incidents; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete HSE <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderHSE(); showToast('Deleted',`${id} deleted`,'success'); }); }
+function closeHSE(id) { const i=window.APP_DATA.getPD().hse.incidents.find(x=>x.id===id); if(i){i.status='closed';renderHSE();showToast('Closed',`${id} closed`,'success');} }
+function deleteHSE(id) { const data=window.APP_DATA.getPD().hse.incidents; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete HSE <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderHSE(); showToast('Deleted',`${id} deleted`,'success'); }); }
 function editHSE(id) {
-  const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(!i)return;
+  const i=window.APP_DATA.getPD().hse.incidents.find(x=>x.id===id); if(!i)return;
   openModal('Edit HSE Incident','',`
     <div class="form-row">
       <div class="form-group"><label class="form-label">HSE ID</label><input class="form-control" id="eh-id" value="${i.id}"></div>
@@ -1651,8 +1829,32 @@ function editHSE(id) {
   });
 }
 
+function openUpdateHSEStatsModal() {
+  const stats = window.APP_DATA.getPD().hse.stats;
+  openModal('Update HSE Statistics','',`
+    <div style="margin-bottom:8px;font-size:12px;color:var(--text-muted)">Enter cumulative project HSE statistics. These are manually tracked values.</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Safe Man Hours</label><input class="form-control" id="hs-hours" type="number" min="0" value="${stats.safeManHours||0}" placeholder="e.g. 284000"></div>
+      <div class="form-group"><label class="form-label">LTIR Score</label><input class="form-control" id="hs-ltir" type="number" min="0" step="0.01" value="${stats.ltir||0}" placeholder="e.g. 0.35"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Toolbox Talks Conducted</label><input class="form-control" id="hs-toolbox" type="number" min="0" value="${stats.toolboxTalks||0}" placeholder="e.g. 48"></div>
+      <div class="form-group"><label class="form-label">LTIs Recorded</label><input class="form-control" id="hs-lti" type="number" min="0" value="${stats.lti||0}" placeholder="e.g. 1"></div>
+    </div>`,
+  ()=>{
+    const s = window.APP_DATA.getPD().hse.stats;
+    s.safeManHours = parseFloat(document.getElementById('hs-hours').value) || 0;
+    s.ltir         = parseFloat(document.getElementById('hs-ltir').value)  || 0;
+    s.toolboxTalks = parseInt(document.getElementById('hs-toolbox').value) || 0;
+    s.lti          = parseInt(document.getElementById('hs-lti').value)     || 0;
+    if(window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
+    renderHSE();
+    showToast('HSE Stats Updated', 'Safety statistics saved for this project', 'success');
+  }, 'Save Stats');
+}
+
 function viewHSE(id) {
-  const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(!i)return;
+  const i=window.APP_DATA.getPD().hse.incidents.find(x=>x.id===id); if(!i)return;
   openModal('HSE Incident Detail','',`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       ${inf('ID',i.id)}${inf('Type',i.type)}
@@ -1693,7 +1895,7 @@ function renderSubcontractors() {
       <td class="td-mono">${formatCurrency(s.paidToDate)}</td>
       <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${s.performance}%;background:${pc}"></div></div><span style="font-family:'DM Mono',monospace;font-size:11px;color:${pc}">${s.performance||'—'}${s.performance?'%':''}</span></div></td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.subcontractors}${encodeURIComponent(s.id+'.pdf')}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('subcontractors','${s.id}.pdf')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewSub('${s.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editSub('${s.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteSub('${s.id}')">Delete</button>
@@ -1801,7 +2003,23 @@ function printSubPDF() {
 // ── COST ─────────────────────────────────────────────────────
 function renderCost() {
   const D=window.APP_DATA.mockCostData;
-  renderRegisterStats('cost-stats',[{label:'Revised Budget',value:formatMillions(D.revisedBudget),color:'blue'},{label:'Actual Cost',value:formatMillions(D.actualCost),color:'emerald'},{label:'Forecast Final',value:formatMillions(D.forecastFinalCost),color:'amber'},{label:'Cost Variance',value:formatMillions(D.costVariance),color:'rose'}]);
+  // Always compute live totals purely from categories — never fall back to stale stored fields
+  const liveRevBudget = D.categories.reduce((a,c)=>a+(c.budget||0), 0);
+  const liveActual    = D.categories.reduce((a,c)=>a+(c.actual||0), 0);
+  const liveForecast  = D.categories.reduce((a,c)=>a+(c.forecast||0), 0);
+  const liveVariance  = liveForecast - liveRevBudget;
+  // Update hero summary cards
+  const heroB=document.getElementById('cost-hero-budget');
+  const heroA=document.getElementById('cost-hero-actual');
+  const heroF=document.getElementById('cost-hero-forecast');
+  if(heroB) heroB.textContent=formatMillions(liveRevBudget);
+  if(heroA) heroA.textContent=formatMillions(liveActual);
+  if(heroF){
+    const varianceFmt=Math.abs(liveVariance/1e6).toFixed(1)+'M';
+    const arrow=liveVariance>0?'▲':'▼';
+    heroF.innerHTML=formatMillions(liveForecast)+(liveVariance!==0?` <span style="font-size:11px">${arrow} ${varianceFmt}</span>`:'');
+  }
+  renderRegisterStats('cost-stats',[{label:'Revised Budget',value:formatMillions(liveRevBudget),color:'blue'},{label:'Actual Cost',value:formatMillions(liveActual),color:'emerald'},{label:'Forecast Final',value:formatMillions(liveForecast),color:'amber'},{label:'Cost Variance',value:formatMillions(liveVariance),color:liveVariance>0?'rose':'emerald'}]);
   renderTable('cost-table-body',D.categories,c=>{
     const fv=c.forecast-c.budget, vc=fv>0?'var(--accent-rose)':'var(--accent-emerald)';
     return `<tr>
@@ -1813,7 +2031,7 @@ function renderCost() {
       <td class="td-mono" style="color:${vc}">${fv>0?'+':''}${formatCurrency(fv)}</td>
       <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,(c.actual/c.budget*100)).toFixed(0)}%"></div></div></td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.cost}${encodeURIComponent(c.name.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('cost',c.name.replace(/ /g,'-')+'.pdf')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewCostCategory('${c.name}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCostCategory('${c.name}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCostCategory('${c.name}')">Delete</button>
@@ -1826,8 +2044,18 @@ function renderCost() {
 
 function renderCostChart() {
   const ctx=document.getElementById('cost-chart'); if(!ctx)return;
-  if(STATE.charts.cost) STATE.charts.cost.destroy();
+  if(STATE.charts.cost){STATE.charts.cost.destroy();STATE.charts.cost=null;}
   const cats=window.APP_DATA.mockCostData.categories;
+  if(!cats||!cats.length){
+    const parent=ctx.parentElement;
+    const existing=parent.querySelector('.empty-chart-msg');
+    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No cost categories yet — click ➕ Add Category to begin';parent.appendChild(e);}
+    ctx.style.display='none'; return;
+  }
+  ctx.style.display='';
+  const parent=ctx.parentElement;
+  const existing=parent.querySelector('.empty-chart-msg');
+  if(existing) existing.remove();
   STATE.charts.cost=new Chart(ctx,{type:'bar',data:{labels:cats.map(c=>c.name.length>12?c.name.substring(0,12)+'…':c.name),datasets:[{label:'Budget',data:cats.map(c=>+(c.budget/1e6).toFixed(2)),backgroundColor:'rgba(59,130,246,0.3)',borderColor:'#3b82f6',borderWidth:1,borderRadius:4},{label:'Forecast',data:cats.map(c=>+(c.forecast/1e6).toFixed(2)),backgroundColor:'rgba(244,63,94,0.5)',borderColor:'#f43f5e',borderWidth:1,borderRadius:4},{label:'Actual',data:cats.map(c=>+(c.actual/1e6).toFixed(2)),backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10b981',borderWidth:1,borderRadius:4}]},options:chartDefaults({scales:{y:{ticks:{callback:v=>'SAR '+v+'M'}}}})});
 }
 
@@ -1863,8 +2091,33 @@ function editCostCategory(name) {
     c.committed=parseFloat(document.getElementById('ec-committed').value)||c.committed;
     c.actual=parseFloat(document.getElementById('ec-actual').value)||c.actual;
     c.forecast=parseFloat(document.getElementById('ec-forecast').value)||c.forecast;
+    if (window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
     renderCost(); showToast('Updated',`${c.name} updated`,'success');
   });
+}
+
+function openAddCostCategoryModal() {
+  openModal('Add Cost Category','',`
+    <div class="form-group"><label class="form-label">Category Name</label><input class="form-control" id="ac-name" placeholder="e.g. Structural Works"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Budget (SAR)</label><input class="form-control" id="ac-budget" type="number" placeholder="0" value="0"></div>
+      <div class="form-group"><label class="form-label">Committed (SAR)</label><input class="form-control" id="ac-committed" type="number" placeholder="0" value="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Actual (SAR)</label><input class="form-control" id="ac-actual" type="number" placeholder="0" value="0"></div>
+      <div class="form-group"><label class="form-label">Forecast (SAR)</label><input class="form-control" id="ac-forecast" type="number" placeholder="0" value="0"></div>
+    </div>`,
+  ()=>{
+    const name=document.getElementById('ac-name').value.trim();
+    if(!name){showToast('Error','Category name is required','error');return;}
+    const budget=parseFloat(document.getElementById('ac-budget').value)||0;
+    const committed=parseFloat(document.getElementById('ac-committed').value)||0;
+    const actual=parseFloat(document.getElementById('ac-actual').value)||0;
+    const forecast=parseFloat(document.getElementById('ac-forecast').value)||budget;
+    window.APP_DATA.mockCostData.categories.push({name,budget,committed,actual,forecast});
+    if (window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
+    renderCost(); showToast('Added',`${name} added to Cost Control`,'success');
+  },'Add Category');
 }
 
 function openAddVariationOrderModal() {
@@ -1923,7 +2176,7 @@ function renderManpower() {
       <td>${w.actual?`<div class="progress-bar"><div class="progress-fill ${w.actual<w.target*0.9?'amber':''}" style="width:${Math.min(100,w.actual/w.target*100).toFixed(0)}%"></div></div>`:'—'}</td>
       <td>${w.actual?`<span style="font-family:'DM Mono',monospace;font-size:11px;color:${w.actual>=w.target*0.95?'var(--accent-emerald)':'var(--accent-amber)'}">${(w.actual/w.target*100).toFixed(0)}%</span>`:'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.manpower}${encodeURIComponent(w.week.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('progress',w.week.replace(/ /g,'-')+'.pdf')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewManpowerWeek('${w.week}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editManpowerWeek('${w.week}')">Edit</button>
         <button class="btn btn-sm btn-secondary" onclick="triggerImport('manpower')">Import</button>`:''}
@@ -1945,8 +2198,18 @@ function renderManpower() {
 }
 function renderManpowerChart() {
   const ctx=document.getElementById('manpower-chart'); if(!ctx)return;
-  if(STATE.charts.manpower) STATE.charts.manpower.destroy();
+  if(STATE.charts.manpower) { STATE.charts.manpower.destroy(); STATE.charts.manpower=null; }
   const w=window.APP_DATA.mockManpowerData.weekly;
+  if(!w || !w.length){
+    const parent=ctx.parentElement;
+    const existing=parent.querySelector('.empty-chart-msg');
+    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No weekly manpower logs yet — add a Daily Log Entry to begin';parent.appendChild(e);}
+    ctx.style.display='none'; return;
+  }
+  ctx.style.display='';
+  const parent=ctx.parentElement;
+  const existing=parent.querySelector('.empty-chart-msg');
+  if(existing) existing.remove();
   STATE.charts.manpower=new Chart(ctx,{type:'bar',data:{labels:w.map(x=>x.week),datasets:[{label:'Target',data:w.map(x=>x.target),backgroundColor:'rgba(59,130,246,0.3)',borderColor:'#3b82f6',borderWidth:1,borderRadius:4},{label:'Actual',data:w.map(x=>x.actual),backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10b981',borderWidth:1,borderRadius:4}]},options:chartDefaults()});
 }
 
@@ -2127,7 +2390,7 @@ function renderCloseout() {
       <td class="td-mono">${c.assignedTo}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${c.remarks||'—'}</td>
       <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.closeout}${encodeURIComponent(c.id+'.pdf')}" target="_blank">Open</a>
+        <button class="drive-link" onclick="openDriveFile('closeout','${c.id}.pdf')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewCloseout('${c.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCloseout('${c.id}')">Edit</button>
         ${c.status!=='complete'?`<button class="btn btn-sm btn-success" onclick="completeCloseout('${c.id}')">✓ Complete</button>`:'<span style="color:var(--accent-emerald);font-size:12px">✓ Done</span>'}
@@ -2250,11 +2513,18 @@ function openAddProjectModal() {
   ()=>{
     const proj={id:document.getElementById('np-id').value||('PRJ-0'+String(window.APP_DATA.PROJECTS.length+1).padStart(2,'0')),code:document.getElementById('np-code').value||'NEW-2026',name:document.getElementById('np-name').value||'New Project',client:document.getElementById('np-client').value,contractor:document.getElementById('np-contractor').value,consultant:document.getElementById('np-consultant').value,location:document.getElementById('np-location').value,contractValue:parseFloat(document.getElementById('np-value').value)||0,currency:'SAR',currentProgress:0,status:document.getElementById('np-status').value,startDate:document.getElementById('np-start').value,plannedEnd:document.getElementById('np-end').value,description:document.getElementById('np-desc').value};
     window.APP_DATA.PROJECTS.push(proj);
+    // Initialize empty data store for new project
+    window.APP_DATA.getProjectStore(proj.id);
+    // Switch to the new project
+    window.APP_DATA.switchProjectData(proj.id);
+    updateProjectDisplay(proj);
     const switcher=document.getElementById('project-switcher');
-    if(switcher){ const opt=document.createElement('option'); opt.value=proj.id; opt.textContent=proj.code+' — '+proj.name.substring(0,28)+'…'; switcher.appendChild(opt); }
-    renderProjects();
-    saveProjectDataAuto();
-    showToast('Project Added',proj.name,'success');
+    if(switcher){ const opt=document.createElement('option'); opt.value=proj.id; opt.textContent=proj.code+' — '+(proj.name.length>28?proj.name.substring(0,28)+'…':proj.name); switcher.appendChild(opt); switcher.value=proj.id; }
+    updateNavBadges();
+    if(window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
+    // Navigate to dashboard so user sees fresh empty project
+    navigateTo('dashboard');
+    showToast('Project Added ✓', proj.name + ' — active with empty registers', 'success');
   });
 }
 
@@ -2303,12 +2573,22 @@ function capitalize(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 function debounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms);};}
 
 // ── MODAL ─────────────────────────────────────────────────────
-function openModal(title,subtitle,content,onSave) {
+function openModal(title,subtitle,content,onSave,_btnLabel) {
   document.getElementById('modal-title').textContent=title;
   document.getElementById('modal-body').innerHTML=content;
-  const saveBtn=document.getElementById('modal-save-btn');
-  saveBtn.style.display=onSave?'':'none';
-  saveBtn.onclick=()=>{if(onSave)onSave();closeModal();};
+  // Replace save button to remove stale event listeners
+  const oldBtn = document.getElementById('modal-save-btn');
+  const newBtn = oldBtn.cloneNode(true);
+  oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+  newBtn.style.display = onSave ? '' : 'none';
+  newBtn.textContent = (typeof _btnLabel==='string' && _btnLabel) ? _btnLabel : 'Save';
+  newBtn.addEventListener('click', async () => {
+    if (!onSave) { closeModal(); return; }
+    try {
+      const result = await Promise.resolve(onSave());
+      if (result !== false) closeModal();
+    } catch(e) { console.error('Modal save error:',e); closeModal(); }
+  });
   document.getElementById('modal-overlay').classList.add('active');
 }
 
@@ -2333,138 +2613,202 @@ function chartDefaults(o={}){
   return {...base,...o};
 }
 
-// ── LANGUAGE TOGGLE (EN / AR) ──────────────────────────────────
-const TRANSLATIONS = {
-  en: {
-    'Dashboard Overview': 'Dashboard Overview',
-    'Project Management': 'Project Management',
-    'Drawing Register': 'Drawing Register',
-    'Material Submittal Register': 'Material Submittal Register',
-    'Method Statement Register': 'Method Statement Register',
-    'Test & Commissioning Register': 'Test & Commissioning Register',
-    'NCR / RFI / Site Instructions': 'NCR / RFI / Site Instructions',
-    'Procurement Tracker': 'Procurement Tracker',
-    'Progress Tracker': 'Progress Tracker',
-    'HSE Register': 'HSE Register',
-    'Subcontractor Management': 'Subcontractor Management',
-    'Cost Control': 'Cost Control',
-    'Manpower & Equipment': 'Manpower & Equipment',
-    'Project Closeout': 'Project Closeout',
-    'Active Project': 'Active Project',
-    'ADMIN': 'ADMIN', 'OPERATOR': 'OPERATOR',
-    'Overview': 'Overview',
-    'Document Control': 'Document Control',
-    'Site Management': 'Site Management',
-    'Commercial': 'Commercial',
-    'Closeout': 'Closeout',
-  },
-  ar: {
-    'Dashboard Overview': 'نظرة عامة على لوحة القيادة',
-    'Project Management': 'إدارة المشاريع',
-    'Drawing Register': 'سجل الرسومات',
-    'Material Submittal Register': 'سجل تقديم المواد',
-    'Method Statement Register': 'سجل بيانات الطريقة',
-    'Test & Commissioning Register': 'سجل الاختبار والتشغيل',
-    'NCR / RFI / Site Instructions': 'تقارير عدم المطابقة / استفسارات المعلومات',
-    'Procurement Tracker': 'متابعة المشتريات',
-    'Progress Tracker': 'متابعة التقدم',
-    'HSE Register': 'سجل الصحة والسلامة والبيئة',
-    'Subcontractor Management': 'إدارة المقاولين من الباطن',
-    'Cost Control': 'التحكم في التكاليف',
-    'Manpower & Equipment': 'القوى العاملة والمعدات',
-    'Project Closeout': 'إغلاق المشروع',
-    'Active Project': 'المشروع النشط',
-    'ADMIN': 'مسؤول', 'OPERATOR': 'مشغّل',
-    'Overview': 'نظرة عامة',
-    'Document Control': 'التحكم في الوثائق',
-    'Site Management': 'إدارة الموقع',
-    'Commercial': 'التجاري',
-    'Closeout': 'الإغلاق',
-  }
-};
+// ── LOCAL DRIVE FILE OPENER ──────────────────────────────────
+// Browsers block file:/// from http:// pages. This function:
+// 1. Tries direct href (works when HTML opened as local file)  
+// 2. Falls back to showing the path with copy-to-clipboard
+function openDriveFile(folder, filename) {
+  var folderMap = window.APP_DATA.LOCAL_DRIVE;
+  var base = (folderMap[folder] || folderMap.root || '').replace(/\/+$/, '') + '/';
+  var safeName = String(filename).replace(/ /g, '%20');
+  var fileUrl = base + safeName;
 
-STATE.language = 'en';
+  var folderNames = {
+    drawings:'Drawings', materials:'Materials', methods:'Methods', testing:'Testing',
+    ncr:'NCR', rfi:'RFI', si:'SI', hse:'HSE', procurement:'Procurement',
+    subcontractors:'Subcontractors', closeout:'Closeout', progress:'Progress', root:''
+  };
+  var sub = folderNames[folder] !== undefined ? folderNames[folder] : folder;
+  var winPath = sub
+    ? 'D:\\Construction Innovation\\Projects\\' + sub + '\\' + filename
+    : 'D:\\Construction Innovation\\Projects\\' + filename;
 
-function toggleLanguage() {
-  STATE.language = STATE.language === 'en' ? 'ar' : 'en';
-  const isAr = STATE.language === 'ar';
-  const btn = document.getElementById('lang-toggle');
-  if (btn) btn.textContent = isAr ? 'AR' : 'EN';
-  document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
-  document.documentElement.setAttribute('lang', isAr ? 'ar' : 'en');
-  // Translate nav section labels
-  document.querySelectorAll('.nav-section-label').forEach(el => {
-    const t = TRANSLATIONS[STATE.language][el.textContent.trim()];
-    if (t) el.textContent = t;
-  });
-  // Translate nav items (text nodes, not the icon/badge)
-  document.querySelectorAll('.nav-item').forEach(el => {
-    const icon = el.querySelector('.nav-icon');
-    const badge = el.querySelector('.nav-badge');
-    const pageTitles = { dashboard: isAr?'لوحة القيادة':'Dashboard', projects: isAr?'المشاريع':'Projects', drawings: isAr?'سجل الرسومات':'Drawing Register', materials: isAr?'تقديم المواد':'Material Submittals', methods: isAr?'بيانات الطريقة':'Method Statements', testing: isAr?'الاختبار والتشغيل':'Test & Commissioning', ncr: isAr?'تقارير عدم المطابقة':'NCR / RFI / SI', procurement: isAr?'المشتريات':'Procurement Tracker', progress: isAr?'التقدم':'Progress Tracker', hse: isAr?'سجل HSE':'HSE Register', subcontractors: isAr?'المقاولون':'Subcontractors', cost: isAr?'التكاليف':'Cost Control', manpower: isAr?'القوى العاملة':'Manpower & Equipment', closeout: isAr?'الإغلاق':'Project Closeout' };
-    const page = el.dataset.page;
-    if (page && pageTitles[page]) {
-      el.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) n.textContent = ' ' + pageTitles[page]; });
-    }
-  });
-  // Translate sidebar labels
-  const projLabel = document.querySelector('.proj-label');
-  if (projLabel) projLabel.textContent = isAr ? 'المشروع النشط' : 'Active Project';
-  // Translate header title
-  const titleMap = TRANSLATIONS[STATE.language];
-  const hTitle = document.getElementById('header-page-title');
-  if (hTitle) { const t = titleMap[hTitle.textContent]; if(t) hTitle.textContent = t; }
-  // Re-render page for table labels update
-  renderPage(STATE.currentPage);
-  showToast(isAr ? 'اللغة' : 'Language', isAr ? 'تم التبديل إلى العربية' : 'Switched to English', 'info');
-}
+  // Show toast with clickable link — user clicks it directly (bypasses popup blocker)
+  var toastId = 'drv-' + Date.now();
+  var toast = document.createElement('div');
+  toast.className = 'toast info';
+  toast.id = toastId;
+  toast.style.cssText = 'max-width:460px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px';
 
-// ── PROJECT DATA SAVE / IMPORT (UI wrappers) ───────────────────
-function saveAndExportProjectData() {
-  // First auto-save to localStorage
-  const lsOk = window.APP_DATA.saveProjectData();
-  // Then download JSON file
-  window.APP_DATA.exportProjectData();
-  showToast('Project Data Saved', lsOk ? 'Saved to local storage & downloaded as JSON backup' : 'Downloaded backup (localStorage save failed)', lsOk ? 'success' : 'warning');
-}
+  var icon = document.createElement('span');
+  icon.style.fontSize = '20px';
+  icon.textContent = '📂';
 
-function importProjectDataFromFile() {
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = '.json';
-  fileInput.onchange = async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    try {
-      await window.APP_DATA.importProjectData(file);
-      // Reload entire app UI
-      const proj = window.APP_DATA.ACTIVE_PROJECT;
-      updateProjectDisplay(proj);
-      const switcher = document.getElementById('project-switcher');
-      if (switcher) {
-        switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===proj.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
-      }
-      renderPage(STATE.currentPage);
-      showToast('Project Data Imported', `All data loaded from ${file.name}`, 'success');
-    } catch (err) {
-      showToast('Import Error', err.message, 'error');
+  var body = document.createElement('div');
+  body.style.cssText = 'flex:1;min-width:0';
+
+  var label = document.createElement('div');
+  label.style.cssText = 'font-weight:700;font-size:12px;color:var(--text-primary);margin-bottom:6px';
+  label.textContent = filename;
+
+  // The clickable file link
+  var fileLink = document.createElement('a');
+  fileLink.href = fileUrl;
+  fileLink.target = '_blank';
+  fileLink.style.cssText = [
+    'display:block;padding:6px 10px;margin-bottom:8px',
+    'background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3)',
+    'border-radius:6px;cursor:pointer;text-decoration:none',
+    'font-family:DM Mono,monospace;font-size:10.5px',
+    'color:var(--accent-emerald);word-break:break-all',
+    'transition:background 0.2s'
+  ].join(';');
+  fileLink.textContent = '🔗 ' + fileUrl;
+  fileLink.onmouseover = function(){ this.style.background = 'rgba(16,185,129,0.25)'; };
+  fileLink.onmouseout  = function(){ this.style.background = 'rgba(16,185,129,0.12)'; };
+
+  // Copy Windows path button
+  var copyBtn = document.createElement('button');
+  copyBtn.textContent = '📋 Copy Windows Path';
+  copyBtn.style.cssText = [
+    'background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3)',
+    'color:var(--accent-blue);padding:4px 12px;border-radius:4px',
+    'cursor:pointer;font-size:11px;font-family:inherit'
+  ].join(';');
+  copyBtn.onclick = function() {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(winPath).then(function() {
+        copyBtn.textContent = '✅ Copied!';
+        copyBtn.style.background = 'rgba(16,185,129,0.2)';
+        copyBtn.style.borderColor = 'rgba(16,185,129,0.4)';
+        copyBtn.style.color = 'var(--accent-emerald)';
+      }).catch(function() {
+        copyBtn.textContent = winPath;
+      });
+    } else {
+      copyBtn.textContent = winPath;
     }
   };
-  fileInput.click();
+
+  var note = document.createElement('div');
+  note.style.cssText = 'font-size:10px;color:var(--text-muted);margin-top:6px';
+  note.textContent = 'Click the green link above to open • Paste Windows path in Explorer if needed';
+
+  body.appendChild(label);
+  body.appendChild(fileLink);
+  body.appendChild(copyBtn);
+  body.appendChild(note);
+
+  var closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0';
+  closeBtn.onclick = function() { toast.remove(); };
+
+  toast.appendChild(icon);
+  toast.appendChild(body);
+  toast.appendChild(closeBtn);
+
+  var container = document.getElementById('toast-container');
+  if (container) container.appendChild(toast);
+
+  // Auto dismiss after 15 seconds
+  setTimeout(function() {
+    if (toast.parentNode) {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      toast.style.transition = 'all 0.3s';
+      setTimeout(function() { toast.remove(); }, 300);
+    }
+  }, 15000);
 }
 
-// Auto-save to localStorage whenever any data changes
-// Call saveProjectDataAuto() from key mutation points
-function saveProjectDataAuto() {
-  window.APP_DATA.saveProjectData();
+
+function openDriveFolder(folder) {
+  var folderNames = {
+    drawings:'Drawings', materials:'Materials', methods:'Methods', testing:'Testing',
+    ncr:'NCR', rfi:'RFI', si:'SI', hse:'HSE', procurement:'Procurement',
+    subcontractors:'Subcontractors', closeout:'Closeout', progress:'Progress', root:''
+  };
+  var sub = folderNames[folder] !== undefined ? folderNames[folder] : folder;
+  var folderUrl = window.APP_DATA.LOCAL_DRIVE[folder] || window.APP_DATA.LOCAL_DRIVE.root;
+  var winPath = sub
+    ? 'D:\\Construction Innovation\\Projects\\' + sub
+    : 'D:\\Construction Innovation\\Projects';
+
+  var toastId = 'fld-' + Date.now();
+  var toast = document.createElement('div');
+  toast.className = 'toast info';
+  toast.id = toastId;
+  toast.style.cssText = 'max-width:460px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px';
+
+  var icon = document.createElement('span');
+  icon.style.fontSize = '20px';
+  icon.textContent = '🗂';
+
+  var body = document.createElement('div');
+  body.style.cssText = 'flex:1;min-width:0';
+
+  var label = document.createElement('div');
+  label.style.cssText = 'font-weight:700;font-size:12px;color:var(--text-primary);margin-bottom:6px';
+  label.textContent = (sub || 'Projects') + ' Folder';
+
+  var folderLink = document.createElement('a');
+  folderLink.href = folderUrl;
+  folderLink.target = '_blank';
+  folderLink.style.cssText = [
+    'display:block;padding:6px 10px;margin-bottom:8px',
+    'background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3)',
+    'border-radius:6px;cursor:pointer;text-decoration:none',
+    'font-family:DM Mono,monospace;font-size:10.5px',
+    'color:var(--accent-emerald);word-break:break-all'
+  ].join(';');
+  folderLink.textContent = '🔗 ' + folderUrl;
+
+  var copyBtn = document.createElement('button');
+  copyBtn.textContent = '📋 Copy Folder Path';
+  copyBtn.style.cssText = 'background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:var(--accent-blue);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-family:inherit';
+  copyBtn.onclick = function() {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(winPath).then(function() {
+        copyBtn.textContent = '✅ Copied!';
+      }).catch(function() { copyBtn.textContent = winPath; });
+    } else {
+      copyBtn.textContent = winPath;
+    }
+  };
+
+  body.appendChild(label);
+  body.appendChild(folderLink);
+  body.appendChild(copyBtn);
+
+  var closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;flex-shrink:0';
+  closeBtn.onclick = function() { toast.remove(); };
+
+  toast.appendChild(icon);
+  toast.appendChild(body);
+  toast.appendChild(closeBtn);
+
+  var container = document.getElementById('toast-container');
+  if (container) container.appendChild(toast);
+
+  setTimeout(function() {
+    if (toast.parentNode) {
+      toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)';
+      toast.style.transition = 'all 0.3s';
+      setTimeout(function() { toast.remove(); }, 300);
+    }
+  }, 15000);
 }
+
 
 // ── EXPOSE ────────────────────────────────────────────────────
 const exp={navigateTo,openModal,closeModal,showToast,generatePDF,
   openAddProjectModal,openAddDrawingModal,openAddMaterialModal,openAddSubModal,openAddNCRModal,openAddHSEModal,
   openAddMethodModal,openAddTestModal,openAddPOModal,openAddDailyLogModal,openAddCloseoutItemModal,
   openUpdateProgressModal,openEditProjectModal,confirmDeleteProject,exportProjectsCSV,printProjectsPDF,
-  openSettings,
+  openSettings, openAddCostCategoryModal,
   editDrawingStatus,viewDrawing,deleteDrawing,editMaterial,viewMaterial,deleteMaterial,editMethod,viewMethod,deleteMethod,editTesting,viewTest,deleteTesting,
   viewPO,editPO,deletePO,viewSub,editSub,deleteSub,viewHSE,editHSE,deleteHSE,viewNCR,editNCR,deleteNCR,viewRFI,editRFI,deleteRFI,viewSI,editSI,deleteSI,viewCloseout,editCloseout,deleteCloseout,
   viewCostCategory,editCostCategory,deleteCostCategory,viewManpowerWeek,editManpowerWeek,
@@ -2475,7 +2819,8 @@ const exp={navigateTo,openModal,closeModal,showToast,generatePDF,
   printProcurementPDF,printProgressPDF,printHSEPDF,
  printSubPDF,printCostPDF,printManpowerPDF,printCloseoutPDF,addEquipment,deleteEquipment,
   exportCurrentModule:(m)=>{const map={drawings:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockDrawingsData,'Drawing-Register'),materials:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMaterialsData,'Material-Submittals'),methods:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMethodsData,'Method-Statements'),ncr:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockNCRData,'NCR-Register'),rfi:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockRFIData,'RFI-Register'),si:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSIData,'SI-Register'),procurement:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockProcurementData,'Procurement-Tracker'),hse:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockHSEData.incidents,'HSE-Register'),subcontractors:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSubcontractorData,'Subcontractor-Register'),testing:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockTestingData,'Test-Commissioning'),cost:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCostData.categories,'Cost-Control'),closeout:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCloseoutData,'Project-Closeout')};if(map[m]){map[m]();showToast('Exported',m+' data exported as CSV','success');}},
-  saveAndExportProjectData, importProjectDataFromFile, toggleLanguage,
 };
+exp.openDriveFile = openDriveFile;
+exp.openDriveFolder = openDriveFolder;
 Object.assign(window,exp);
 window.STATE = STATE; // expose for HTML inline access
