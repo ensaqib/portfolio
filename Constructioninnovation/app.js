@@ -2031,11 +2031,10 @@ function renderCost() {
       <td class="td-mono" style="color:${vc}">${fv>0?'+':''}${formatCurrency(fv)}</td>
       <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,(c.actual/c.budget*100)).toFixed(0)}%"></div></div></td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('cost',c.name.replace(/ /g,'-')+'.pdf')">📂 Open</button>
+        <button class="drive-link" onclick="openDriveFile('cost','${c.name.replace(/ /g,'-')}'+'.pdf')">📂 Open</button>
         <button class="btn btn-sm btn-secondary" onclick="viewCostCategory('${c.name}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCostCategory('${c.name}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteCostCategory('${c.name}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('cost')">Import</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteCostCategory('${c.name}')">Delete</button>`:''}
       </td>
     </tr>`;
   });
