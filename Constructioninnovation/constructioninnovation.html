@@ -17,8 +17,28 @@
 <aside class="sidebar">
   <div class="sidebar-brand">
     <a class="brand-logo" href="#" onclick="navigateTo('dashboard');return false;">
-      <div id="brand-logo-wrap" style="width:100px;height:100px;overflow:hidden;border-radius:8px;background:transparent;">
-        <img id="sidebar-logo" style="width:100px;height:100px;object-fit:contain;margin-left:-20px;margin-top:-10px;" alt="CI" onerror="this.style.display='none'">
+      <div id="brand-logo-wrap">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px;flex-shrink:0;">
+          <!-- Outer hex ring -->
+          <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="none" stroke="#3b82f6" stroke-width="1.2" opacity="0.5"/>
+          <!-- Tower body - tall building -->
+          <rect x="17" y="14" width="14" height="24" rx="1" fill="none" stroke="#3b82f6" stroke-width="1.8"/>
+          <!-- Tower windows row 1 -->
+          <rect x="20" y="17" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.8"/>
+          <rect x="25" y="17" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.8"/>
+          <!-- Tower windows row 2 -->
+          <rect x="20" y="22" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.5"/>
+          <rect x="25" y="22" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.5"/>
+          <!-- Tower windows row 3 -->
+          <rect x="20" y="27" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.3"/>
+          <rect x="25" y="27" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.3"/>
+          <!-- Crane arm - amber/gold -->
+          <line x1="24" y1="14" x2="24" y2="6" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+          <line x1="16" y1="8" x2="34" y2="8" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="30" y1="8" x2="30" y2="13" stroke="#f59e0b" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="1.5 1.5"/>
+          <!-- Base ground line -->
+          <line x1="13" y1="38" x2="35" y2="38" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+        </svg>
       </div>
       <div class="brand-text">
         <div class="brand-name">CONSTRUCTION INNOVATION</div>
@@ -57,8 +77,8 @@
       <button class="nav-item" data-page="testing"><span class="nav-icon">🔬</span>Test &amp; Commissioning</button>
 
       <div class="nav-section-label">Site Management</div>
-      <button class="nav-item" data-page="ncr"><span class="nav-icon">⚠️</span>NCR / RFI / SI<span class="nav-badge">7</span></button>
-      <button class="nav-item" data-page="hse"><span class="nav-icon">🦺</span>HSE Register<span class="nav-badge">2</span></button>
+      <button class="nav-item" data-page="ncr"><span class="nav-icon">⚠️</span>NCR / RFI / SI<span class="nav-badge" id="nav-badge-ncr">7</span></button>
+      <button class="nav-item" data-page="hse"><span class="nav-icon">🦺</span>HSE Register<span class="nav-badge" id="nav-badge-hse">2</span></button>
       <button class="nav-item" data-page="manpower"><span class="nav-icon">👷</span>Manpower &amp; Equipment</button>
 
       <div class="nav-section-label">Commercial</div>
@@ -88,7 +108,6 @@
     <div class="header-page-title" id="header-page-title">Dashboard Overview</div>
     <!-- TOP SEARCH BAR REMOVED per user request -->
     <div class="header-actions">
-      <button class="header-btn lang-toggle" id="lang-toggle" onclick="toggleLanguage()" data-tooltip="Switch Language" style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px;min-width:44px">EN</button>
       <button class="header-btn" id="theme-toggle" data-tooltip="Toggle Theme">☀️</button>
       <button class="header-btn" id="notif-btn" style="position:relative">🔔<span class="notif-dot" id="notif-dot" style="display:none"></span></button>
     </div>
@@ -114,7 +133,7 @@
 
       <div class="page-actions" style="margin-bottom:16px">
         <button class="btn btn-pdf" onclick="printDashboardPDF()">🖨 Print Dashboard PDF</button>
-        <button class="btn btn-secondary admin-only" onclick="openAddProjectModal()">➕ New Project</button>
+        <button class="btn btn-secondary" onclick="openAddProjectModal()">➕ New Project</button>
       </div>
 
       <div class="kpi-grid">
@@ -153,10 +172,8 @@
         <div><div class="page-title">📁 Project Management</div><div class="page-subtitle">All projects – edit, delete, switch active</div></div>
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="exportProjectsCSV()">📥 Export CSV</button>
-          <button class="btn btn-secondary" onclick="saveAndExportProjectData()">💾 Save Project Data</button>
-          <button class="btn btn-secondary" onclick="importProjectDataFromFile()">📂 Import Project Data</button>
           <button class="btn btn-pdf" onclick="printProjectsPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary admin-only" onclick="openAddProjectModal()">➕ New Project</button>
+          <button class="btn btn-primary" onclick="openAddProjectModal()">➕ New Project</button>
         </div>
       </div>
       <div class="filter-bar">
@@ -341,7 +358,7 @@
       <div class="kpi-grid" id="progress-stats" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">📈 S-Curve — Planned vs. Actual</span></div><div class="card-body"><div class="chart-wrapper" style="height:280px"><canvas id="progress-scurve-chart"></canvas></div></div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div class="card"><div class="card-header"><span class="card-title">Milestone Tracker</span></div><div class="card-body"><div class="milestone-list" id="milestone-list"></div></div></div>
+        <div class="card"><div class="card-header"><span class="card-title">Milestone Tracker</span></div><div class="card-body"><div class="milestone-list" id="progress-milestone-list"></div></div></div>
         <div class="card"><div class="card-header"><span class="card-title">Discipline Progress</span></div><div class="card-body"><div id="discipline-progress-list"></div></div></div>
       </div>
     </section>
@@ -359,11 +376,13 @@
       <div class="kpi-grid" id="hse-stats" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="chart-grid" style="margin-bottom:20px">
         <div class="card"><div class="card-header"><span class="card-title">Incident Type Breakdown</span></div><div class="card-body"><div class="chart-wrapper" style="height:200px"><canvas id="hse-chart"></canvas></div></div></div>
-        <div class="card"><div class="card-header"><span class="card-title">HSE Performance</span></div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-emerald)">284K</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Safe Man Hours</div></div>
-          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-amber)">0.35</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">LTIR Score</div></div>
-          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-blue)">48</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Toolbox Talks</div></div>
-          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-rose)">1</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">LTIs Recorded</div></div>
+        <div class="card"><div class="card-header"><span class="card-title">HSE Performance</span>
+          ${isAdmin ? '' : ''}<button class="btn btn-sm btn-secondary admin-only" style="margin-left:auto" onclick="openUpdateHSEStatsModal()">✏️ Update Stats</button>
+          </div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div id="hse-perf-hours" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-emerald)">0</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Safe Man Hours</div></div>
+          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div id="hse-perf-ltir" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-amber)">0.00</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">LTIR Score</div></div>
+          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div id="hse-perf-toolbox" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-blue)">0</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Toolbox Talks</div></div>
+          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div id="hse-perf-lti" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-rose)">0</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">LTIs Recorded</div></div>
         </div></div></div>
       </div>
       <div class="card"><div class="table-container"><table>
@@ -402,9 +421,9 @@
       <div class="kpi-grid" id="cost-stats" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Budget vs. Forecast vs. Actual</span></div><div class="card-body"><div class="chart-wrapper" style="height:260px"><canvas id="cost-chart"></canvas></div></div></div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
-        <div class="card" style="background:rgba(59,130,246,0.06);border-color:rgba(59,130,246,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-blue);margin-bottom:4px;text-transform:uppercase">Revised Budget</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-blue)">SAR 188.2M</div></div></div>
-        <div class="card" style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-emerald);margin-bottom:4px;text-transform:uppercase">Actual Cost to Date</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-emerald)">SAR 67.2M</div></div></div>
-        <div class="card" style="background:rgba(244,63,94,0.06);border-color:rgba(244,63,94,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-rose);margin-bottom:4px;text-transform:uppercase">Forecast Final Cost</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-rose)">SAR 192.5M <span style="font-size:11px">▲ 4.3M</span></div></div></div>
+        <div class="card" style="background:rgba(59,130,246,0.06);border-color:rgba(59,130,246,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-blue);margin-bottom:4px;text-transform:uppercase">Revised Budget</div><div id="cost-hero-budget" style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-blue)">—</div></div></div>
+        <div class="card" style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-emerald);margin-bottom:4px;text-transform:uppercase">Actual Cost to Date</div><div id="cost-hero-actual" style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-emerald)">—</div></div></div>
+        <div class="card" style="background:rgba(244,63,94,0.06);border-color:rgba(244,63,94,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-rose);margin-bottom:4px;text-transform:uppercase">Forecast Final Cost</div><div id="cost-hero-forecast" style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-rose)">—</div></div></div>
       </div>
       <div class="card"><div class="table-container"><table>
         <thead><tr><th>Category</th><th>Budget</th><th>Committed</th><th>Actual</th><th>Forecast</th><th>Variance</th><th>% Spent</th><th>Actions</th></tr></thead>
@@ -464,7 +483,7 @@
 </div>
 
 <!-- ── MODAL ──────────────────────────────────────────────────── -->
-<div class="sidebar-overlay" id="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('active');" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199;"></div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="const s=document.querySelector('.sidebar');const o=this;s.classList.remove('open');o.style.opacity='0';setTimeout(()=>o.style.display='none',200);" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199;opacity:0;transition:opacity 0.2s ease;"></div>
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <div class="modal-header">
