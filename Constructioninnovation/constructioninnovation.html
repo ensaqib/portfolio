@@ -416,6 +416,7 @@
           <button class="btn btn-secondary" onclick="exportCurrentModule('cost')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printCostPDF()">🖨 Print PDF</button>
           <button class="btn btn-primary admin-only" onclick="openAddVariationOrderModal()">📝 Variation Order</button>
+          <button class="btn btn-success admin-only" onclick="openAddCostCategoryModal()">➕ Add Category</button>
         </div>
       </div>
       <div class="kpi-grid" id="cost-stats" style="grid-template-columns:repeat(4,1fr)"></div>
@@ -425,7 +426,7 @@
         <div class="card" style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-emerald);margin-bottom:4px;text-transform:uppercase">Actual Cost to Date</div><div id="cost-hero-actual" style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-emerald)">—</div></div></div>
         <div class="card" style="background:rgba(244,63,94,0.06);border-color:rgba(244,63,94,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-rose);margin-bottom:4px;text-transform:uppercase">Forecast Final Cost</div><div id="cost-hero-forecast" style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-rose)">—</div></div></div>
       </div>
-      <div class="card"><div class="table-container"><table>
+      <div class="card"><div class="card-header"><span class="card-title">Cost Categories</span><button class="btn btn-sm btn-success admin-only" onclick="openAddCostCategoryModal()" style="margin-left:auto">➕ Add Category</button></div><div class="table-container"><table>
         <thead><tr><th>Category</th><th>Budget</th><th>Committed</th><th>Actual</th><th>Forecast</th><th>Variance</th><th>% Spent</th><th>Actions</th></tr></thead>
         <tbody id="cost-table-body"></tbody>
       </table></div></div>
