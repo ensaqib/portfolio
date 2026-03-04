@@ -345,8 +345,8 @@
             color: var(--text);
             font-size: 0.78rem;
         }
-        .vdms-csa { cursor:pointer; -webkit-appearance:none; appearance:none; }
-        .vdms-csa option { background: #0a1020; }
+        .vdms-csa, .vdms-runs { cursor:pointer; -webkit-appearance:none; appearance:none; }
+        .vdms-csa option, .vdms-runs option { background: #0a1020; }
     </style>
 </head>
 <body>
@@ -370,10 +370,9 @@
     <button class="filter-btn active" data-filter="all">All Tools</button>
     <button class="filter-btn" data-filter="power">Power Systems</button>
     <button class="filter-btn" data-filter="design">Design &amp; BIM</button>
-    <button class="filter-btn" data-filter="calc">Calculations</button>
+    <button class="filter-btn" data-filter="calc">⚡ Calculations</button>
     <button class="filter-btn" data-filter="field">Field &amp; Mobile</button>
     <button class="filter-btn" data-filter="brands">Brands</button>
-        <button class="filter-btn" data-filter="spreadsheet">📊 Spreadsheet Calcs</button>
 </div>
 
 <!-- ============= TOOLS GRID ============= -->
@@ -584,7 +583,7 @@
     </div>
 
     <!-- ========== SPREADSHEET CALCULATORS (new category) ========== -->
-    <div class="tool-card fade-in" data-category="spreadsheet" onclick="openModal('ampVDCalc')">
+    <div class="tool-card fade-in" data-category="calc" onclick="openModal('ampVDCalc')">
         <div class="tool-status"></div>
         <div class="tool-header">
             <div class="tool-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">VD</div>
@@ -595,7 +594,7 @@
         <button class="open-btn">⚡ Open Calculator</button>
     </div>
 
-    <div class="tool-card fade-in" data-category="spreadsheet" onclick="openModal('ampTraySizer')">
+    <div class="tool-card fade-in" data-category="calc" onclick="openModal('ampTraySizer')">
         <div class="tool-status"></div>
         <div class="tool-header">
             <div class="tool-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);">TS</div>
@@ -606,7 +605,7 @@
         <button class="open-btn">⚡ Open Calculator</button>
     </div>
 
-    <div class="tool-card fade-in" data-category="spreadsheet" onclick="openModal('ampLightDistance')">
+    <div class="tool-card fade-in" data-category="calc" onclick="openModal('ampLightDistance')">
         <div class="tool-header">
             <div class="tool-icon" style="background:linear-gradient(135deg,#10b981,#059669);">LD</div>
             <div><div class="tool-title">AMP Light Layout Optimizer</div><div class="tool-category">Luminaire Spacing</div></div>
@@ -616,7 +615,7 @@
         <button class="open-btn">⚡ Open Calculator</button>
     </div>
 
-    <div class="tool-card fade-in" data-category="spreadsheet" onclick="openModal('ampPanelSchedule')">
+    <div class="tool-card fade-in" data-category="calc" onclick="openModal('ampPanelSchedule')">
         <div class="tool-status"></div>
         <div class="tool-header">
             <div class="tool-icon" style="background:linear-gradient(135deg,#ef4444,#b91c1c);">PS</div>
@@ -627,7 +626,7 @@
         <button class="open-btn">⚡ Open Calculator</button>
     </div>
 
-    <div class="tool-card fade-in" data-category="spreadsheet" onclick="openModal('ampCableOD')">
+    <div class="tool-card fade-in" data-category="calc" onclick="openModal('ampCableOD')">
         <div class="tool-header">
             <div class="tool-icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2);">OD</div>
             <div><div class="tool-title">AMP Cable OD &amp; Weight</div><div class="tool-category">Physical Parameters</div></div>
@@ -2074,18 +2073,18 @@ function calcCableSizer() {
     ['Length / Voltage', len+' m / '+Vn+'V ('+(phases===3?'3Ø':'1Ø')+')', '—'],
     ['Material / Insulation', mat.toUpperCase()+' / '+ins.toUpperCase()+' ('+Tmax+'°C)', '—'],
     ['Installation Method', 'Method '+method+' — derating: '+mf, '—'],
-    ['── CABLE SELECTION ──','',''],
+    ['--- CABLE SELECTION ---','',''],
     overrideCSA>0 ? ['Overridden Cable Size', selectedCSA+' mm² (user selected)', 'WARN'] : ['Recommended Cable Size', selectedCSA+' mm²', 'PASS'],
     ['  → Min for Ampacity (×1.25)', ampCSA+' mm²', '—'],
     ['  → Min for VD ('+VDlimit+'%)', vdCSA+' mm²', '—'],
     ['  → Min for SC withstand', round(S_min,1)+' mm² → std: '+scCSA+' mm²', '—'],
-    ['── RESULTS ──','',''],
+    ['--- RESULTS ---','',''],
     ['Cable Ampacity (Iz corrected)', Iz+' A', Ib<=Iz?'PASS':'FAIL'],
     ['Utilisation (Ib/Iz)', round(Ib/Iz*100,1)+'%', Ib/Iz>1?'FAIL':Ib/Iz>0.9?'WARN':'PASS'],
     ['Voltage Drop (ΔV)', round(VD_V,2)+' V', '—'],
     ['Voltage Drop (%)', VD_pc+'%', VD_pc>VDlimit?'FAIL':VD_pc>VDlimit*0.8?'WARN':'PASS'],
     ['VD Limit Applied', VDlimit+'%', '—'],
-    ['── PROTECTION ──','',''],
+    ['--- PROTECTION ---','',''],
     ['SC Withstand Check', selectedCSA+'≥'+round(S_min,1)+'mm²', selectedCSA>=S_min?'PASS':'FAIL'],
     ['Recommended CB Rating', In_prot+' A (IEC 60947-2)', '—'],
     ['k Factor', k+' (IEC 60909)', '—'],
@@ -2331,21 +2330,21 @@ function calcPowerDistributor() {
   }[coord] || coord;
 
   const rows = [
-    ['── INPUT ──','',''],
+    ['--- INPUT ---','',''],
     ['Connected Load', kVA+' kVA', '—'],
     ['Design Load (×'+round(df,2)+'DF)', round(kVA_design,1)+' kVA / '+round(kW,1)+' kW', '—'],
     ['Full Load Current (I_FL)', round(I_fl,1)+' A', '—'],
     ['Prospective S.C. (Isc)', Ipsc+' kA', Ipsc>50?'WARN':'PASS'],
-    ['── SWITCHGEAR SIZING ──','',''],
+    ['--- SWITCHGEAR SIZING ---','',''],
     ['Main CB Rating (In)', cbRating+' A', '—'],
     ['Busbar Rating', busbarRating+' A', '—'],
     ['Required Breaking Capacity (Icu)', 'Min '+Ipsc+' kA', '—'],
     ['IEC 60947-2 CB Category', Ipsc<=10?'Category A':'Category B (Icw tested)', '—'],
-    ['── IEC 61439 FORM SELECTION ──','',''],
+    ['--- IEC 61439 FORM SELECTION ---','',''],
     ['RECOMMENDED FORM', 'Form '+formCode, 'PASS'],
     ['Form Description', formDesc, '—'],
     ['Selection Basis', formReason, '—'],
-    ['── COORDINATION ──','',''],
+    ['--- COORDINATION ---','',''],
     ['Coordination Type', coord.toUpperCase(), '—'],
     ['Coordination Note', coordNote, '—'],
   ];
@@ -2608,246 +2607,335 @@ const AMP_LOGO_B64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAV4AAADpCAYA
 // ================================================================
 async function exportPDF(toolId) {
   if(!window.jspdf) { alert('jsPDF not loaded. Check internet connection.'); return; }
-  const { jsPDF } = window.jspdf;
-  if(!jsPDF) { alert('jsPDF not loaded.'); return; }
-  const rows = lastResults[toolId];
-  if(!rows || rows.length === 0) { alert('No results to export. Run the calculation first.'); return; }
+  var jsPDFLib = window.jspdf;
+  if(!jsPDFLib || !jsPDFLib.jsPDF) { alert('jsPDF library not loaded.'); return; }
+  var jsPDF = jsPDFLib.jsPDF;
+  var rows = lastResults[toolId];
+  if(!rows || rows.length === 0) { alert('No results yet — run the calculation first.'); return; }
 
-  const toolNames = {
-    ampPowerAnalysis:        'AMP Power Analysis — Load Flow & Short Circuit',
-    ampProtectionSuite:      'AMP Protection Suite — Arc Flash Analysis',
-    ampGridSimulator:        'AMP Grid Simulator — IEC 60909 Short Circuit',
-    ampCableThermal:         'AMP Cable Thermal Analyzer — IEC 60287',
-    ampCADDesigner:          'AMP Load Summary — Panel Schedule & Load Distribution',
-    ampCAEPlanner:           'AMP CAE Planner — Power Budget',
-    ampBIMPlatform:          'AMP BIM Platform — Building Load Schedule',
-    ampArcFlash:             'AMP Arc Flash Evaluator — IEEE 1584-2018',
-    ampLightingDesigner:     'AMP Lighting Designer — ISO/CIE 8995-1',
-    ampCableSizer:           'AMP Cable Sizer — IEC 60364 / BS 7671',
-    ampFieldTester:          'AMP Field Tester — BS 7671 Commissioning',
-    ampMobileCalc:           "AMP Mobile Calculator — Ohm's Law & Resistor",
-    ampFieldSuite:           'AMP Field Suite — Motor Starting IEEE 3002.7',
-    ampPowerDistributor:     'AMP Power Distributor — IEC 60947 / IEC 61439',
-    ampElectrificationSystem:'AMP Electrification System — IDMT Relay IEC 60255',
-    ampAutomationController: 'AMP Automation Controller — PLC Sizing IEC 61131',
-    ampPowerManager:         'AMP Power Manager — UPS Sizing IEC 62040',
-    ampLightingController:   'AMP Lighting Controller — DALI IEC 62386',
-    ampAVIntegrator:         'AMP AV Integrator — AV Power Budget',
-    ampVDCalc:               'AMP Voltage Drop Calculator — GCC Market Cables',
-    ampTraySizer:            'AMP Tray & Trunking Sizer — Cable Management',
-    ampLightDistance:        'AMP Light Layout Optimizer — ISO/CIE 8995-1',
-    ampPanelSchedule:        'AMP Panel Board Schedule — MDB to DB (IEC 61439 / SBC 401)',
-    ampCableOD:              'AMP Cable OD & Weight — GCC/KSA Market Cables',
+  var toolNames = {
+    ampPowerAnalysis:         'AMP Power Analysis — Load Flow & Short Circuit',
+    ampProtectionSuite:       'AMP Protection Suite — Arc Flash Analysis',
+    ampGridSimulator:         'AMP Grid Simulator — IEC 60909 Short Circuit',
+    ampCableThermal:          'AMP Cable Thermal Analyzer — IEC 60287',
+    ampCADDesigner:           'AMP Load Summary — Panel Schedule & Load Distribution',
+    ampCAEPlanner:            'AMP CAE Planner — Power Budget',
+    ampBIMPlatform:           'AMP BIM Platform — Building Load Schedule',
+    ampArcFlash:              'AMP Arc Flash Evaluator — IEEE 1584-2018',
+    ampLightingDesigner:      'AMP Lighting Designer — ISO/CIE 8995-1',
+    ampCableSizer:            'AMP Cable Sizer — IEC 60364 / BS 7671',
+    ampFieldTester:           'AMP Field Tester — BS 7671 Commissioning',
+    ampMobileCalc:            "AMP Mobile Calculator — Ohm's Law & Resistor",
+    ampFieldSuite:            'AMP Field Suite — Motor Starting IEEE 3002.7',
+    ampPowerDistributor:      'AMP Power Distributor — IEC 60947 / IEC 61439',
+    ampElectrificationSystem: 'AMP Electrification System — IDMT Relay IEC 60255',
+    ampAutomationController:  'AMP Automation Controller — PLC Sizing IEC 61131',
+    ampPowerManager:          'AMP Power Manager — UPS Sizing IEC 62040',
+    ampLightingController:    'AMP Lighting Controller — DALI IEC 62386',
+    ampAVIntegrator:          'AMP AV Integrator — AV Power Budget',
+    ampVDCalc:                'AMP Voltage Drop Calculator — GCC Market Cables',
+    ampTraySizer:             'AMP Tray & Trunking Sizer — Cable Management',
+    ampLightDistance:         'AMP Light Layout Optimizer — ISO/CIE 8995-1',
+    ampPanelSchedule:         'AMP Panel Board Schedule — MDB to DB (IEC 61439 / SBC 401)',
+    ampCableOD:               'AMP Cable OD & Weight — GCC/KSA Market Cables',
   };
 
-  const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-  const W = doc.internal.pageSize.getWidth();   // 210mm
-  const H = doc.internal.pageSize.getHeight();  // 297mm
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-GB', {day:'2-digit',month:'long',year:'numeric'});
-  const timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
-  const HDR_H = 21.5;   // header height mm (compact — ≤21.5mm)
-  const FTR_H = 14;     // footer height mm
-  const MARGIN = 14;
-  const COL_W = W - MARGIN*2;
+  var doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+  var W = 210; var H = 297;
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'});
+  var timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
 
-  // Colour palette — print-friendly, low ink
-  const C_HDR_BG   = [15, 60, 110];      // deep blue header
-  const C_HDR_ACC  = [0, 160, 240];      // bright accent line
-  const C_TOOL_BG  = [230, 242, 255];    // very light blue toolbox
-  const C_TBL_HDR  = [20, 80, 140];      // dark blue table header
-  const C_ROW_ODD  = [255, 255, 255];    // white
-  const C_ROW_EVEN = [244, 249, 255];    // very light blue
-  const C_SEP_ROW  = [220, 235, 252];    // separator row bg
-  const C_TEXT     = [30, 45, 70];       // dark navy text
-  const C_WHITE    = [255, 255, 255];
-  const C_PASS     = [0, 130, 60];
-  const C_FAIL     = [190, 30, 30];
-  const C_WARN     = [160, 90, 0];
-  const C_FTR_BG   = [230, 242, 255];
+  // ── Layout constants ──────────────────────────────────────
+  var HDR_H  = 22;    // header strip height (mm)
+  var FTR_H  = 15;    // footer height (mm)
+  var M      = 12;    // left/right page margin
+  var TW     = W - M*2;  // table width = 186mm
 
-  function drawHeader(pgNum, pgTotal) {
-    // Header bg
-    doc.setFillColor(...C_HDR_BG);
-    doc.rect(0, 0, W, HDR_H, 'F');
-    // Top accent line
-    doc.setFillColor(...C_HDR_ACC);
-    doc.rect(0, 0, W, 0.9, 'F');
-    // Bottom accent line
-    doc.setFillColor(...C_HDR_ACC);
-    doc.rect(0, HDR_H - 0.5, W, 0.5, 'F');
-    // Logo (try embedded, fallback text)
-    try {
-      doc.addImage(AMP_LOGO_B64, 'PNG', 4, 1.5, 30, 17);
-    } catch(e) {
-      doc.setFillColor(0, 50, 100);
-      doc.rect(4, 1.5, 30, 17, 'F');
-      doc.setTextColor(0, 200, 255);
-      doc.setFontSize(11); doc.setFont('helvetica','bold');
-      doc.text('AMP', 19, 12, {align:'center'});
+  // Column x positions (absolute mm from left edge)
+  var COL_PARAM  = M;           // Parameter label  (0%  of TW)
+  var COL_VAL    = M + TW*0.40; // Value            (40% of TW)
+  var COL_STAT   = M + TW*0.82; // Status           (82% of TW)
+  var COL_END    = M + TW;      // right edge
+
+  var COL_PARAM_W = TW*0.39;   // max width for param text
+  var COL_VAL_W   = TW*0.40;   // max width for value text
+  var COL_STAT_W  = TW*0.18;   // max width for status
+
+  var ROW_H = 8;       // data row height (mm)
+  var SEP_H = 6.5;     // separator row height
+
+  var maxY = H - FTR_H - 2;
+
+  // ── Colours ──────────────────────────────────────────────
+  var C_HDR_BG    = [10, 45, 90];
+  var C_HDR_ACC   = [0, 160, 240];
+  var C_TOOL_BG   = [235, 245, 255];
+  var C_TOOL_ACC  = [0, 140, 220];
+  var C_TBL_HDR   = [18, 70, 130];
+  var C_TBL_HDR_L = [200, 220, 245];   // light text on dark header
+  var C_ROW_ODD   = [255, 255, 255];
+  var C_ROW_EVEN  = [244, 250, 255];
+  var C_SEP_BG    = [215, 232, 252];
+  var C_SEP_TXT   = [15, 60, 120];
+  var C_TEXT      = [25, 40, 65];
+  var C_DIVIDER   = [200, 218, 238];
+  var C_FTR_BG    = [230, 242, 255];
+  var C_PASS      = [0, 125, 55];
+  var C_FAIL      = [185, 25, 25];
+  var C_WARN      = [150, 80, 0];
+
+  // ── Helpers ──────────────────────────────────────────────
+  function rgbArr(arr) { doc.setTextColor(arr[0], arr[1], arr[2]); }
+  function fillArr(arr) { doc.setFillColor(arr[0], arr[1], arr[2]); }
+
+  function clipText(text, maxW, fontSize, bold) {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    // Measure and truncate with ellipsis if needed
+    var str = String(text || '');
+    while(str.length > 3 && doc.getTextWidth(str) > maxW) {
+      str = str.substring(0, str.length - 4) + '…';
     }
-    // Title
-    doc.setTextColor(...C_WHITE);
-    doc.setFontSize(11); doc.setFont('helvetica','bold');
-    doc.text('AMP ELECTRICAL DESIGN SUITE', 38, 8);
+    return str;
+  }
+
+  // ── drawHeader ───────────────────────────────────────────
+  function drawHeader(pgNum, pgTotal) {
+    fillArr(C_HDR_BG);
+    doc.rect(0, 0, W, HDR_H, 'F');
+    // Accent lines
+    fillArr(C_HDR_ACC);
+    doc.rect(0, 0, W, 1.0, 'F');
+    doc.rect(0, HDR_H - 0.6, W, 0.6, 'F');
+    // Logo
+    try {
+      doc.addImage(AMP_LOGO_B64, 'PNG', M - 2, 2, 28, 16);
+    } catch(e) {
+      fillArr([0, 40, 100]);
+      doc.rect(M - 2, 2, 28, 16, 'F');
+      doc.setTextColor(0, 200, 255);
+      doc.setFontSize(12); doc.setFont('helvetica','bold');
+      doc.text('AMP', M + 12, 12, {align:'center'});
+    }
+    // Title block
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11.5); doc.setFont('helvetica','bold');
+    doc.text('AMP ELECTRICAL DESIGN SUITE', M + 32, 9);
     doc.setFontSize(7.5); doc.setFont('helvetica','normal');
-    doc.setTextColor(180, 210, 240);
-    doc.text('Calculation Report  |  IEC / SBC 401 / IEEE Compliant', 38, 13.5);
-    // Page number top-right
-    doc.setTextColor(180, 210, 240);
+    doc.setTextColor(170, 205, 235);
+    doc.text('Calculation Report  |  IEC / SBC 401 / IEEE Compliant', M + 32, 15);
+    // Page number — right aligned
+    doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+    doc.setTextColor(200, 225, 248);
+    doc.text('Page ' + pgNum + ' of ' + pgTotal, W - M, 9, {align:'right'});
     doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('Page '+pgNum+' of '+pgTotal, W - 5, 9, {align:'right'});
-    doc.text(dateStr, W - 5, 14, {align:'right'});
+    doc.setTextColor(150, 185, 215);
+    doc.text(dateStr, W - M, 15, {align:'right'});
   }
 
+  // ── drawToolBox (full page width, professional) ──────────
   function drawToolBox(toolName) {
-    var y = HDR_H + 1;
-    var bh = 10;
-    doc.setFillColor(...C_TOOL_BG);
-    doc.rect(MARGIN, y, COL_W, bh, 'F');
-    doc.setFillColor(...C_HDR_ACC);
-    doc.rect(MARGIN, y, 2.5, bh, 'F');
-    doc.setTextColor(...C_TEXT);
-    doc.setFontSize(9); doc.setFont('helvetica','bold');
-    doc.text(toolName, MARGIN + 5, y + 5.5);
+    var y = HDR_H + 0.5;
+    var bh = 11;
+    // Full-width background (0 to W)
+    fillArr(C_TOOL_BG);
+    doc.rect(0, y, W, bh, 'F');
+    // Left accent bar (full height)
+    fillArr(C_TOOL_ACC);
+    doc.rect(0, y, 3.5, bh, 'F');
+    // Bottom border line
+    doc.setDrawColor(C_TOOL_ACC[0], C_TOOL_ACC[1], C_TOOL_ACC[2]);
+    doc.setLineWidth(0.5);
+    doc.line(0, y + bh, W, y + bh);
+    // Tool name text
+    rgbArr(C_TBL_HDR);
+    doc.setFontSize(9.5); doc.setFont('helvetica','bold');
+    var tnClipped = clipText(toolName, W - M - 80, 9.5, true);
+    doc.text(tnClipped, M + 2, y + 7);
+    // Generated date/time
     doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.setTextColor(80, 100, 140);
-    doc.text('Generated: '+dateStr+'  '+timeStr, W - MARGIN, y + 5.5, {align:'right'});
-    return y + bh + 3;
+    doc.setTextColor(80, 105, 145);
+    doc.text('Generated: ' + dateStr + '  ' + timeStr, W - M, y + 7, {align:'right'});
+    return y + bh + 2;
   }
 
+  // ── drawTableHeader ───────────────────────────────────────
+  function drawTableHeader(yy) {
+    fillArr(C_TBL_HDR);
+    doc.rect(M, yy, TW, 8.5, 'F');
+    // Column dividers
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.2);
+    doc.line(COL_VAL - 1, yy, COL_VAL - 1, yy + 8.5);
+    doc.line(COL_STAT - 1, yy, COL_STAT - 1, yy + 8.5);
+    // Header text — centred in each column
+    rgbArr(C_TBL_HDR_L);
+    doc.setFontSize(8); doc.setFont('helvetica','bold');
+    // PARAMETER — centred in its column
+    doc.text('PARAMETER', COL_PARAM + COL_PARAM_W/2, yy + 5.8, {align:'center'});
+    // VALUE — centred in its column
+    doc.text('VALUE / RESULT', COL_VAL + COL_VAL_W/2, yy + 5.8, {align:'center'});
+    // STATUS — centred in its column
+    doc.text('STATUS', COL_STAT + COL_STAT_W/2, yy + 5.8, {align:'center'});
+    return yy + 8.5;
+  }
+
+  // ── drawFooter ────────────────────────────────────────────
   function drawFooter(pgNum, pgTotal) {
     var fy = H - FTR_H;
-    doc.setFillColor(...C_FTR_BG);
+    fillArr(C_FTR_BG);
     doc.rect(0, fy, W, FTR_H, 'F');
-    doc.setFillColor(...C_HDR_ACC);
-    doc.rect(0, fy, W, 0.4, 'F');
-    doc.setTextColor(...C_TEXT);
+    doc.setDrawColor(C_HDR_ACC[0], C_HDR_ACC[1], C_HDR_ACC[2]);
+    doc.setLineWidth(0.5);
+    doc.line(0, fy, W, fy);
+    rgbArr(C_TBL_HDR);
     doc.setFontSize(7.5); doc.setFont('helvetica','bold');
     doc.text('Engr. Saqib Hussain (PE)  |  AMP Electrical Engineering Tools', W/2, fy + 4.5, {align:'center'});
     doc.setFontSize(6.5); doc.setFont('helvetica','normal');
-    doc.setTextColor(80, 100, 140);
-    doc.text('Pakistan Engineering Council (Elect/24950)  |  Saudi Council of Engineers (99995)  |  Complies with IEC / SBC 401', W/2, fy + 8.5, {align:'center'});
-    doc.setTextColor(...C_TEXT);
+    doc.setTextColor(75, 100, 140);
+    doc.text('Pakistan Engineering Council (Elect/24950)  |  Saudi Council of Engineers (99995)  |  Complies with IEC / SBC 401 / IEEE Standards', W/2, fy + 8.5, {align:'center'});
+    rgbArr(C_TEXT);
     doc.setFontSize(6.5);
-    doc.text('Page '+pgNum+' of '+pgTotal, W - MARGIN, fy + 11.5, {align:'right'});
+    doc.text('Page ' + pgNum + ' of ' + pgTotal, W - M, fy + 12, {align:'right'});
   }
 
-  // -- First pass: count total pages --
-  var rH = 7.5;
-  var firstUsable = HDR_H + 1 + 10 + 3 + 9 + 3;  // after header+toolbox+tblhdr
-  var maxY = H - FTR_H - 2;
-  var pageCount = 1;
-  var ySimulate = firstUsable;
-  rows.forEach(function(row) {
-    if(ySimulate + rH > maxY) { pageCount++; ySimulate = HDR_H + 1 + 9 + 2; }
-    ySimulate += rH;
-  });
-  // Standards block
-  if(ySimulate + 25 > maxY) pageCount++;
+  // ── drawRow ──────────────────────────────────────────────
+  function drawRow(param, val, stat, rowIdx, y) {
+    var isSep = param.startsWith('---') || param.startsWith('===') || param.charCodeAt(0) === 0x2500 || param.charCodeAt(0) === 0x2014;
+    var rh = isSep ? SEP_H : ROW_H;
 
-  // -- Render --
+    if(isSep) {
+      // Separator / section heading row
+      fillArr(C_SEP_BG);
+      doc.rect(M, y, TW, rh, 'F');
+      // Left accent bar
+      fillArr(C_TOOL_ACC);
+      doc.rect(M, y, 2.5, rh, 'F');
+      // Bottom line
+      doc.setDrawColor(C_TOOL_ACC[0], C_TOOL_ACC[1], C_TOOL_ACC[2]);
+      doc.setLineWidth(0.2);
+      doc.line(M, y + rh, M + TW, y + rh);
+      // Text
+      rgbArr(C_SEP_TXT);
+      doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+      var cleanLabel = param.replace(/^-+\s*/g,'').replace(/^=+\s*/g,'').trim();
+      doc.text(cleanLabel, M + 5, y + rh - 1.8);
+    } else {
+      // Normal data row — alternating background
+      var bg = (rowIdx % 2 === 0) ? C_ROW_ODD : C_ROW_EVEN;
+      fillArr(bg);
+      doc.rect(M, y, TW, rh, 'F');
+
+      // Subtle column divider lines
+      doc.setDrawColor(C_DIVIDER[0], C_DIVIDER[1], C_DIVIDER[2]);
+      doc.setLineWidth(0.15);
+      doc.line(COL_VAL - 1, y, COL_VAL - 1, y + rh);
+      doc.line(COL_STAT - 1, y, COL_STAT - 1, y + rh);
+
+      // Bottom row divider
+      doc.setDrawColor(220, 232, 245);
+      doc.setLineWidth(0.1);
+      doc.line(M, y + rh, M + TW, y + rh);
+
+      // PARAMETER text — left-aligned, clipped
+      rgbArr(C_TEXT);
+      doc.setFontSize(7.5); doc.setFont('helvetica','normal');
+      var pText = clipText(param, COL_PARAM_W - 4, 7.5, false);
+      doc.text(pText, COL_PARAM + 3, y + rh - 2.2);
+
+      // VALUE text — left-aligned in value column, clipped
+      rgbArr(C_TEXT);
+      doc.setFontSize(7.5); doc.setFont('helvetica','normal');
+      var vText = clipText(val, COL_VAL_W - 4, 7.5, false);
+      doc.text(vText, COL_VAL + 2, y + rh - 2.2);
+
+      // STATUS — centred in status column, coloured, bold
+      var statStr = String(stat || '');
+      var isDash = (statStr === '—' || statStr === '-' || statStr === '');
+      if(!isDash) {
+        if(statStr === 'PASS')      { doc.setTextColor(C_PASS[0],C_PASS[1],C_PASS[2]); doc.setFont('helvetica','bold'); }
+        else if(statStr === 'FAIL') { doc.setTextColor(C_FAIL[0],C_FAIL[1],C_FAIL[2]); doc.setFont('helvetica','bold'); }
+        else if(statStr === 'WARN') { doc.setTextColor(C_WARN[0],C_WARN[1],C_WARN[2]); doc.setFont('helvetica','bold'); }
+        else                        { doc.setTextColor(90,115,150); doc.setFont('helvetica','normal'); }
+        doc.setFontSize(7.5);
+        // Centre status in its column
+        doc.text(statStr.substring(0, 8), COL_STAT + COL_STAT_W/2, y + rh - 2.2, {align:'center'});
+      }
+    }
+    return rh;
+  }
+
+  // ── Page count simulation ────────────────────────────────
+  var pageCount = 1;
+  var yS = HDR_H + 0.5 + 11 + 2 + 8.5 + 1; // after header+toolbox+tblhdr
+  rows.forEach(function(row) {
+    var rh = (String(row[0]||'').startsWith('─') || String(row[0]||'').startsWith('---')) ? SEP_H : ROW_H;
+    if(yS + rh > maxY) { pageCount++; yS = HDR_H + 2 + 8.5 + 1; }
+    yS += rh;
+  });
+  if(yS + 28 > maxY) pageCount++;
+
+  // ── Render ───────────────────────────────────────────────
   var currentPage = 1;
   drawHeader(currentPage, pageCount);
   var y = drawToolBox(toolNames[toolId] || toolId);
-
-  // Table header
-  function drawTableHeader(yy) {
-    doc.setFillColor(...C_TBL_HDR);
-    doc.rect(MARGIN, yy, COL_W, 9, 'F');
-    doc.setTextColor(...C_WHITE);
-    doc.setFontSize(8); doc.setFont('helvetica','bold');
-    doc.text('PARAMETER', MARGIN + 3, yy + 5.8);
-    doc.text('VALUE / RESULT', MARGIN + COL_W*0.42, yy + 5.8);
-    doc.text('STATUS', MARGIN + COL_W*0.87, yy + 5.8);
-    return yy + 9;
-  }
-
   y = drawTableHeader(y);
   y += 1;
 
-  rows.forEach(function(row, idx) {
-    if(y + rH > maxY) {
+  var dataRowIdx = 0;
+  rows.forEach(function(row) {
+    var param = String(row[0] || '');
+    var val   = String(row[1] || '');
+    var stat  = String(row[2] || '');
+    var rh    = (param.startsWith('─') || param.startsWith('---')) ? SEP_H : ROW_H;
+
+    if(y + rh > maxY) {
       drawFooter(currentPage, pageCount);
       doc.addPage();
       currentPage++;
       drawHeader(currentPage, pageCount);
-      y = HDR_H + 2;
+      y = HDR_H + 0.5 + 11 + 2;
       y = drawTableHeader(y);
       y += 1;
+      dataRowIdx = 0;
     }
 
-    var param = String(row[0] || '');
-    var val   = String(row[1] || '');
-    var stat  = String(row[2] || '');
-
-    // Separator row (starts with ─ or ---)
-    var isSep = param.startsWith('─') || param.startsWith('---') || param.startsWith('—');
-    if(isSep) {
-      doc.setFillColor(...C_SEP_ROW);
-      doc.rect(MARGIN, y, COL_W, rH, 'F');
-      doc.setFillColor(...C_HDR_ACC);
-      doc.rect(MARGIN, y + rH - 0.3, COL_W, 0.3, 'F');
-      doc.setTextColor(...C_TBL_HDR);
-      doc.setFontSize(7.5); doc.setFont('helvetica','bold');
-      // Clean up separator prefix characters
-      var cleanParam = param.replace(/^─+\s*/,'').replace(/^---+/,'').trim();
-      doc.text(cleanParam, MARGIN + 3, y + rH - 2);
-    } else {
-      var bg = idx % 2 === 0 ? C_ROW_ODD : C_ROW_EVEN;
-      doc.setFillColor(...bg);
-      doc.rect(MARGIN, y, COL_W, rH, 'F');
-      // Light divider
-      doc.setDrawColor(200, 215, 235);
-      doc.setLineWidth(0.1);
-      doc.line(MARGIN, y + rH, MARGIN + COL_W, y + rH);
-
-      doc.setTextColor(...C_TEXT);
-      doc.setFontSize(7.5); doc.setFont('helvetica','normal');
-      doc.text(param.substring(0, 50), MARGIN + 3, y + rH - 2);
-
-      // Value column
-      doc.setFont('helvetica','normal');
-      var valTxt = val.substring(0, 55);
-      doc.text(valTxt, MARGIN + COL_W*0.42, y + rH - 2);
-
-      // Status column with colour
-      if(stat === 'PASS') { doc.setTextColor(...C_PASS); doc.setFont('helvetica','bold'); }
-      else if(stat === 'FAIL') { doc.setTextColor(...C_FAIL); doc.setFont('helvetica','bold'); }
-      else if(stat === 'WARN') { doc.setTextColor(...C_WARN); doc.setFont('helvetica','bold'); }
-      else { doc.setTextColor(120, 140, 170); doc.setFont('helvetica','normal'); }
-      if(stat && stat !== '—' && stat !== '—') doc.text(stat.substring(0,10), MARGIN + COL_W*0.87, y + rH - 2);
-    }
-    y += rH;
+    drawRow(param, val, stat, dataRowIdx, y);
+    if(!param.startsWith('─') && !param.startsWith('---')) dataRowIdx++;
+    y += rh;
   });
 
-  // Standards block
-  if(y + 26 > maxY) {
+  // Standards compliance block
+  var SB_H = 28;
+  if(y + SB_H > maxY) {
     drawFooter(currentPage, pageCount);
     doc.addPage();
     currentPage++;
     drawHeader(currentPage, pageCount);
     y = HDR_H + 4;
   }
-  y += 3;
-  doc.setFillColor(240, 246, 255);
-  doc.rect(MARGIN, y, COL_W, 22, 'F');
-  doc.setFillColor(...C_HDR_ACC);
-  doc.rect(MARGIN, y, 2, 22, 'F');
-  doc.setTextColor(...C_TBL_HDR);
+  y += 4;
+  fillArr([238, 246, 255]);
+  doc.rect(M, y, TW, SB_H, 'F');
+  fillArr(C_TOOL_ACC);
+  doc.rect(M, y, 3, SB_H, 'F');
+  rgbArr(C_TBL_HDR);
   doc.setFontSize(7.5); doc.setFont('helvetica','bold');
-  doc.text('STANDARDS COMPLIANCE', MARGIN + 5, y + 5.5);
-  doc.setTextColor(60, 80, 120); doc.setFont('helvetica','normal');
+  doc.text('STANDARDS COMPLIANCE', M + 6, y + 6);
+  doc.setTextColor(60, 85, 130); doc.setFont('helvetica','normal');
   doc.setFontSize(6.5);
-  var note = 'This calculation report complies with applicable international standards including IEC 60909, IEC 60287, IEC 60364-5-52, IEC 61439 (SBC 401), IEC 60947-2, BS 7671 (18th Ed.), IEEE 1584-2018, NEC NFPA 70, ISO/CIE 8995-1, and ASHRAE 90.1 as applicable to the specific calculation tool used.';
-  var lines = doc.splitTextToSize(note, COL_W - 8);
-  doc.text(lines, MARGIN + 5, y + 11);
+  var note = 'This calculation report complies with applicable international standards including IEC 60909, IEC 60287, IEC 60364-5-52, IEC 61439 (SBC 401), IEC 60947-2, BS 7671 (18th Ed.), IEEE 1584-2018, NEC NFPA 70, ISO/CIE 8995-1, and ASHRAE 90.1 as applicable to the specific calculation tool used. Results are for design guidance and must be verified by a licensed engineer before implementation.';
+  var lines = doc.splitTextToSize(note, TW - 10);
+  doc.text(lines, M + 6, y + 12);
 
   drawFooter(currentPage, pageCount);
 
-  var fname = 'AMP_Calc_' + toolId + '_' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '.pdf';
+  var now2 = new Date();
+  var fname = 'AMP_Calc_' + toolId + '_' + now2.getFullYear() + String(now2.getMonth()+1).padStart(2,'0') + String(now2.getDate()).padStart(2,'0') + '.pdf';
   doc.save(fname);
 }
+
 
 // ================================================================
 // ORIGINAL FUNCTIONALITY — Particles, Filter, Animations
@@ -3046,9 +3134,10 @@ window.addEventListener('scroll', () => {
         <table style="width:100%;border-collapse:collapse;font-size:0.79rem;" id="vdMSTbl">
           <thead>
             <tr style="background:rgba(0,180,255,0.12);">
-              <th style="padding:0.45rem;color:var(--primary);text-align:left;white-space:nowrap;">Section</th>
+              <th style="padding:0.45rem;color:var(--primary);text-align:left;white-space:nowrap;">Sec</th>
               <th style="padding:0.45rem;color:var(--primary);">From → To</th>
               <th style="padding:0.45rem;color:var(--primary);">CSA (mm²)</th>
+              <th style="padding:0.45rem;color:var(--primary);">Runs</th>
               <th style="padding:0.45rem;color:var(--primary);">Length (m)</th>
               <th style="padding:0.45rem;color:var(--primary);">Load (kW)</th>
               <th style="padding:0.45rem;color:var(--primary);">PF</th>
@@ -3056,29 +3145,33 @@ window.addEventListener('scroll', () => {
           </thead>
           <tbody id="vdMSBody">
             <tr><td style="padding:0.3rem;font-weight:700;color:var(--primary);">S1</td>
-              <td><input value="TX→MDB" class="vdms-in" style="width:70px;"></td>
-              <td><select class="vdms-csa vdms-in" style="width:65px;"><option>240</option><option>185</option><option>150</option><option>120</option><option>95</option><option>70</option><option>50</option><option>35</option><option>25</option><option>16</option></select></td>
-              <td><input type="number" value="30" class="vdms-in" style="width:55px;"></td>
-              <td><input type="number" value="100" class="vdms-in" style="width:55px;"></td>
-              <td><input type="number" value="0.85" step="0.01" class="vdms-in" style="width:48px;"></td></tr>
+              <td><input value="TX→MDB" class="vdms-in" style="width:68px;"></td>
+              <td><select class="vdms-csa vdms-in" style="width:68px;"><option value="0">— skip —</option><option value="1.5">1.5</option><option value="2.5">2.5</option><option value="4">4</option><option value="6">6</option><option value="10">10</option><option value="16">16</option><option value="25">25</option><option value="35">35</option><option value="50">50</option><option value="70">70</option><option value="95">95</option><option value="120">120</option><option value="150">150</option><option value="185">185</option><option value="240" selected>240</option><option value="300">300</option></select></td>
+              <td><select class="vdms-runs vdms-in" style="width:46px;"><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></td>
+              <td><input type="number" value="30" class="vdms-in" style="width:52px;"></td>
+              <td><input type="number" value="100" class="vdms-in" style="width:52px;"></td>
+              <td><input type="number" value="0.85" step="0.01" class="vdms-in" style="width:46px;"></td></tr>
             <tr><td style="padding:0.3rem;font-weight:700;color:var(--primary);">S2</td>
-              <td><input value="MDB→SMDB" class="vdms-in" style="width:70px;"></td>
-              <td><select class="vdms-csa vdms-in" style="width:65px;"><option>120</option><option>95</option><option>70</option><option>50</option><option>35</option><option>25</option><option>16</option></select></td>
-              <td><input type="number" value="60" class="vdms-in" style="width:55px;"></td>
-              <td><input type="number" value="50" class="vdms-in" style="width:55px;"></td>
-              <td><input type="number" value="0.85" step="0.01" class="vdms-in" style="width:48px;"></td></tr>
+              <td><input value="MDB→SMDB" class="vdms-in" style="width:68px;"></td>
+              <td><select class="vdms-csa vdms-in" style="width:68px;"><option value="0">— skip —</option><option value="1.5">1.5</option><option value="2.5">2.5</option><option value="4">4</option><option value="6">6</option><option value="10">10</option><option value="16">16</option><option value="25">25</option><option value="35">35</option><option value="50">50</option><option value="70">70</option><option value="95">95</option><option value="120" selected>120</option><option value="150">150</option><option value="185">185</option><option value="240">240</option><option value="300">300</option></select></td>
+              <td><select class="vdms-runs vdms-in" style="width:46px;"><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></td>
+              <td><input type="number" value="60" class="vdms-in" style="width:52px;"></td>
+              <td><input type="number" value="50" class="vdms-in" style="width:52px;"></td>
+              <td><input type="number" value="0.85" step="0.01" class="vdms-in" style="width:46px;"></td></tr>
             <tr><td style="padding:0.3rem;font-weight:700;color:var(--primary);">S3</td>
-              <td><input value="SMDB→DB" class="vdms-in" style="width:70px;"></td>
-              <td><select class="vdms-csa vdms-in" style="width:65px;"><option>25</option><option>16</option><option>10</option><option>6</option><option>4</option><option>2.5</option></select></td>
-              <td><input type="number" value="25" class="vdms-in" style="width:55px;"></td>
-              <td><input type="number" value="10" class="vdms-in" style="width:55px;"></td>
-              <td><input type="number" value="0.85" step="0.01" class="vdms-in" style="width:48px;"></td></tr>
+              <td><input value="SMDB→DB" class="vdms-in" style="width:68px;"></td>
+              <td><select class="vdms-csa vdms-in" style="width:68px;"><option value="0">— skip —</option><option value="1.5">1.5</option><option value="2.5">2.5</option><option value="4">4</option><option value="6">6</option><option value="10">10</option><option value="16">16</option><option value="25" selected>25</option><option value="35">35</option><option value="50">50</option><option value="70">70</option><option value="95">95</option><option value="120">120</option><option value="150">150</option><option value="185">185</option><option value="240">240</option><option value="300">300</option></select></td>
+              <td><select class="vdms-runs vdms-in" style="width:46px;"><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></td>
+              <td><input type="number" value="25" class="vdms-in" style="width:52px;"></td>
+              <td><input type="number" value="10" class="vdms-in" style="width:52px;"></td>
+              <td><input type="number" value="0.85" step="0.01" class="vdms-in" style="width:46px;"></td></tr>
             <tr><td style="padding:0.3rem;font-weight:700;color:var(--primary);">S4</td>
-              <td><input value="DB→Sub" class="vdms-in" style="width:70px;"></td>
-              <td><select class="vdms-csa vdms-in" style="width:65px;"><option value="0">—</option><option>4</option><option>2.5</option><option>1.5</option></select></td>
-              <td><input type="number" value="0" class="vdms-in" style="width:55px;"></td>
-              <td><input type="number" value="0" class="vdms-in" style="width:55px;"></td>
-              <td><input type="number" value="0.85" step="0.01" class="vdms-in" style="width:48px;"></td></tr>
+              <td><input value="DB→Sub" class="vdms-in" style="width:68px;"></td>
+              <td><select class="vdms-csa vdms-in" style="width:68px;"><option value="0">— skip —</option><option value="1.5">1.5</option><option value="2.5">2.5</option><option value="4">4</option><option value="6">6</option><option value="10">10</option><option value="16">16</option><option value="25">25</option><option value="35">35</option><option value="50">50</option><option value="70">70</option><option value="95">95</option><option value="120">120</option><option value="150">150</option><option value="185">185</option><option value="240">240</option><option value="300">300</option></select></td>
+              <td><select class="vdms-runs vdms-in" style="width:46px;"><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></td>
+              <td><input type="number" value="0" class="vdms-in" style="width:52px;"></td>
+              <td><input type="number" value="0" class="vdms-in" style="width:52px;"></td>
+              <td><input type="number" value="0.85" step="0.01" class="vdms-in" style="width:46px;"></td></tr>
           </tbody>
         </table>
         </div>
@@ -3290,7 +3383,7 @@ window.addEventListener('scroll', () => {
       </div>
 
       <div class="form-section">
-        <div class="form-section-title">📋 Circuit Load Schedule (up to 12 circuits)</div>
+        <div class="form-section-title">📋 Circuit Load Schedule</div>
         <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;font-size:0.78rem;" id="psCircuitTable">
             <thead>
@@ -3968,27 +4061,29 @@ function calcPanelSchedule() {
   var upVD_calc = round(Math.sqrt(3)*I_main*(upR*0.85+upX*0.527)*upLen/1000/Vn*100,2);
 
   var rows = [
-    ['─ PANEL DATA ─','',''],
+    ['--- PANEL DATA ---','',''],
     ['Panel ID', panelId+' ('+panelType+')','—'],
     ['Supply Voltage', Vn+'V ('+(Vn>=400?'3Ø':'1Ø')+')','—'],
     ['Global Power Factor', globalPF,'—'],
     ['Total Connected Load', round(totalKW,1)+' kW / '+round(totalKVA,1)+' kVA','—'],
     ['Design Current (total)', round(I_main,1)+' A','—'],
     ['Main Incomer CB', In_main+' A','—'],
-    ['─ UPSTREAM ─','',''],
+    ['--- UPSTREAM ---','',''],
     ['Feeder Cable', upCSA+' mm² × '+upLen+' m','—'],
     ['Feeder VD', round(upVD_calc,2)+'% (entered: '+upVD+'%)', (upVD_calc+upVD)>2?'WARN':'PASS'],
-    ['─ PHASE BALANCE ─','',''],
+    ['--- PHASE BALANCE ---','',''],
     ['L1 Load', round(L1kW,1)+' kW','—'],
     ['L2 Load', round(L2kW,1)+' kW','—'],
     ['L3 Load', round(L3kW,1)+' kW','—'],
     ['Max Phase Imbalance', maxImb+'% (target ≤10%)', maxImb>10?'WARN':'PASS'],
-    ['─ CIRCUITS ─','',''],
+    ['--- CIRCUITS ---','',''],
   ];
   circuits.forEach(function(c) {
     var ok=c.ok;
-    var status=c.totVD>4||c.Ib>c.Iz?'FAIL':c.totVD>3?'WARN':'PASS';
-    rows.push(['L'+c.n+': '+c.desc, c.kW+'kW|'+c.Ib+'A|'+c.csa+'mm²('+c.Iz+'A)'+(c.Ib<=c.Iz?'✓':'✗')+'|CB:'+c.cb+'A|VD:'+c.VD+'%→'+c.totVD+'%|'+c.ph, status]);
+    var ampOk=c.Ib<=c.Iz; var vdOk=c.totVD<=4;
+    var status=(!ampOk||c.totVD>4)?'FAIL':c.totVD>3?'WARN':'PASS';
+    var cableStatus=ampOk?'OK':'OVERLOAD';
+    rows.push(['L'+c.n+': '+c.desc+' ('+c.ph+')', c.kW+'kW | Ib:'+c.Ib+'A | '+c.csa+'mm² Iz:'+c.Iz+'A | CB:'+c.cb+'A | VD:'+c.VD+'%+up='+c.totVD+'%', status]);
   });
   showResults(mid, rows);
 }
@@ -4076,62 +4171,85 @@ function calcVDMultiSection() {
   var Vn = parseFloat(document.getElementById('vd_v').value) || 400;
   var phases = parseInt(document.getElementById('vd_phases').value) || 3;
   var temp = parseFloat(document.getElementById('vd_temp') ? document.getElementById('vd_temp').value : 30) || 30;
-  var rows = document.querySelectorAll('#vdMSBody tr');
+  var trows = document.querySelectorAll('#vdMSBody tr');
   var cumVD = 0;
-  var out = '<div style="background:rgba(0,180,255,0.06);border:1px solid rgba(0,180,255,0.2);border-radius:8px;padding:0.75rem;">';
-  out += '<div style="color:#00c8ff;font-weight:700;margin-bottom:0.5rem;font-size:0.88rem;">Cumulative VD Analysis — Temp: '+temp+'°C</div>';
-  out += '<table style="width:100%;border-collapse:collapse;font-size:0.77rem;">';
-  out += '<tr style="background:rgba(0,180,255,0.1);"><th style="padding:0.35rem;color:var(--primary);text-align:left;">Sec</th><th style="padding:0.35rem;color:var(--primary);">Route</th><th style="padding:0.35rem;color:var(--primary);">mm²</th><th style="padding:0.35rem;color:var(--primary);">m</th><th style="padding:0.35rem;color:var(--primary);">kW</th><th style="padding:0.35rem;color:var(--primary);">Ib(A)</th><th style="padding:0.35rem;color:var(--primary);">Seg VD%</th><th style="padding:0.35rem;color:var(--primary);">Cumul%</th><th style="padding:0.35rem;color:var(--primary);">Status</th></tr>';
-  rows.forEach(function(tr, idx) {
+  var out = '<div style="background:rgba(0,180,255,0.06);border:1px solid rgba(0,180,255,0.2);border-radius:8px;padding:0.75rem;overflow-x:auto;">';
+  out += '<div style="color:#00c8ff;font-weight:700;margin-bottom:0.5rem;font-size:0.88rem;">Cumulative VD Analysis — '+phases+'Ø | '+Vn+'V | Temp: '+temp+'°C</div>';
+  out += '<table style="width:100%;border-collapse:collapse;font-size:0.76rem;min-width:520px;">';
+  out += '<tr style="background:rgba(0,180,255,0.15);">'
+    +'<th style="padding:0.35rem 0.4rem;color:var(--primary);text-align:left;">Sec</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">Route</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">mm²</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">Runs</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">m</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">kW</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">Ib/run(A)</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">Iz(A)</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">Util%</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">Seg VD%</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">Cum VD%</th>'
+    +'<th style="padding:0.35rem;color:var(--primary);">Status</th>'
+    +'</tr>';
+  trows.forEach(function(tr, idx) {
     var inps = tr.querySelectorAll('input');
     var sels = tr.querySelectorAll('select');
     if(!inps[0]) return;
     var label = 'S'+(idx+1);
     var route = inps[0].value;
     var csa = parseFloat(sels[0] ? sels[0].value : 0) || 0;
+    var runs = parseInt(sels[1] ? sels[1].value : 1) || 1;
     var len = parseFloat(inps[1] ? inps[1].value : 0) || 0;
     var kW = parseFloat(inps[2] ? inps[2].value : 0) || 0;
     var pf = parseFloat(inps[3] ? inps[3].value : 0.85) || 0.85;
     if(!csa || !len || !kW) return;
     var kVA = kW / pf;
-    var Ib = phases===3 ? (kVA*1000)/(Math.sqrt(3)*Vn) : (kVA*1000)/Vn;
+    var Ib_total = phases===3 ? (kVA*1000)/(Math.sqrt(3)*Vn) : (kVA*1000)/Vn;
+    var Ib_per_run = Ib_total / runs;  // Current per cable run
     var dbEntry = (CABLE_DB[mfr] && CABLE_DB[mfr].xlpe_cu && CABLE_DB[mfr].xlpe_cu[csa]) ? CABLE_DB[mfr].xlpe_cu[csa] : null;
     var r90 = dbEntry ? dbEntry[5] : (17.241e-3/csa);
     var x = dbEntry ? dbEntry[6] : 0.15;
-    // Temp correction (IEC 60228): resistance increases with temp
+    var Iz_single = dbEntry ? dbEntry[1] : csa*1.5;
     var alpha = 0.00393;
     var rAdj = r90 * (1 + alpha*(temp-90));
     if(rAdj < r90*0.5) rAdj = r90*0.8;
     var sinphi = Math.sqrt(1-pf*pf);
     var zeff = rAdj*pf + x*sinphi;
-    var VD_mV = phases===3 ? Math.sqrt(3)*Ib*zeff*len : 2*Ib*zeff*len;
+    // VD based on current per run (parallel reduces current, not length)
+    var VD_mV = phases===3 ? Math.sqrt(3)*Ib_per_run*zeff*len : 2*Ib_per_run*zeff*len;
     var VD_pc = round(VD_mV/1000/Vn*100, 2);
     cumVD = round(cumVD + VD_pc, 3);
+    var util = round(Ib_per_run/Iz_single*100, 1);
     var maxSeg = idx===0 ? 1.5 : 2.5;
     var segOK = VD_pc <= maxSeg;
+    var ampOK = util <= 100;
     var cumOK = cumVD <= 4.0;
+    var ok = segOK && ampOK && cumOK;
     var segCol = segOK ? '#10c078' : '#f04050';
-    var cumCol = cumVD<=4?'#10c078':cumVD<=3.5?'#f0a030':'#f04050';
-    var rowBg = idx%2===0 ? 'rgba(10,20,40,0.6)' : 'rgba(8,16,30,0.6)';
-    out += '<tr style="background:'+rowBg+';">';
-    out += '<td style="padding:0.3rem;font-weight:700;color:var(--primary);">'+label+'</td>';
-    out += '<td style="padding:0.3rem;color:#d8eaf7;">'+route+'</td>';
-    out += '<td style="padding:0.3rem;color:#d8eaf7;">'+csa+'</td>';
-    out += '<td style="padding:0.3rem;color:#d8eaf7;">'+len+'</td>';
-    out += '<td style="padding:0.3rem;color:#d8eaf7;">'+kW+'</td>';
-    out += '<td style="padding:0.3rem;color:#d8eaf7;">'+round(Ib,1)+'</td>';
-    out += '<td style="padding:0.3rem;color:'+segCol+';font-weight:600;">'+VD_pc+'%'+(segOK?'':' !')+'</td>';
-    out += '<td style="padding:0.3rem;font-weight:700;color:'+cumCol+';">'+cumVD+'%</td>';
-    out += '<td style="padding:0.3rem;color:'+cumCol+';">'+(cumOK ? (VD_pc>maxSeg?'Seg!':'OK') : 'FAIL')+'</td>';
-    out += '</tr>';
+    var ampCol = ampOK ? (util>85?'#f0a030':'#10c078') : '#f04050';
+    var cumCol = cumOK ? (cumVD>3.5?'#f0a030':'#10c078') : '#f04050';
+    var rowBg = idx%2===0 ? 'rgba(10,20,40,0.6)' : 'rgba(8,16,32,0.7)';
+    out += '<tr style="background:'+rowBg+';">'
+      +'<td style="padding:0.3rem 0.4rem;font-weight:700;color:var(--primary);">'+label+'</td>'
+      +'<td style="padding:0.3rem;color:#c8e0f4;white-space:nowrap;">'+route+'</td>'
+      +'<td style="padding:0.3rem;color:#d8eaf7;font-weight:600;">'+csa+'</td>'
+      +'<td style="padding:0.3rem;color:#d8eaf7;text-align:center;">×'+runs+'</td>'
+      +'<td style="padding:0.3rem;color:#d8eaf7;">'+len+'</td>'
+      +'<td style="padding:0.3rem;color:#d8eaf7;">'+kW+'</td>'
+      +'<td style="padding:0.3rem;color:#d8eaf7;">'+round(Ib_per_run,1)+'</td>'
+      +'<td style="padding:0.3rem;color:#d8eaf7;">'+round(Iz_single,0)+'</td>'
+      +'<td style="padding:0.3rem;color:'+ampCol+';font-weight:600;">'+util+'%</td>'
+      +'<td style="padding:0.3rem;color:'+segCol+';font-weight:600;">'+VD_pc+'%'+(segOK?'':' ⚠')+'</td>'
+      +'<td style="padding:0.3rem;font-weight:700;color:'+cumCol+';">'+cumVD+'%</td>'
+      +'<td style="padding:0.3rem;color:'+(ok?'#10c078':'#f04050')+';font-weight:700;">'+(ok?'✓ OK':(cumVD>4?'FAIL':(!ampOK?'OVERLOAD':'SEG!'))+'')+'</td>'
+      +'</tr>';
   });
   out += '</table>';
-  out += '<div style="margin-top:0.5rem;padding:0.4rem 0.6rem;background:rgba(0,0,0,0.3);border-radius:5px;display:flex;align-items:center;gap:0.75rem;">';
-  out += '<span style="color:#d8eaf7;font-size:0.8rem;"><strong>Total Cumulative VD:</strong></span>';
   var finalCol = cumVD>4?'#f04050':cumVD>3.5?'#f0a030':'#10c078';
-  out += '<span style="font-size:1rem;font-weight:700;color:'+finalCol+';">'+cumVD+'%</span>';
-  out += '<span style="color:rgba(200,220,240,0.5);font-size:0.74rem;">(IEC limit: 4.0% | Temp: '+temp+'°C)</span>';
-  out += '</div></div>';
+  out += '<div style="margin-top:0.6rem;padding:0.5rem 0.8rem;background:rgba(0,0,0,0.25);border-radius:6px;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">'
+    +'<span style="color:#c0d8f0;font-size:0.82rem;font-weight:600;">Total Cumulative VD:</span>'
+    +'<span style="font-size:1.05rem;font-weight:700;color:'+finalCol+';">'+cumVD+'%</span>'
+    +'<span style="color:rgba(180,210,240,0.5);font-size:0.74rem;">IEC 60364 limit: ≤4.0% total | MDB→SMDB: ≤1.5% | SMDB→DB: ≤2.5%</span>'
+    +'</div></div>';
   var d = document.getElementById('vdMSResult');
   if(d) d.innerHTML = out;
 }
