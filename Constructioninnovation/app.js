@@ -10,8 +10,21 @@ const STATE = {
   userRole: 'operator', // 'admin' or 'operator' — default operator for security
   darkMode: true,
   drawingMEPFilter: 'all',
-  ncrTab: 'ncr',
+  ncrTab: 'ncr',  // kept for legacy compat
+  materialDiscFilter: 'all',
+  methodDiscFilter: 'all',
+  testingDiscFilter: 'all',
+  ncrDiscFilter: 'all',
+  rfiDiscFilter: 'all',
+  siDiscFilter: 'all',
+  wirDiscFilter: 'all',
+  mdrDiscFilter: 'all',
+  procurementDiscFilter: 'all',
+  subDiscFilter: 'all',
+  costDiscFilter: 'all',
+  closeoutDiscFilter: 'all',
   charts: {},
+  filePaths: {}, // Amendment 4: saved local drive paths per module
 };
 
 document.addEventListener('DOMContentLoaded', () => { initApp(); });
@@ -32,20 +45,10 @@ function initApp() {
   // Populate project switcher
   const switcher = document.getElementById('project-switcher');
   if (switcher) {
-    switcher.innerHTML = D.PROJECTS.map(p => `<option value="${p.id}" ${p.id===proj.id?'selected':''}>${p.code} — ${p.name.length>28?p.name.substring(0,28)+'…':p.name}</option>`).join('');
+    switcher.innerHTML = D.PROJECTS.map(p => `<option value="${p.id}" ${p.id===proj.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
     switcher.addEventListener('change', () => {
       const p = D.PROJECTS.find(x => x.id === switcher.value);
-      if (p) {
-        // Destroy ALL charts so they redraw cleanly for new project data
-        Object.keys(STATE.charts).forEach(k => { if(STATE.charts[k]){STATE.charts[k].destroy();STATE.charts[k]=null;} });
-        // Switch all data to new project
-        window.APP_DATA.switchProjectData(p.id);
-        updateProjectDisplay(p);
-        updateNavBadges();
-        // Always navigate to dashboard so user sees fresh data
-        navigateTo('dashboard');
-        showToast('Project Switched ✓', p.name, 'info');
-      }
+      if (p) { D.ACTIVE_PROJECT = p; updateProjectDisplay(p); renderPage(STATE.currentPage); showToast('Project Switched', p.name, 'info'); }
     });
   }
 
@@ -53,7 +56,6 @@ function initApp() {
   setupHeaderActions();
   setupNotifications(D.NOTIFICATIONS);
   navigateTo('dashboard');
-  setTimeout(() => { if(window.APP_DATA && window.APP_DATA.updateNavBadges) window.APP_DATA.updateNavBadges(); }, 400);
 }
 
 function updateProjectDisplay(proj) {
@@ -78,23 +80,10 @@ function navigateTo(page) {
   STATE.currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.querySelectorAll('.page-section').forEach(sec => sec.classList.toggle('active', sec.id === 'page-' + page));
-  const titles = { dashboard:'Dashboard Overview', projects:'Project Management', drawings:'Drawing Register', materials:'Material Submittal Register', methods:'Method Statement Register', testing:'Test & Commissioning Register', ncr:'NCR / RFI / Site Instructions', procurement:'Procurement Tracker', progress:'Progress Tracker', hse:'HSE Register', subcontractors:'Subcontractor Management', cost:'Cost Control', manpower:'Manpower & Equipment', closeout:'Project Closeout' };
+  const titles = { dashboard:'Dashboard Overview', projects:'Project Management', drawings:'Drawing Register', materials:'Material Submittal Register', methods:'Method Statement Register', testing:'Test & Commissioning Register', ncr:'NCR Register', rfi:'RFI Register', si:'Site Instructions', wir:'Work Inspection Requests', mdr:'Material Delivery Receipts', procurement:'Procurement Tracker', progress:'Progress Tracker', hse:'HSE Register', subcontractors:'Subcontractor Management', cost:'Cost Control', manpower:'Manpower & Equipment', closeout:'Project Closeout' };
   const el = document.getElementById('header-page-title');
   if (el) el.textContent = titles[page] || 'Dashboard';
-  // Map page → chart keys to destroy before re-render (ensures clean redraw on project switch)
-  const pageCharts = {
-    dashboard: ['scurve','discipline'],
-    progress:  ['progressScurve'],
-    cost:      ['cost'],
-    procurement:['procurement'],
-    hse:       ['hse'],
-    manpower:  ['manpower'],
-  };
-  if (pageCharts[page]) {
-    pageCharts[page].forEach(k => { if(STATE.charts[k]){STATE.charts[k].destroy();STATE.charts[k]=null;} });
-  }
   renderPage(page);
-  if(window.APP_DATA && window.APP_DATA.updateNavBadges) window.APP_DATA.updateNavBadges();
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
   sidebar?.classList.remove('open');
@@ -102,8 +91,8 @@ function navigateTo(page) {
 }
 
 function renderPage(page) {
-  const map = { dashboard:renderDashboard, projects:renderProjects, drawings:renderDrawings, materials:renderMaterials, methods:renderMethods, testing:renderTesting, ncr:renderNCRPage, procurement:renderProcurement, progress:renderProgress, hse:renderHSE, subcontractors:renderSubcontractors, cost:renderCost, manpower:renderManpower, closeout:renderCloseout };
-  if (map[page]) map[page]();
+  const map = { dashboard:renderDashboard, projects:renderProjects, drawings:renderDrawings, materials:renderMaterials, methods:renderMethods, testing:renderTesting, ncr:renderNCRPage, rfi:renderRFIPage, si:renderSIPage, wir:renderWIRPage, mdr:renderMDRPage, procurement:renderProcurement, progress:renderProgress, hse:renderHSE, subcontractors:renderSubcontractors, cost:renderCost, manpower:renderManpower, closeout:renderCloseout };
+  if (map[page]) setTimeout(() => map[page](), 50);
 }
 
 // ── HEADER ────────────────────────────────────────────────────
@@ -385,9 +374,9 @@ function renderProjects() {
       <td><div class="progress-bar" style="width:60px"><div class="progress-fill" style="width:${p.currentProgress}%"></div></div> ${p.currentProgress}%</td>
       <td>${statusBadge(p.status)}</td>
       <td>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.root}${encodeURIComponent(p.code)}/" target="_blank" title="Open project folder">📂 Open</a>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="openEditProjectModal('${p.id}')">✎ Edit</button>
         <button class="btn btn-sm btn-danger" onclick="confirmDeleteProject('${p.id}')">🗑 Delete</button>`:''}
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('projects')">Import</button>
       </td>
     </tr>`).join('');
   setupTableFilter('projects-filter-input', 'projects-table-body');
@@ -437,7 +426,7 @@ function openEditProjectModal(id) {
       // Update switcher
       const switcher = document.getElementById('project-switcher');
       if (switcher) {
-        switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.length>28?p.name.substring(0,28)+'…':p.name}</option>`).join('');
+        switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
       }
       showToast('Project Updated', p.name, 'success');
     }
@@ -451,13 +440,13 @@ function confirmDeleteProject(id) {
   if (index !== -1) {
     const deleted = window.APP_DATA.PROJECTS.splice(index, 1)[0];
     if (window.APP_DATA.ACTIVE_PROJECT.id === id && window.APP_DATA.PROJECTS.length > 0) {
-      window.APP_DATA.switchProjectData(window.APP_DATA.PROJECTS[0].id);
+      window.APP_DATA.ACTIVE_PROJECT = window.APP_DATA.PROJECTS[0];
       updateProjectDisplay(window.APP_DATA.ACTIVE_PROJECT);
     }
     renderProjects();
     const switcher = document.getElementById('project-switcher');
     if (switcher) {
-      switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.length>28?p.name.substring(0,28)+'…':p.name}</option>`).join('');
+      switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
     }
     showToast('Project Deleted', deleted.name, 'warning');
   }
@@ -483,122 +472,96 @@ function printProjectsPDF() {
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────
+// ── LIVE KPI REFRESH (called after every data mutation) ────────
+function refreshDashboardKPIs() {
+  // Only update DOM elements that exist — safe to call from any page
+  const D = window.APP_DATA;
+  const KPIs = D.computeKPIs();
+  const proj = D.ACTIVE_PROJECT;
+
+  // Dashboard KPI tiles
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  set('wb-progress',       KPIs.overallProgress + '%');
+  set('wb-workers',        KPIs.activeWorkers);
+  set('wb-contract',       formatMillions(proj.contractValue));
+  set('kpi-drawings-pending', KPIs.drawingsPending);
+  set('kpi-open-ncrs',     KPIs.openNCRs + KPIs.openRFIs + KPIs.openSIs);
+  set('kpi-schedule-var',  KPIs.scheduleVariance + '%');
+  set('kpi-cost-var',      (KPIs.costVariance>0?'+':'') + KPIs.costVariance + '%');
+  set('kpi-progress',      KPIs.overallProgress + '%');
+  set('kpi-workers',       KPIs.activeWorkers);
+  set('kpi-safe-hours',    (KPIs.safeManHours/1000).toFixed(0) + 'K');
+  set('kpi-ltir',          KPIs.ltir);
+
+  // Sidebar progress bar
+  const fill = document.getElementById('sidebar-progress-fill');
+  const pct  = document.getElementById('sidebar-progress-pct');
+  if(fill) fill.style.width = KPIs.overallProgress + '%';
+  if(pct)  pct.textContent  = KPIs.overallProgress + '%';
+
+  // Nav badges — drawings pending, NCR open count
+  const drawBadge = document.querySelector('[data-page="drawings"] .nav-badge');
+  if(drawBadge) drawBadge.textContent = KPIs.drawingsPending || '';
+
+  const ncrBadge = document.getElementById('nav-badge-ncr') || document.querySelector('[data-page="ncr"] .nav-badge');
+  if(ncrBadge) ncrBadge.textContent = KPIs.openNCRs || '';
+
+  const hseBadge = document.querySelector('[data-page="hse"] .nav-badge');
+  if(hseBadge) hseBadge.textContent = KPIs.openIncidents || '';
+
+  // If we're currently on the dashboard, also refresh activity feed
+  if(STATE.currentPage === 'dashboard') {
+    renderDashboardActivity();
+  }
+}
+
 function renderDashboard() {
   const D = window.APP_DATA, KPIs = D.computeKPIs(), proj = D.ACTIVE_PROJECT;
-  // Always sync sidebar display when rendering dashboard
-  updateProjectDisplay(proj);
   document.getElementById('wb-project').textContent = proj.name;
   document.getElementById('wb-progress').textContent = KPIs.overallProgress + '%';
   document.getElementById('wb-workers').textContent = KPIs.activeWorkers;
   document.getElementById('wb-contract').textContent = formatMillions(proj.contractValue);
   document.getElementById('kpi-drawings-pending').textContent = KPIs.drawingsPending;
   document.getElementById('kpi-open-ncrs').textContent = KPIs.openNCRs + KPIs.openRFIs + KPIs.openSIs;
-  // Schedule variance: prefix + for positive (ahead), - for negative (behind)
-  const svEl = document.getElementById('kpi-schedule-var');
-  if (svEl) {
-    svEl.textContent = (KPIs.scheduleVariance > 0 ? '+' : '') + KPIs.scheduleVariance + '%';
-    // Color: green = on/ahead, red = behind
-    const svCard = svEl.closest('.kpi-card');
-    if (svCard) {
-      svCard.className = 'kpi-card ' + (KPIs.scheduleVariance >= 0 ? 'emerald' : 'amber');
-    }
-  }
-  // Cost variance: show red if over budget, green if under
-  const cvEl = document.getElementById('kpi-cost-var');
-  if (cvEl) {
-    cvEl.textContent = (KPIs.costVariance > 0 ? '+' : '') + KPIs.costVariance + '%';
-    const cvCard = cvEl.closest('.kpi-card');
-    if (cvCard) {
-      cvCard.className = 'kpi-card ' + (KPIs.costVariance <= 0 ? 'emerald' : 'rose');
-    }
-  }
+  document.getElementById('kpi-schedule-var').textContent = KPIs.scheduleVariance + '%';
+  document.getElementById('kpi-cost-var').textContent = (KPIs.costVariance>0?'+':'') + KPIs.costVariance + '%';
   document.getElementById('kpi-progress').textContent = KPIs.overallProgress + '%';
   document.getElementById('kpi-workers').textContent = KPIs.activeWorkers;
-  document.getElementById('kpi-safe-hours').textContent = KPIs.safeManHours > 0 ? (KPIs.safeManHours/1000).toFixed(0) + 'K' : '0K';
+  document.getElementById('kpi-safe-hours').textContent = (KPIs.safeManHours/1000).toFixed(0) + 'K';
   document.getElementById('kpi-ltir').textContent = KPIs.ltir;
   renderSCurveChart(); renderDisciplineChart(); renderMilestoneList(); renderDashboardActivity();
 }
 
 function renderSCurveChart() {
   const ctx = document.getElementById('scurve-chart'); if (!ctx) return;
-  if (STATE.charts.scurve) { STATE.charts.scurve.destroy(); STATE.charts.scurve = null; }
-  const d = (window.APP_DATA.mockProgressData && window.APP_DATA.mockProgressData.sCurveData) || [];
-  if (!d.length) {
-    // Draw empty state
-    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
-    const parent = ctx.parentElement;
-    const msg = parent.querySelector('.empty-chart-msg');
-    if (!msg) { const e=document.createElement('div'); e.className='empty-chart-msg'; e.style.cssText='text-align:center;padding:40px;color:var(--text-muted);font-size:12px'; e.textContent='No progress data yet — update progress to see S-Curve'; parent.appendChild(e); }
-    return;
-  }
-  const emptyMsg = ctx.parentElement.querySelector('.empty-chart-msg');
-  if (emptyMsg) emptyMsg.remove();
-  const allVals = d.flatMap(x=>[x.planned,x.actual]).filter(v=>v!=null);
-  const dataMax = allVals.length ? Math.max(...allVals) : 100;
-  const yMax = Math.ceil(Math.min(100, dataMax * 1.15) / 10) * 10; // 15% headroom, rounded to 10
-  STATE.charts.scurve = new Chart(ctx, { type:'line', data:{ labels:d.map(x=>x.month), datasets:[{ label:'Planned', data:d.map(x=>x.planned), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin' },{ label:'Actual', data:d.map(x=>x.actual), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin', spanGaps:false }] }, options:chartDefaults({ scales:{ y:{ min:0, max:yMax, ticks:{ callback:v=>v+'%' } } } }) });
+  if (STATE.charts.scurve) STATE.charts.scurve.destroy();
+  const d = window.APP_DATA.mockProgressData.sCurveData;
+  STATE.charts.scurve = new Chart(ctx, { type:'line', data:{ labels:d.map(x=>x.month), datasets:[{ label:'Planned', data:d.map(x=>x.planned), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin' },{ label:'Actual', data:d.map(x=>x.actual), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin', spanGaps:false }] }, options:chartDefaults({ scales:{ y:{ min:0, suggestedMax:55, ticks:{ callback:v=>v+'%' } } } }) });
 }
 
 function renderDisciplineChart() {
   const ctx = document.getElementById('discipline-chart'); if (!ctx) return;
-  if (STATE.charts.discipline) { STATE.charts.discipline.destroy(); STATE.charts.discipline = null; }
-  const d = (window.APP_DATA.mockProgressData && window.APP_DATA.mockProgressData.disciplineProgress) || [];
-  if (!d.length) {
-    const parent=ctx.parentElement;
-    const existing=parent.querySelector('.empty-chart-msg');
-    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No discipline data yet — update progress to populate this chart';parent.appendChild(e);}
-    ctx.style.display='none'; return;
-  }
-  ctx.style.display='';
-  const parent=ctx.parentElement;
-  const existing=parent.querySelector('.empty-chart-msg');
-  if(existing) existing.remove();
+  if (STATE.charts.discipline) STATE.charts.discipline.destroy();
+  const d = window.APP_DATA.mockProgressData.disciplineProgress;
   STATE.charts.discipline = new Chart(ctx, { type:'bar', data:{ labels:d.map(x=>x.name), datasets:[{ label:'Planned %', data:d.map(x=>x.planned), backgroundColor:'rgba(59,130,246,0.3)', borderColor:'#3b82f6', borderWidth:1, borderRadius:4 },{ label:'Actual %', data:d.map(x=>x.progress), backgroundColor:'rgba(16,185,129,0.7)', borderColor:'#10b981', borderWidth:1, borderRadius:4 }] }, options:chartDefaults({ scales:{ y:{ max:100, ticks:{ callback:v=>v+'%' } } } }) });
 }
 
 function renderMilestoneList() {
-  // Update both dashboard and progress page milestone lists
-  ['milestone-list','progress-milestone-list'].forEach(id => {
-  const container = document.getElementById(id); if (!container) return;
-  const milestones = window.APP_DATA.mockProgressData.milestones;
-  if (!milestones || !milestones.length) {
-    container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">No milestones yet — click ➕ Update Progress to add milestones</div>';
-    return;
-  }
+  const container = document.getElementById('milestone-list'); if (!container) return;
   const icons={completed:'✓','on-track':'►','at-risk':'⚠',delayed:'✗'};
-  container.innerHTML = milestones.slice(0,6).map(ms=>`
+  container.innerHTML = window.APP_DATA.mockProgressData.milestones.slice(0,6).map(ms=>`
     <div class="milestone-item">
       <div class="ms-icon ${ms.status}">${icons[ms.status]||'●'}</div>
       <div class="ms-info"><div class="ms-name">${ms.name}</div><div class="ms-date">Planned: ${ms.planned}${ms.actual?' | Actual: '+ms.actual:''}</div></div>
       <span class="badge badge-${ms.status==='completed'?'completed':ms.status==='on-track'?'approved':ms.status==='at-risk'?'pending':'rejected'}">${ms.status.replace('-',' ')}</span>
       ${ms.delay>0?`<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent-rose)">+${ms.delay}d</span>`:''}
     </div>`).join('');
-  }); // end forEach
 }
 
 function renderDashboardActivity() {
+  const activities=[{color:'var(--accent-emerald)',text:'DWG-010 Fire Suppression approved by consultant',time:'1h ago'},{color:'var(--accent-rose)',text:'NCR-003 raised: Improper Curing Procedure – Critical',time:'3h ago'},{color:'var(--accent-blue)',text:'MAT-003 Curtain Wall submitted for review',time:'6h ago'},{color:'var(--accent-amber)',text:'HSE-003 Near Miss: Crane swing logged',time:'1d ago'},{color:'var(--accent-violet)',text:'PO-004 HVAC Equipment partial delivery (60%)',time:'2d ago'}];
   const c = document.getElementById('activity-feed'); if(!c)return;
-  const D = window.APP_DATA;
-  const pd = D.getPD ? D.getPD() : null;
-  const activities = [];
-  if (pd) {
-    // Pull latest real data as activity items
-    const latestDwg = [...(pd.drawings||[])].sort((a,b)=>b.date>a.date?1:-1)[0];
-    if(latestDwg) activities.push({color:'var(--accent-blue)',text:`${latestDwg.id} — ${latestDwg.title} (${latestDwg.status})`,time:latestDwg.date});
-    const openNCRs = (pd.ncr||[]).filter(n=>n.status==='open');
-    if(openNCRs.length) activities.push({color:'var(--accent-rose)',text:`${openNCRs.length} open NCR${openNCRs.length>1?'s':''} — ${openNCRs[0].title}`,time:openNCRs[0].date});
-    const pendingMat = (pd.materials||[]).filter(m=>m.status==='under-review'||m.status==='submitted');
-    if(pendingMat.length) activities.push({color:'var(--accent-amber)',text:`${pendingMat.length} material submittal${pendingMat.length>1?'s':''} pending approval`,time:pendingMat[0].submitDate});
-    const openHSE = (pd.hse?.incidents||[]).filter(i=>i.status==='open');
-    if(openHSE.length) activities.push({color:'var(--accent-orange)',text:`HSE: ${openHSE[0].desc}`,time:openHSE[0].date});
-    const activePO = (pd.procurement||[]).filter(p=>p.status==='active'||p.status==='partially-delivered');
-    if(activePO.length) activities.push({color:'var(--accent-violet)',text:`${activePO[0].item} — ${activePO[0].status}`,time:activePO[0].deliveryDate});
-  }
-  if(!activities.length) {
-    c.innerHTML='<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">No recent activity — add drawings, NCRs or materials to see activity here.</div>';
-    return;
-  }
-  c.innerHTML = activities.map(a=>`<div class="activity-item"><div class="activity-dot" style="background:${a.color}"></div><div style="flex:1"><div style="font-size:12.5px;color:var(--text-primary)">${a.text}</div><div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:2px">${a.time||''}</div></div></div>`).join('');
+  c.innerHTML = activities.map(a=>`<div class="activity-item"><div class="activity-dot" style="background:${a.color}"></div><div style="flex:1"><div style="font-size:12.5px;color:var(--text-primary)">${a.text}</div><div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:2px">${a.time}</div></div></div>`).join('');
 }
 
 async function printDashboardPDF() {
@@ -710,7 +673,7 @@ function renderDrawings() {
       <td style="font-size:11px;color:var(--text-secondary);max-width:150px">${d.comments||'—'}</td>
       <td>
         <div style="display:flex;gap:4px">
-          <button class="drive-link" onclick="openDriveFile('drawings','${d.file}')">📂 Open</button>
+          <a class="drive-link" href="${D.LOCAL_DRIVE.drawings}${encodeURIComponent(d.file)}" target="_blank" title="Open file from local drive">Open</a>
           <button class="btn btn-sm btn-secondary" onclick="viewDrawing('${d.id}')">View</button>
           ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editDrawingStatus('${d.id}')">Edit</button>
           <button class="btn btn-sm btn-danger" onclick="deleteDrawing('${d.id}')">Delete</button>
@@ -743,7 +706,7 @@ function viewDrawing(id) {
     </div>
     <div style="margin-top:14px">${inf('Comments',d.comments||'No comments')}</div>
     <div style="margin-top:14px">
-      <button class="drive-link" style="font-size:12px" onclick="openDriveFile('drawings','${d.file}')">📂 ${d.file}</button>
+      <a class="drive-link" style="font-size:12px" href="${window.APP_DATA.LOCAL_DRIVE.drawings}${encodeURIComponent(d.file)}" target="_blank">📂 ${d.file}</a>
     </div>`);
 }
 
@@ -769,14 +732,14 @@ function editDrawingStatus(id) {
     d.status=document.getElementById('edit-status-select').value;
     d.rev=parseInt(document.getElementById('edit-rev').value)||d.rev;
     d.comments=document.getElementById('edit-comments').value;
-    renderDrawings(); showToast('Updated',`${d.id} updated to Rev ${d.rev} — ${d.status}`,'success');
+    renderDrawings(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${d.id} updated to Rev ${d.rev} — ${d.status}`,'success');
   });
 }
 
 function deleteDrawing(id) {
   const data=window.APP_DATA.mockDrawingsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Drawing <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderDrawings(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderDrawings(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddDrawingModal() {
@@ -797,16 +760,20 @@ function openAddDrawingModal() {
     <div class="form-group"><label class="form-label">Comments</label><textarea class="form-control" id="nd-comments" rows="2"></textarea></div>`,
   ()=>{
     const id=document.getElementById('nd-id').value||('DWG-0'+String(window.APP_DATA.mockDrawingsData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockDrawingsData.unshift({id,title:document.getElementById('nd-title').value||'New Drawing',discipline:document.getElementById('nd-disc').value,rev:parseInt(document.getElementById('nd-rev').value)||1,status:'submitted',submittedBy:'U001',date:document.getElementById('nd-date').value,consultant:document.getElementById('nd-cons').value,file:document.getElementById('nd-file').value||(id+'-Rev1.pdf'),comments:document.getElementById('nd-comments').value});
-    renderDrawings(); showToast('Added',`${id} added to Drawing Register`,'success');
+    window.APP_DATA.mockDrawingsData.push({id,title:document.getElementById('nd-title').value||'New Drawing',discipline:document.getElementById('nd-disc').value,rev:parseInt(document.getElementById('nd-rev').value)||1,status:'submitted',submittedBy:'U001',date:document.getElementById('nd-date').value,consultant:document.getElementById('nd-cons').value,file:document.getElementById('nd-file').value||(id+'-Rev1.pdf'),comments:document.getElementById('nd-comments').value});
+    renderDrawings(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Drawing Register`,'success');
   });
 }
 
 function printDrawingsPDF() {
-  const data = window.APP_DATA.mockDrawingsData;
+  let data = window.APP_DATA.mockDrawingsData;
+  const mf=STATE.drawingMEPFilter;
+  if(mf==='mep') data=data.filter(d=>['Electrical','Mechanical','Plumbing','HVAC','Fire Protection'].includes(d.discipline));
+  else if(mf&&mf!=='all') data=data.filter(d=>d.discipline.toLowerCase()===mf.toLowerCase()||d.discipline.toLowerCase().includes(mf.toLowerCase()));
+  const discLabel = mf==='all'?'All Disciplines':(mf==='mep'?'All MEP':mf.charAt(0).toUpperCase()+mf.slice(1));
   generatePDF({
-    title:'DRAWING REGISTER',
-    subtitle:'Document Control Register — All Disciplines',
+    title:'DRAWING REGISTER — '+discLabel.toUpperCase(),
+    subtitle:'Document Control Register | Discipline: '+discLabel,
     module:'DWG',
     kpis:[
       {label:'Total Drawings',value:data.length,color:'#1d4ed8'},
@@ -824,18 +791,21 @@ function importDrawingsCSV(file) {
     rows.forEach(r => {
       if (r.id && r.title) window.APP_DATA.mockDrawingsData.push({ id:r.id, title:r.title, discipline:r.discipline||'Civil', rev:parseInt(r.rev)||1, status:r.status||'submitted', submittedBy:'U001', date:r.date||new Date().toISOString().split('T')[0], consultant:r.consultant||'', file:r.file||'', comments:r.comments||'' });
     });
-    renderDrawings(); showToast('Imported',`${rows.length} drawings imported`,'success');
+    renderDrawings(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Imported',`${rows.length} drawings imported`,'success');
   });
 }
 
 // ── MATERIALS ─────────────────────────────────────────────────
 function renderMaterials() {
-  const data=window.APP_DATA.mockMaterialsData;
+  let data=window.APP_DATA.mockMaterialsData;
+  const df=STATE.materialDiscFilter;
+  if(df&&df!=='all') data=data.filter(m=>(m.discipline||'').toLowerCase()===df.toLowerCase());
   renderRegisterStats('materials-stats',[{label:'Total',value:data.length,color:'blue'},{label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'emerald'},{label:'Pending',value:data.filter(d=>d.status==='under-review'||d.status==='submitted').length,color:'amber'},{label:'Rejected',value:data.filter(d=>d.status==='rejected').length,color:'rose'}]);
   renderTable('materials-table-body',data,m=>`
     <tr>
       <td class="td-mono">${m.id}</td>
       <td style="font-weight:600;color:var(--text-primary)">${m.item}</td>
+      <td><span class="tag">${m.discipline||'General'}</span></td>
       <td class="td-mono">${m.boqRef}</td>
       <td class="td-mono" style="color:var(--accent-amber)">${m.poNo||'—'}</td>
       <td style="color:var(--text-secondary)">${m.supplier}</td>
@@ -846,14 +816,14 @@ function renderMaterials() {
       <td class="td-mono">${m.deliveryDate}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${m.remarks||'—'}</td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('materials','${m.id}-Rev${m.rev}.pdf')">📂 Open</button>
+        <a class="drive-link" href="${openLocalFile('materials',m.id+'-Rev'+m.rev+'.pdf')}" target="_blank" onclick="saveFilePath('materials',this.href)">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewMaterial('${m.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editMaterial('${m.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteMaterial('${m.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('materials')">Import</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteMaterial('${m.id}')">Delete</button>`:''}
       </td>
     </tr>`);
   setupTableFilter('material-filter-input','materials-table-body');
+  setupDiscTabs('materials-disc-tabs','materialDiscFilter',renderMaterials);
 }
 
 function viewMaterial(id) {
@@ -876,6 +846,7 @@ function editMaterial(id) {
       <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="em-id" value="${m.id}"></div>
       <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="em-item" value="${m.item}"></div>
     </div>
+    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="em-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(m.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-control" id="em-status">${['submitted','under-review','approved','rejected'].map(s=>`<option value="${s}"${s===m.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
@@ -892,19 +863,20 @@ function editMaterial(id) {
   ()=>{
     m.id=document.getElementById('em-id').value||m.id;
     m.item=document.getElementById('em-item').value||m.item;
+    m.discipline=document.getElementById('em-disc').value;
     m.status=document.getElementById('em-status').value;
     m.rev=parseInt(document.getElementById('em-rev').value)||m.rev;
     m.poNo=document.getElementById('em-po').value;
     m.approveDate=document.getElementById('em-adate').value;
     m.remarks=document.getElementById('em-remarks').value;
-    renderMaterials(); showToast('Updated',`${m.id} updated`,'success');
+    renderMaterials(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${m.id} updated`,'success');
   });
 }
 
 function deleteMaterial(id) {
   const data=window.APP_DATA.mockMaterialsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Material <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderMaterials(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderMaterials(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddMaterialModal() {
@@ -914,6 +886,7 @@ function openAddMaterialModal() {
       <div class="form-group"><label class="form-label">PO Reference</label><input class="form-control" id="nm-po" placeholder="PO-001"></div>
     </div>
     <div class="form-group"><label class="form-label">Material Description</label><input class="form-control" id="nm-item" placeholder="Material name"></div>
+    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="nm-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}">${d}</option>`).join('')}</select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">BOQ Reference</label><input class="form-control" id="nm-boq" placeholder="BOQ-3.1.1"></div>
       <div class="form-group"><label class="form-label">Supplier</label><input class="form-control" id="nm-supplier" placeholder="Supplier name"></div>
@@ -929,28 +902,34 @@ function openAddMaterialModal() {
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nm-remarks" rows="2"></textarea></div>`,
   ()=>{
     const id=document.getElementById('nm-id').value||('MAT-0'+String(window.APP_DATA.mockMaterialsData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockMaterialsData.unshift({id,item:document.getElementById('nm-item').value||'New Material',boqRef:document.getElementById('nm-boq').value,poNo:document.getElementById('nm-po').value,supplier:document.getElementById('nm-supplier').value,rev:parseInt(document.getElementById('nm-rev').value)||1,status:'submitted',submitDate:new Date().toISOString().split('T')[0],approveDate:'',deliveryDate:document.getElementById('nm-del').value,qty:parseFloat(document.getElementById('nm-qty').value)||0,unit:document.getElementById('nm-unit').value,remarks:document.getElementById('nm-remarks').value});
-    renderMaterials(); showToast('Added',`${id} added to Material Register`,'success');
+    window.APP_DATA.mockMaterialsData.push({id,item:document.getElementById('nm-item').value||'New Material',discipline:document.getElementById('nm-disc')?.value||'General',boqRef:document.getElementById('nm-boq').value,poNo:document.getElementById('nm-po').value,supplier:document.getElementById('nm-supplier').value,rev:parseInt(document.getElementById('nm-rev').value)||1,status:'submitted',submitDate:new Date().toISOString().split('T')[0],approveDate:'',deliveryDate:document.getElementById('nm-del').value,qty:parseFloat(document.getElementById('nm-qty').value)||0,unit:document.getElementById('nm-unit').value,remarks:document.getElementById('nm-remarks').value});
+    renderMaterials(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Material Register`,'success');
   });
 }
 
 function printMaterialsPDF() {
-  const data=window.APP_DATA.mockMaterialsData;
-  generatePDF({ title:'MATERIAL SUBMITTAL REGISTER', subtitle:'BOQ-Linked Material Approvals & Delivery Tracking', module:'MAT',
-    kpis:[{label:'Total Items',value:data.length,color:'#1d4ed8'},{label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'#059669'},{label:'Pending',value:data.filter(d=>d.status!=='approved').length,color:'#f59e0b'},{label:'Rejected',value:data.filter(d=>d.status==='rejected').length,color:'#dc2626'}],
-    tableHeaders:['ID','Material','BOQ Ref','PO No.','Supplier','Rev','Status','Submit Date','Delivery Date','Remarks'],
-    tableRows:data.map(m=>[m.id,m.item,m.boqRef,m.poNo||'—',m.supplier,'Rev '+m.rev,pdfBadge(m.status),m.submitDate,m.deliveryDate,m.remarks||'—']),
+  let data=window.APP_DATA.mockMaterialsData;
+  const df=STATE.materialDiscFilter;
+  if(df&&df!=='all') data=data.filter(m=>(m.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df==='all'?'All Disciplines':df;
+  generatePDF({ title:'MATERIAL SUBMITTAL REGISTER — '+discLabel.toUpperCase(), subtitle:'BOQ-Linked Material Approvals | Discipline: '+discLabel, module:'MAT',
+    kpis:[{label:'Total Items',value:data.length,color:'#1d4ed8'},{label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'#059669'},{label:'Pending',value:data.filter(d=>d.status!=='approved'&&d.status!=='rejected').length,color:'#f59e0b'},{label:'Rejected',value:data.filter(d=>d.status==='rejected').length,color:'#dc2626'}],
+    tableHeaders:['ID','Material','Discipline','BOQ Ref','PO No.','Supplier','Rev','Status','Submit Date','Delivery Date','Remarks'],
+    tableRows:data.map(m=>[m.id,m.item,m.discipline||'General',m.boqRef,m.poNo||'—',m.supplier,'Rev '+m.rev,pdfBadge(m.status),m.submitDate,m.deliveryDate,m.remarks||'—']),
   });
 }
 
 // ── METHODS ───────────────────────────────────────────────────
 function renderMethods() {
-  const data=window.APP_DATA.mockMethodsData;
+  let data=window.APP_DATA.mockMethodsData;
+  const df=STATE.methodDiscFilter;
+  if(df&&df!=='all') data=data.filter(m=>(m.discipline||m.category||'').toLowerCase()===df.toLowerCase());
   renderRegisterStats('methods-stats',[{label:'Total',value:data.length,color:'blue'},{label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'emerald'},{label:'Pending HSE',value:data.filter(d=>d.hseReview==='Pending').length,color:'amber'},{label:'Critical Risk',value:data.filter(d=>d.risk==='Critical').length,color:'rose'}]);
   renderTable('methods-table-body',data,m=>`
     <tr>
       <td class="td-mono">${m.id}</td>
       <td style="font-weight:600;color:var(--text-primary)">${m.title}</td>
+      <td><span class="tag">${m.discipline||m.category}</span></td>
       <td><span class="tag">${m.category}</span></td>
       <td>${riskBadge(m.risk)}</td>
       <td class="td-mono" style="color:var(--accent-cyan)">Rev ${m.rev}</td>
@@ -958,14 +937,14 @@ function renderMethods() {
       <td><span class="badge badge-${m.hseReview==='Approved'?'approved':'pending'}">${m.hseReview}</span></td>
       <td class="td-mono">${m.date}</td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('methods','${m.file}')">📂 Open</button>
+        <a class="drive-link" href="${openLocalFile('methods',m.file)}" target="_blank" onclick="saveFilePath('methods',this.href)">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewMethod('${m.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editMethod('${m.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteMethod('${m.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('methods')">Import</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteMethod('${m.id}')">Delete</button>`:''}
       </td>
     </tr>`);
   setupTableFilter('method-filter-input','methods-table-body');
+  setupDiscTabs('methods-disc-tabs','methodDiscFilter',renderMethods);
 }
 
 function viewMethod(id) {
@@ -987,6 +966,7 @@ function editMethod(id) {
       <div class="form-group"><label class="form-label">MS ID</label><input class="form-control" id="ems-id" value="${m.id}"></div>
       <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="ems-title" value="${m.title}"></div>
     </div>
+    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="ems-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(m.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-control" id="ems-status">${['submitted','under-review','approved','rejected'].map(s=>`<option value="${s}"${s===m.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
@@ -999,18 +979,19 @@ function editMethod(id) {
   ()=>{
     m.id=document.getElementById('ems-id').value||m.id;
     m.title=document.getElementById('ems-title').value||m.title;
+    m.discipline=document.getElementById('ems-disc').value;
     m.status=document.getElementById('ems-status').value;
     m.rev=parseInt(document.getElementById('ems-rev').value)||m.rev;
     m.hseReview=document.getElementById('ems-hse').value;
     m.file=`${m.id}-Rev${m.rev}.pdf`;
-    renderMethods(); showToast('Updated',`${m.id} updated to Rev ${m.rev}`,'success');
+    renderMethods(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${m.id} updated to Rev ${m.rev}`,'success');
   });
 }
 
 function deleteMethod(id) {
   const data=window.APP_DATA.mockMethodsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Method Statement <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderMethods(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderMethods(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddMethodModal() {
@@ -1032,7 +1013,7 @@ function openAddMethodModal() {
     <div class="form-group"><label class="form-label">File Name</label><input class="form-control" id="nm-file" placeholder="MS-007-Rev1.pdf"></div>`,
   ()=>{
     const id=document.getElementById('nm-id').value||('MS-0'+String(window.APP_DATA.mockMethodsData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockMethodsData.unshift({
+    window.APP_DATA.mockMethodsData.push({
       id, title: document.getElementById('nm-title').value || 'New MS',
       category: document.getElementById('nm-cat').value,
       risk: document.getElementById('nm-risk').value,
@@ -1043,27 +1024,33 @@ function openAddMethodModal() {
       hseReview: document.getElementById('nm-hse').value,
       file: document.getElementById('nm-file').value || (id+'-Rev1.pdf')
     });
-    renderMethods(); showToast('Added',`${id} added to Method Statements`,'success');
+    renderMethods(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Method Statements`,'success');
   });
 }
 
 function printMethodsPDF() {
-  const data=window.APP_DATA.mockMethodsData;
-  generatePDF({ title:'METHOD STATEMENT REGISTER', subtitle:'Construction Methods, HSE Reviews & Risk Assessments', module:'MS',
+  let data=window.APP_DATA.mockMethodsData;
+  const df=STATE.methodDiscFilter;
+  if(df&&df!=='all') data=data.filter(m=>(m.discipline||m.category||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df==='all'?'All Disciplines':df;
+  generatePDF({ title:'METHOD STATEMENT REGISTER — '+discLabel.toUpperCase(), subtitle:'Construction Methods & HSE Reviews | Discipline: '+discLabel, module:'MS',
     kpis:[{label:'Total MSs',value:data.length,color:'#1d4ed8'},{label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'#059669'},{label:'HSE Pending',value:data.filter(d=>d.hseReview==='Pending').length,color:'#f59e0b'},{label:'Critical Risk',value:data.filter(d=>d.risk==='Critical').length,color:'#dc2626'}],
-    tableHeaders:['MS ID','Title','Category','Risk','Rev','Status','HSE Review','Date'],
-    tableRows:data.map(m=>[m.id,m.title,m.category,m.risk,'Rev '+m.rev,pdfBadge(m.status),m.hseReview,m.date]),
+    tableHeaders:['MS ID','Title','Discipline','Category','Risk','Rev','Status','HSE Review','Date'],
+    tableRows:data.map(m=>[m.id,m.title,m.discipline||m.category,m.category,m.risk,'Rev '+m.rev,pdfBadge(m.status),m.hseReview,m.date]),
   });
 }
 
 // ── TESTING ───────────────────────────────────────────────────
 function renderTesting() {
-  const data=window.APP_DATA.mockTestingData;
+  let data=window.APP_DATA.mockTestingData;
+  const df=STATE.testingDiscFilter;
+  if(df&&df!=='all') data=data.filter(t=>(t.discipline||t.type||'').toLowerCase()===df.toLowerCase());
   renderRegisterStats('testing-stats',[{label:'Total Tests',value:data.length,color:'blue'},{label:'Passed',value:data.filter(d=>d.status==='passed').length,color:'emerald'},{label:'Failed',value:data.filter(d=>d.status==='failed').length,color:'rose'},{label:'Pending',value:data.filter(d=>d.status==='pending').length,color:'amber'}]);
   renderTable('testing-table-body',data,t=>`
     <tr>
       <td class="td-mono">${t.id}</td>
       <td style="font-weight:600;color:var(--text-primary)">${t.system}</td>
+      <td><span class="tag">${t.discipline||t.type}</span></td>
       <td><span class="tag">${t.type}</span></td>
       <td class="td-mono">${t.date}</td>
       <td class="td-mono" style="color:var(--accent-cyan)">Rev ${t.rev}</td>
@@ -1071,13 +1058,14 @@ function renderTesting() {
       <td>${t.cert?`<span class="td-mono" style="color:var(--accent-emerald)">${t.cert}</span>`:'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${t.remarks}</td>
       <td>
-        ${t.file?`<button class="drive-link" onclick="openDriveFile('testing','${t.file}')">📂 Open</button>`:'<span style="color:var(--text-muted);font-size:11px">No file</span>'}
+        ${t.file?`<a class="drive-link" href="${openLocalFile('testing',t.file)}" target="_blank" onclick="saveFilePath('testing',this.href)">Open</a>`:'<span style="color:var(--text-muted);font-size:11px">No file</span>'}
         <button class="btn btn-sm btn-secondary" onclick="viewTest('${t.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editTesting('${t.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteTesting('${t.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('testing')">Import</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteTesting('${t.id}')">Delete</button>`:''}
       </td>
     </tr>`);
+  setupTableFilter('testing-filter-input','testing-table-body');
+  setupDiscTabs('testing-disc-tabs','testingDiscFilter',renderTesting);
 }
 
 function viewTest(id) {
@@ -1119,14 +1107,14 @@ function editTesting(id) {
     t.date=document.getElementById('et-date').value;
     t.remarks=document.getElementById('et-remarks').value;
     t.file=t.cert?`${t.id}-Rev${t.rev}.pdf`:'';
-    renderTesting(); showToast('Updated',`${t.id} updated`,'success');
+    renderTesting(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${t.id} updated`,'success');
   });
 }
 
 function deleteTesting(id) {
   const data=window.APP_DATA.mockTestingData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
   openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Test <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderTesting(); showToast('Deleted',`${id} deleted`,'success'); });
+  ()=>{ data.splice(idx,1); renderTesting(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); });
 }
 
 function openAddTestModal() {
@@ -1147,7 +1135,7 @@ function openAddTestModal() {
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nt-remarks" rows="2"></textarea></div>`,
   ()=>{
     const id=document.getElementById('nt-id').value||('TC-0'+String(window.APP_DATA.mockTestingData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockTestingData.unshift({
+    window.APP_DATA.mockTestingData.push({
       id, system: document.getElementById('nt-sys').value || 'New Test',
       type: document.getElementById('nt-type').value,
       date: document.getElementById('nt-date').value,
@@ -1157,12 +1145,15 @@ function openAddTestModal() {
       file: document.getElementById('nt-cert').value ? (id+'-Rev1.pdf') : '',
       remarks: document.getElementById('nt-remarks').value
     });
-    renderTesting(); showToast('Added',`${id} added to Test Register`,'success');
+    renderTesting(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Test Register`,'success');
   });
 }
 
 function printTestingPDF() {
-  const data=window.APP_DATA.mockTestingData;
+  let data=window.APP_DATA.mockTestingData;
+  const df=STATE.testingDiscFilter;
+  if(df&&df!=='all') data=data.filter(t=>(t.discipline||t.type||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df==='all'?'All Disciplines':df;
   generatePDF({ title:'TEST & COMMISSIONING REGISTER', subtitle:'Test Certificates, Commissioning Logs & Punch Lists', module:'TC',
     kpis:[{label:'Total Tests',value:data.length,color:'#1d4ed8'},{label:'Passed',value:data.filter(d=>d.status==='passed').length,color:'#059669'},{label:'Failed',value:data.filter(d=>d.status==='failed').length,color:'#dc2626'},{label:'Pending',value:data.filter(d=>d.status==='pending').length,color:'#f59e0b'}],
     tableHeaders:['ID','System / Test','Type','Date','Rev','Status','Certificate','Remarks'],
@@ -1170,23 +1161,23 @@ function printTestingPDF() {
   });
 }
 
-// ── NCR / RFI / SI ────────────────────────────────────────────
-function renderNCRPage() {
-  const tab = STATE.ncrTab;
-  document.querySelectorAll('.ncr-tab').forEach(t => t.classList.toggle('active', t.dataset.ncrtab === tab));
-  document.querySelectorAll('.ncr-sub-section').forEach(s => s.style.display = s.id === 'ncr-section-'+tab ? '' : 'none');
-  if (tab === 'ncr') renderNCR();
-  else if (tab === 'rfi') renderRFI();
-  else renderSI();
-}
+// ── NCR / RFI / SI / WIR / MDR — each as separate page ───────
+function renderNCRPage() { renderNCR(); }
+function renderRFIPage() { renderRFI(); }
+function renderSIPage()  { renderSI(); }
+function renderWIRPage() { renderWIR(); }
+function renderMDRPage() { renderMDR(); }
 
 function renderNCR() {
-  const data=window.APP_DATA.mockNCRData;
+  let data=window.APP_DATA.mockNCRData;
+  const df=STATE.ncrDiscFilter;
+  if(df&&df!=='all') data=data.filter(n=>(n.discipline||'').toLowerCase()===df.toLowerCase());
   renderRegisterStats('ncr-stats',[{label:'Total NCRs',value:data.length,color:'blue'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'amber'},{label:'Critical',value:data.filter(d=>d.priority==='critical'&&d.status==='open').length,color:'rose'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'emerald'}]);
   renderTable('ncr-table-body',data,n=>`
     <tr>
       <td class="td-mono">${n.id}</td>
       <td style="font-weight:600;color:var(--text-primary)">${n.title}</td>
+      <td><span class="tag">${n.discipline||'General'}</span></td>
       <td>${priorityBadge(n.priority)}</td>
       <td><span class="badge badge-${n.status}">${n.status.toUpperCase()}</span></td>
       <td class="td-mono">${n.date}</td>
@@ -1194,15 +1185,15 @@ function renderNCR() {
       <td style="font-size:11px;color:var(--text-secondary)">${n.location||'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${n.remarks||'—'}</td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('ncr','${n.file}')">📂 Open</button>
+        <a class="drive-link" href="${openLocalFile('ncr',n.file)}" target="_blank" onclick="saveFilePath('ncr',this.href)">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewNCR('${n.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editNCR('${n.id}')">Edit</button>
         ${n.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeNCR('${n.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-danger" onclick="deleteNCR('${n.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('ncr')">Import</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteNCR('${n.id}')">Delete</button>`:''}
       </td>
     </tr>`);
   setupTableFilter('ncr-filter-input','ncr-table-body');
+  setupDiscTabs('ncr-disc-tabs','ncrDiscFilter',renderNCR);
 }
 
 function viewNCR(id) {
@@ -1233,6 +1224,7 @@ function editNCR(id) {
         <select class="form-control" id="en-status"><option value="open"${n.status==='open'?' selected':''}>Open</option><option value="closed"${n.status==='closed'?' selected':''}>Closed</option></select>
       </div>
     </div>
+    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="en-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(n.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
     <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="en-loc" value="${n.location||''}"></div>
     <div class="form-group"><label class="form-label">Assigned To</label>
       <select class="form-control" id="en-assign">${window.APP_DATA.USERS.map(u=>`<option value="${u.id}"${u.id===n.assignedTo?' selected':''}>${u.name}</option>`).join('')}</select>
@@ -1241,37 +1233,42 @@ function editNCR(id) {
   ()=>{
     n.id=document.getElementById('en-id').value||n.id;
     n.title=document.getElementById('en-title').value||n.title;
+    n.discipline=document.getElementById('en-disc').value;
     n.priority=document.getElementById('en-pri').value;
     n.status=document.getElementById('en-status').value;
     n.location=document.getElementById('en-loc').value;
     n.assignedTo=document.getElementById('en-assign').value;
     n.remarks=document.getElementById('en-rem').value;
     if(n.status==='closed'&&!n.closureDate) n.closureDate=new Date().toISOString().split('T')[0];
-    renderNCR(); showToast('Updated',`${n.id} updated`,'success');
+    renderNCR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${n.id} updated`,'success');
   });
 }
 
 function renderRFI() {
-  const data=window.APP_DATA.mockRFIData;
+  let data=window.APP_DATA.mockRFIData;
+  const df=STATE.rfiDiscFilter;
+  if(df&&df!=='all') data=data.filter(r=>(r.discipline||'').toLowerCase()===df.toLowerCase());
+  renderRegisterStats('rfi-stats',[{label:'Total RFIs',value:data.length,color:'blue'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'amber'},{label:'High Priority',value:data.filter(d=>d.priority==='high').length,color:'rose'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'emerald'}]);
   renderTable('rfi-table-body',data,r=>`
     <tr>
       <td class="td-mono">${r.id}</td>
       <td style="font-weight:600;color:var(--text-primary)">${r.title}</td>
-      <td><span class="tag">${r.discipline||'—'}</span></td>
+      <td><span class="tag">${r.discipline||'General'}</span></td>
       <td>${priorityBadge(r.priority)}</td>
       <td><span class="badge badge-${r.status}">${r.status.toUpperCase()}</span></td>
       <td class="td-mono">${r.date}</td>
       <td class="td-mono">${r.closureDate||'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${r.remarks||'—'}</td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('rfi','${r.file}')">📂 Open</button>
+        <a class="drive-link" href="${openLocalFile('rfi',r.file)}" target="_blank" onclick="saveFilePath('rfi',this.href)">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewRFI('${r.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editRFI('${r.id}')">Edit</button>
         ${r.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeRFI('${r.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-danger" onclick="deleteRFI('${r.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('rfi')">Import</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteRFI('${r.id}')">Delete</button>`:''}
       </td>
     </tr>`);
+  setupTableFilter('rfi-filter-input','rfi-table-body');
+  setupDiscTabs('rfi-disc-tabs','rfiDiscFilter',renderRFI);
 }
 
 function viewRFI(id) {
@@ -1311,16 +1308,20 @@ function editRFI(id) {
     r.discipline=document.getElementById('er-disc').value;
     r.remarks=document.getElementById('er-rem').value;
     if(r.status==='closed'&&!r.closureDate) r.closureDate=new Date().toISOString().split('T')[0];
-    renderRFI(); showToast('Updated',`${r.id} updated`,'success');
+    renderRFI(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${r.id} updated`,'success');
   });
 }
 
 function renderSI() {
-  const data=window.APP_DATA.mockSIData;
+  let data=window.APP_DATA.mockSIData;
+  const df=STATE.siDiscFilter;
+  if(df&&df!=='all') data=data.filter(s=>(s.discipline||'').toLowerCase()===df.toLowerCase());
+  renderRegisterStats('si-stats',[{label:'Total SIs',value:data.length,color:'blue'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'amber'},{label:'High Priority',value:data.filter(d=>d.priority==='high').length,color:'rose'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'emerald'}]);
   renderTable('si-table-body',data,s=>`
     <tr>
       <td class="td-mono">${s.id}</td>
       <td style="font-weight:600;color:var(--text-primary)">${s.title}</td>
+      <td><span class="tag">${s.discipline||'General'}</span></td>
       <td class="td-mono">${s.ref||'—'}</td>
       <td>${priorityBadge(s.priority)}</td>
       <td><span class="badge badge-${s.status}">${s.status.toUpperCase()}</span></td>
@@ -1328,14 +1329,15 @@ function renderSI() {
       <td style="color:var(--accent-amber);font-family:'DM Mono',monospace">${s.costImpact||'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${s.remarks||'—'}</td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('si','${s.file}')">📂 Open</button>
+        <a class="drive-link" href="${openLocalFile('si',s.file)}" target="_blank" onclick="saveFilePath('si',this.href)">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewSI('${s.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editSI('${s.id}')">Edit</button>
         ${s.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeSI('${s.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-danger" onclick="deleteSI('${s.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('si')">Import</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteSI('${s.id}')">Delete</button>`:''}
       </td>
     </tr>`);
+  setupTableFilter('si-filter-input','si-table-body');
+  setupDiscTabs('si-disc-tabs','siDiscFilter',renderSI);
 }
 
 function viewSI(id) {
@@ -1365,6 +1367,7 @@ function editSI(id) {
         <select class="form-control" id="esi-status"><option value="open"${s.status==='open'?' selected':''}>Open</option><option value="closed"${s.status==='closed'?' selected':''}>Closed</option></select>
       </div>
     </div>
+    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="esi-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(s.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Ref / SKT</label><input class="form-control" id="esi-ref" value="${s.ref||''}"></div>
       <div class="form-group"><label class="form-label">Cost Impact</label><input class="form-control" id="esi-cost" value="${s.costImpact||''}"></div>
@@ -1373,76 +1376,359 @@ function editSI(id) {
   ()=>{
     s.id=document.getElementById('esi-id').value||s.id;
     s.title=document.getElementById('esi-title').value||s.title;
+    s.discipline=document.getElementById('esi-disc').value;
     s.priority=document.getElementById('esi-pri').value;
     s.status=document.getElementById('esi-status').value;
     s.ref=document.getElementById('esi-ref').value;
     s.costImpact=document.getElementById('esi-cost').value;
     s.remarks=document.getElementById('esi-rem').value;
-    renderSI(); showToast('Updated',`${s.id} updated`,'success');
+    renderSI(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${s.id} updated`,'success');
   });
 }
 
-function setNCRTab(tab) { STATE.ncrTab=tab; renderNCRPage(); if(window.updateNCRActions) window.updateNCRActions(tab); }
-function deleteNCR(id) { const data=window.APP_DATA.mockNCRData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete NCR <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderNCR(); showToast('Deleted',`${id} deleted`,'success'); }); }
-function closeNCR(id) { const n=window.APP_DATA.mockNCRData.find(x=>x.id===id); if(n){n.status='closed';n.closureDate=new Date().toISOString().split('T')[0];renderNCR();showToast('Closed',`${id} closed`,'success');} }
-function deleteRFI(id) { const data=window.APP_DATA.mockRFIData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete RFI <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderRFI(); showToast('Deleted',`${id} deleted`,'success'); }); }
-function closeRFI(id) { const r=window.APP_DATA.mockRFIData.find(x=>x.id===id); if(r){r.status='closed';r.closureDate=new Date().toISOString().split('T')[0];renderRFI();showToast('Closed',`${id} closed`,'success');} }
-function deleteSI(id)  { const data=window.APP_DATA.mockSIData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete SI <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderSI(); showToast('Deleted',`${id} deleted`,'success'); }); }
-function closeSI(id)  { const s=window.APP_DATA.mockSIData.find(x=>x.id===id);  if(s){s.status='closed';renderSI();showToast('Closed',`${id} closed`,'success');} }
+function setNCRTab(tab) { STATE.ncrTab=tab; if(tab==='rfi'||tab==='si'||tab==='wir'||tab==='mdr') navigateTo(tab); else navigateTo('ncr'); }
+function deleteNCR(id) { const data=window.APP_DATA.mockNCRData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete NCR <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); saveProjectDataAuto(); refreshDashboardKPIs(); renderNCR(); showToast('Deleted',`${id} deleted`,'success'); }); }
+function closeNCR(id) { const n=window.APP_DATA.mockNCRData.find(x=>x.id===id); if(n){n.status='closed';n.closureDate=new Date().toISOString().split('T')[0];saveProjectDataAuto();refreshDashboardKPIs();renderNCR();showToast('Closed',`${id} closed`,'success');} }
+function deleteRFI(id) { const data=window.APP_DATA.mockRFIData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete RFI <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); saveProjectDataAuto(); refreshDashboardKPIs(); renderRFI(); showToast('Deleted',`${id} deleted`,'success'); }); }
+function closeRFI(id) { const r=window.APP_DATA.mockRFIData.find(x=>x.id===id); if(r){r.status='closed';r.closureDate=new Date().toISOString().split('T')[0];saveProjectDataAuto();refreshDashboardKPIs();renderRFI();showToast('Closed',`${id} closed`,'success');} }
+function deleteSI(id)  { const data=window.APP_DATA.mockSIData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete SI <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); saveProjectDataAuto(); refreshDashboardKPIs(); renderSI(); showToast('Deleted',`${id} deleted`,'success'); }); }
+function closeSI(id)  { const s=window.APP_DATA.mockSIData.find(x=>x.id===id);  if(s){s.status='closed';saveProjectDataAuto();refreshDashboardKPIs();renderSI();showToast('Closed',`${id} closed`,'success');} }
+
+// ── WIR — Work Inspection Requests ───────────────────────────
+function renderWIR() {
+  let data = window.APP_DATA.mockWIRData;
+  const df=STATE.wirDiscFilter;
+  if(df&&df!=='all') data=data.filter(w=>(w.discipline||'').toLowerCase()===df.toLowerCase());
+  renderRegisterStats('wir-stats', [
+    { label: 'Total WIRs',   value: data.length,                              color: 'violet' },
+    { label: 'Pending',      value: data.filter(w => !w.closureDate).length,  color: 'amber'  },
+    { label: 'Inspected',    value: data.filter(w =>  w.closureDate).length,  color: 'emerald'},
+    { label: 'Passed',       value: data.filter(w => w.result === 'Passed').length, color: 'blue' },
+  ]);
+  renderTable('wir-table-body', data, w => `
+    <tr>
+      <td class="td-mono" style="color:#8e44ad">${w.id}</td>
+      <td style="font-weight:600;color:var(--text-primary)">${w.title}</td>
+      <td><span class="tag">${w.discipline||'General'}</span></td>
+      <td>${priorityBadge(w.priority)}</td>
+      <td class="td-mono">${w.date}</td>
+      <td class="td-mono">${w.inspectionDate || '—'}</td>
+      <td><span class="badge badge-${w.result === 'Passed' ? 'approved' : w.result === 'Failed' ? 'rejected' : 'pending'}">${w.result}</span></td>
+      <td style="font-size:11px;color:var(--text-secondary)">${w.location || '—'}</td>
+      <td style="font-size:11px;color:var(--text-secondary)">${w.remarks || '—'}</td>
+      <td>
+        <a class="drive-link" href="${openLocalFile('wir',w.file)}" target="_blank" onclick="saveFilePath('wir',this.href)">Open</a>
+        <button class="btn btn-sm btn-secondary" onclick="viewWIR('${w.id}')">View</button>
+        ${isAdmin() ? `<button class="btn btn-sm btn-secondary" onclick="editWIR('${w.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteWIR('${w.id}')">Delete</button>` : ''}
+      </td>
+    </tr>`);
+  setupTableFilter('wir-filter-input','wir-table-body');
+  setupDiscTabs('wir-disc-tabs','wirDiscFilter',renderWIR);
+}
+
+function viewWIR(id) {
+  const w = window.APP_DATA.mockWIRData.find(x => x.id === id); if (!w) return;
+  openModal('Work Inspection Request — Details', '', `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      ${inf('WIR ID', w.id)}${inf('Title', w.title)}
+      ${inf('Priority', priorityBadge(w.priority))}${inf('Requested By', w.requestedBy)}
+      ${inf('Date Raised', w.date)}${inf('Inspection Date', w.inspectionDate || '—')}
+      ${inf('Location', w.location || '—')}${inf('Assigned To', w.assignedTo)}
+      ${inf('Result', `<span class="badge badge-${w.result === 'Passed' ? 'approved' : w.result === 'Failed' ? 'rejected' : 'pending'}">${w.result}</span>`)}${inf('Closure Date', w.closureDate || '—')}
+    </div>
+    <div style="margin-top:14px">${inf('Remarks', w.remarks || '—')}</div>`);
+}
+
+function editWIR(id) {
+  const w = window.APP_DATA.mockWIRData.find(x => x.id === id); if (!w) return;
+  openModal('Edit Work Inspection Request', '', `
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">WIR ID</label><input class="form-control" id="ew-id" value="${w.id}"></div>
+      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="ew-title" value="${w.title}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Priority</label>
+        <select class="form-control" id="ew-pri"><option value="low"${w.priority==='low'?' selected':''}>Low</option><option value="medium"${w.priority==='medium'?' selected':''}>Medium</option><option value="high"${w.priority==='high'?' selected':''}>High</option><option value="critical"${w.priority==='critical'?' selected':''}>Critical</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Result</label>
+        <select class="form-control" id="ew-result"><option${w.result==='Pending'?' selected':''}>Pending</option><option${w.result==='Passed'?' selected':''}>Passed</option><option${w.result==='Failed'?' selected':''}>Failed</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Inspection Date</label><input class="form-control" id="ew-insdate" type="date" value="${w.inspectionDate || ''}"></div>
+      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="ew-loc" value="${w.location || ''}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="ew-rem" rows="2">${w.remarks || ''}</textarea></div>`,
+  () => {
+    w.id            = document.getElementById('ew-id').value || w.id;
+    w.title         = document.getElementById('ew-title').value || w.title;
+    w.priority      = document.getElementById('ew-pri').value;
+    w.result        = document.getElementById('ew-result').value;
+    w.inspectionDate= document.getElementById('ew-insdate').value;
+    w.location      = document.getElementById('ew-loc').value;
+    w.remarks       = document.getElementById('ew-rem').value;
+    if (w.result !== 'Pending' && !w.closureDate) w.closureDate = new Date().toISOString().split('T')[0];
+    renderWIR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated', `${w.id} updated`, 'success');
+  });
+}
+
+function deleteWIR(id) {
+  const data = window.APP_DATA.mockWIRData; const idx = data.findIndex(x => x.id === id); if (idx === -1) return;
+  openModal('Confirm Delete', '', `<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete WIR <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
+  () => { data.splice(idx, 1); renderWIR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted', `${id} deleted`, 'success'); });
+}
+
+function openAddWIRModal() {
+  openModal('Raise Work Inspection Request', '', `
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">WIR ID</label><input class="form-control" id="nw-id" placeholder="WIR-004"></div>
+      <div class="form-group"><label class="form-label">Priority</label>
+        <select class="form-control" id="nw-pri"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Title / Inspection Scope</label><input class="form-control" id="nw-title" placeholder="Describe the inspection required"></div>
+    <div class="form-group"><label class="form-label">Discipline</label>
+      <select class="form-control" id="nw-disc"><option value="">General</option>${window.APP_DATA.DISCIPLINES.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="nw-loc" placeholder="Site location / grid ref"></div>
+      <div class="form-group"><label class="form-label">Assigned Consultant</label>
+        <select class="form-control" id="nw-assign">${window.APP_DATA.USERS.map(u => `<option value="${u.id}">${u.name}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nw-rem" rows="2"></textarea></div>`,
+  () => {
+    const id = document.getElementById('nw-id').value || ('WIR-0' + String(window.APP_DATA.mockWIRData.length + 1).padStart(2, '0'));
+    window.APP_DATA.mockWIRData.push({ id, title: document.getElementById('nw-title').value || 'New WIR', discipline: document.getElementById('nw-disc').value||'General', requestedBy: 'U001', date: new Date().toISOString().split('T')[0], status: 'WIR', priority: document.getElementById('nw-pri').value, assignedTo: document.getElementById('nw-assign').value, closureDate: '', file: id + '.pdf', location: document.getElementById('nw-loc').value, inspectionDate: '', result: 'Pending', remarks: document.getElementById('nw-rem').value });
+    renderWIR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Raised', `${id} has been raised`, 'info');
+  });
+}
+
+function printWIRPDF() {
+  let data = window.APP_DATA.mockWIRData;
+  const df=STATE.wirDiscFilter;
+  if(df&&df!=='all') data=data.filter(w=>(w.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df&&df!=='all'?df:'All Disciplines';
+  generatePDF({ title: 'WIR REGISTER — '+discLabel.toUpperCase(), subtitle: 'Work Inspection Requests | Discipline: '+discLabel, module: 'WIR',
+    kpis: [
+      { label: 'Total WIRs',  value: data.length,                              color: '#8e44ad' },
+      { label: 'Pending',     value: data.filter(w => !w.closureDate).length,  color: '#f59e0b' },
+      { label: 'Passed',      value: data.filter(w => w.result === 'Passed').length, color: '#059669' },
+      { label: 'Failed',      value: data.filter(w => w.result === 'Failed').length, color: '#dc2626' },
+    ],
+    tableHeaders: ['WIR ID', 'Title', 'Discipline', 'Priority', 'Date Raised', 'Inspection Date', 'Result', 'Location', 'Remarks'],
+    tableRows: data.map(w => [w.id, w.title, w.discipline||'General', w.priority.toUpperCase(), w.date, w.inspectionDate || '—', w.result, w.location || '—', w.remarks || '—']),
+  });
+}
+
+// ── MDR — Material Delivery Receipts ─────────────────────────
+function renderMDR() {
+  let data = window.APP_DATA.mockMDRData;
+  const df=STATE.mdrDiscFilter;
+  if(df&&df!=='all') data=data.filter(m=>(m.discipline||'').toLowerCase()===df.toLowerCase());
+  renderRegisterStats('mdr-stats', [
+    { label: 'Total MDRs',   value: data.length,                                      color: 'cyan'   },
+    { label: 'Good',         value: data.filter(m => m.condition === 'Good').length,  color: 'emerald'},
+    { label: 'Rejected',     value: data.filter(m => m.condition === 'Rejected').length, color: 'rose'},
+    { label: 'Pending Check',value: data.filter(m => m.condition === 'Pending').length,  color: 'amber'},
+  ]);
+  renderTable('mdr-table-body', data, m => `
+    <tr>
+      <td class="td-mono" style="color:#16a085">${m.id}</td>
+      <td style="font-weight:600;color:var(--text-primary)">${m.title}</td>
+      <td><span class="tag">${m.discipline||'General'}</span></td>
+      <td style="color:var(--text-secondary)">${m.deliveredBy}</td>
+      <td class="td-mono" style="color:var(--accent-amber)">${m.poRef || '—'}</td>
+      <td class="td-mono">${m.date}</td>
+      <td class="td-mono">${m.qty}</td>
+      <td><span class="badge badge-${m.condition === 'Good' ? 'approved' : m.condition === 'Rejected' ? 'rejected' : 'pending'}">${m.condition}</span></td>
+      <td style="font-size:11px;color:var(--text-secondary)">${m.location || '—'}</td>
+      <td style="font-size:11px;color:var(--text-secondary)">${m.remarks || '—'}</td>
+      <td>
+        <a class="drive-link" href="${openLocalFile('mdr',m.file)}" target="_blank" onclick="saveFilePath('mdr',this.href)">Open</a>
+        <button class="btn btn-sm btn-secondary" onclick="viewMDR('${m.id}')">View</button>
+        ${isAdmin() ? `<button class="btn btn-sm btn-secondary" onclick="editMDR('${m.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteMDR('${m.id}')">Delete</button>` : ''}
+      </td>
+    </tr>`);
+  setupTableFilter('mdr-filter-input','mdr-table-body');
+  setupDiscTabs('mdr-disc-tabs','mdrDiscFilter',renderMDR);
+}
+
+function viewMDR(id) {
+  const m = window.APP_DATA.mockMDRData.find(x => x.id === id); if (!m) return;
+  openModal('Material Delivery Receipt — Details', '', `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      ${inf('MDR ID', m.id)}${inf('Description', m.title)}
+      ${inf('Delivered By', m.deliveredBy)}${inf('PO Reference', m.poRef || '—')}
+      ${inf('Date Received', m.date)}${inf('Quantity', m.qty)}
+      ${inf('Condition', `<span class="badge badge-${m.condition === 'Good' ? 'approved' : m.condition === 'Rejected' ? 'rejected' : 'pending'}">${m.condition}</span>`)}${inf('Received By', m.receivedBy)}
+      ${inf('Location', m.location || '—')}
+    </div>
+    <div style="margin-top:14px">${inf('Remarks', m.remarks || '—')}</div>`);
+}
+
+function editMDR(id) {
+  const m = window.APP_DATA.mockMDRData.find(x => x.id === id); if (!m) return;
+  openModal('Edit Material Delivery Receipt', '', `
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">MDR ID</label><input class="form-control" id="em-id2" value="${m.id}"></div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="em-title" value="${m.title}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Condition</label>
+        <select class="form-control" id="em-cond"><option${m.condition==='Good'?' selected':''}>Good</option><option${m.condition==='Pending'?' selected':''}>Pending</option><option${m.condition==='Rejected'?' selected':''}>Rejected</option><option${m.condition==='Damaged'?' selected':''}>Damaged</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Quantity</label><input class="form-control" id="em-qty" value="${m.qty}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">PO Reference</label><input class="form-control" id="em-po2" value="${m.poRef || ''}"></div>
+      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="em-loc2" value="${m.location || ''}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="em-rem2" rows="2">${m.remarks || ''}</textarea></div>`,
+  () => {
+    m.id        = document.getElementById('em-id2').value || m.id;
+    m.title     = document.getElementById('em-title').value || m.title;
+    m.condition = document.getElementById('em-cond').value;
+    m.qty       = document.getElementById('em-qty').value;
+    m.poRef     = document.getElementById('em-po2').value;
+    m.location  = document.getElementById('em-loc2').value;
+    m.remarks   = document.getElementById('em-rem2').value;
+    renderMDR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated', `${m.id} updated`, 'success');
+  });
+}
+
+function deleteMDR(id) {
+  const data = window.APP_DATA.mockMDRData; const idx = data.findIndex(x => x.id === id); if (idx === -1) return;
+  openModal('Confirm Delete', '', `<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete MDR <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
+  () => { data.splice(idx, 1); renderMDR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted', `${id} deleted`, 'success'); });
+}
+
+function openAddMDRModal() {
+  openModal('Log Material Delivery Receipt', '', `
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">MDR ID</label><input class="form-control" id="nm-id2" placeholder="MDR-004"></div>
+      <div class="form-group"><label class="form-label">PO Reference</label><input class="form-control" id="nm-po2" placeholder="PO-001"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Material / Delivery Description</label><input class="form-control" id="nm-title2" placeholder="Describe what was delivered"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Delivered By (Supplier)</label><input class="form-control" id="nm-by" placeholder="Supplier name"></div>
+      <div class="form-group"><label class="form-label">Quantity</label><input class="form-control" id="nm-qty2" placeholder="e.g. 42 MT"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Discipline</label>
+      <select class="form-control" id="nm-disc2"><option value="">General</option>${window.APP_DATA.DISCIPLINES.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Condition</label>
+        <select class="form-control" id="nm-cond"><option>Good</option><option>Pending</option><option>Rejected</option><option>Damaged</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="nm-loc2" placeholder="Delivery location on site"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nm-rem2" rows="2"></textarea></div>`,
+  () => {
+    const id = document.getElementById('nm-id2').value || ('MDR-0' + String(window.APP_DATA.mockMDRData.length + 1).padStart(2, '0'));
+    window.APP_DATA.mockMDRData.push({ id, title: document.getElementById('nm-title2').value || 'New MDR', discipline: document.getElementById('nm-disc2').value||'General', deliveredBy: document.getElementById('nm-by').value, date: new Date().toISOString().split('T')[0], status: 'MDR', priority: 'medium', receivedBy: 'U001', file: id + '.pdf', location: document.getElementById('nm-loc2').value, poRef: document.getElementById('nm-po2').value, qty: document.getElementById('nm-qty2').value, condition: document.getElementById('nm-cond').value, remarks: document.getElementById('nm-rem2').value });
+    renderMDR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Logged', `${id} has been logged`, 'success');
+  });
+}
+
+function printMDRPDF() {
+  let data = window.APP_DATA.mockMDRData;
+  const df=STATE.mdrDiscFilter;
+  if(df&&df!=='all') data=data.filter(m=>(m.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df&&df!=='all'?df:'All Disciplines';
+  generatePDF({ title: 'MDR REGISTER — '+discLabel.toUpperCase(), subtitle: 'Material Delivery Receipts | Discipline: '+discLabel, module: 'MDR',
+    kpis: [
+      { label: 'Total MDRs',    value: data.length,                               color: '#16a085' },
+      { label: 'Good',          value: data.filter(m => m.condition === 'Good').length, color: '#059669' },
+      { label: 'Rejected',      value: data.filter(m => m.condition === 'Rejected').length, color: '#dc2626' },
+      { label: 'Pending Check', value: data.filter(m => m.condition === 'Pending').length, color: '#f59e0b' },
+    ],
+    tableHeaders: ['MDR ID', 'Description', 'Discipline', 'Delivered By', 'PO Ref', 'Date', 'Qty', 'Condition', 'Location', 'Remarks'],
+    tableRows: data.map(m => [m.id, m.title, m.discipline||'General', m.deliveredBy, m.poRef || '—', m.date, m.qty, m.condition, m.location || '—', m.remarks || '—']),
+  });
+}
 
 function openAddNCRModal() {
-  openModal('Raise New NCR','',`
+  const page = STATE.currentPage;
+  const isRFI = page==='rfi', isSI = page==='si';
+  const label = isRFI?'RFI':isSI?'SI':'NCR';
+  const data = isRFI?window.APP_DATA.mockRFIData:isSI?window.APP_DATA.mockSIData:window.APP_DATA.mockNCRData;
+  const prefix = label+'-0';
+  openModal(`Raise New ${label}`,'',`
     <div class="form-row">
-      <div class="form-group"><label class="form-label">NCR ID</label><input class="form-control" id="nn-id" placeholder="NCR-005"></div>
+      <div class="form-group"><label class="form-label">${label} ID</label><input class="form-control" id="nn-id" placeholder="${label}-00${data.length+1}"></div>
       <div class="form-group"><label class="form-label">Priority</label>
         <select class="form-control" id="nn-pri"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select>
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Title / Description</label><input class="form-control" id="nn-title" placeholder="Describe the non-conformance"></div>
+    <div class="form-group"><label class="form-label">Title / Description</label><input class="form-control" id="nn-title" placeholder="Describe the issue"></div>
+    <div class="form-group"><label class="form-label">Discipline</label>
+      <select class="form-control" id="nn-disc"><option value="">General</option>${window.APP_DATA.DISCIPLINES.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="nn-loc" placeholder="Site location"></div>
       <div class="form-group"><label class="form-label">Assigned To</label>
         <select class="form-control" id="nn-assign">${window.APP_DATA.USERS.map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}</select>
       </div>
     </div>
+    ${isSI?'<div class="form-group"><label class="form-label">Cost Impact</label><input class="form-control" id="nn-cost" placeholder="SAR 0"></div>':''}
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nn-rem" rows="2"></textarea></div>`,
   ()=>{
-    const id=document.getElementById('nn-id').value||('NCR-0'+String(window.APP_DATA.mockNCRData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockNCRData.unshift({id,title:document.getElementById('nn-title').value||'New NCR',raised:'U001',date:new Date().toISOString().split('T')[0],status:'open',priority:document.getElementById('nn-pri').value,assignedTo:document.getElementById('nn-assign').value,closureDate:'',file:id+'.pdf',remarks:document.getElementById('nn-rem').value,location:document.getElementById('nn-loc').value});
-    renderNCR(); showToast('Raised',`${id} has been raised`,'warning');
+    const id=document.getElementById('nn-id').value||(prefix+String(data.length+1).padStart(2,'0'));
+    const disc=document.getElementById('nn-disc').value||'General';
+    const today=new Date().toISOString().split('T')[0];
+    if(isRFI) window.APP_DATA.mockRFIData.push({id,title:document.getElementById('nn-title').value||'New RFI',discipline:disc,priority:document.getElementById('nn-pri').value,status:'open',date:today,closureDate:'',file:id+'.pdf',remarks:document.getElementById('nn-rem').value,location:document.getElementById('nn-loc').value});
+    else if(isSI) window.APP_DATA.mockSIData.push({id,title:document.getElementById('nn-title').value||'New SI',discipline:disc,ref:'',priority:document.getElementById('nn-pri').value,status:'open',date:today,costImpact:document.getElementById('nn-cost')?.value||'',file:id+'.pdf',remarks:document.getElementById('nn-rem').value});
+    else window.APP_DATA.mockNCRData.push({id,title:document.getElementById('nn-title').value||'New NCR',discipline:disc,raised:'U001',date:today,status:'open',priority:document.getElementById('nn-pri').value,assignedTo:document.getElementById('nn-assign').value,closureDate:'',file:id+'.pdf',remarks:document.getElementById('nn-rem').value,location:document.getElementById('nn-loc').value});
+    saveProjectDataAuto(); refreshDashboardKPIs();
+    saveProjectDataAuto(); refreshDashboardKPIs(); if(isRFI) renderRFI(); else if(isSI) renderSI(); else renderNCR();
+    showToast('Raised',`${id} has been raised`,'warning');
   });
 }
 
 function printNCRPDF() {
-  const D=window.APP_DATA;
-  generatePDF({ title:'NCR REGISTER', subtitle:'Non-Conformance Reports', module:'NCR',
-    kpis:[{label:'Total NCRs',value:D.mockNCRData.length,color:'#1d4ed8'},{label:'Open',value:D.mockNCRData.filter(d=>d.status==='open').length,color:'#f59e0b'},{label:'Critical Open',value:D.mockNCRData.filter(d=>d.priority==='critical'&&d.status==='open').length,color:'#dc2626'},{label:'Closed',value:D.mockNCRData.filter(d=>d.status==='closed').length,color:'#059669'}],
-    tableHeaders:['NCR ID','Title','Priority','Status','Date Raised','Closure Date','Location','Remarks'],
-    tableRows:D.mockNCRData.map(n=>[n.id,n.title,n.priority.toUpperCase(),pdfBadge(n.status),n.date,n.closureDate||'Open',n.location||'—',n.remarks||'—']),
+  let data=window.APP_DATA.mockNCRData;
+  const df=STATE.ncrDiscFilter;
+  if(df&&df!=='all') data=data.filter(n=>(n.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df&&df!=='all'?df:'All Disciplines';
+  generatePDF({ title:'NCR REGISTER — '+discLabel.toUpperCase(), subtitle:'Non-Conformance Reports | Discipline: '+discLabel, module:'NCR',
+    kpis:[{label:'Total NCRs',value:data.length,color:'#1d4ed8'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'#f59e0b'},{label:'Critical Open',value:data.filter(d=>d.priority==='critical'&&d.status==='open').length,color:'#dc2626'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'#059669'}],
+    tableHeaders:['NCR ID','Title','Discipline','Priority','Status','Date Raised','Closure Date','Location','Remarks'],
+    tableRows:data.map(n=>[n.id,n.title,n.discipline||'General',n.priority.toUpperCase(),pdfBadge(n.status),n.date,n.closureDate||'Open',n.location||'—',n.remarks||'—']),
   });
 }
 
 function printRFIPDF() {
-  const D=window.APP_DATA;
-  generatePDF({ title:'RFI REGISTER', subtitle:'Requests for Information', module:'RFI',
-    kpis:[{label:'Total RFIs',value:D.mockRFIData.length,color:'#1d4ed8'},{label:'Open',value:D.mockRFIData.filter(d=>d.status==='open').length,color:'#f59e0b'},{label:'Closed',value:D.mockRFIData.filter(d=>d.status==='closed').length,color:'#059669'},{label:'High Priority',value:D.mockRFIData.filter(d=>d.priority==='high').length,color:'#dc2626'}],
+  let data=window.APP_DATA.mockRFIData;
+  const df=STATE.rfiDiscFilter;
+  if(df&&df!=='all') data=data.filter(r=>(r.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df&&df!=='all'?df:'All Disciplines';
+  generatePDF({ title:'RFI REGISTER — '+discLabel.toUpperCase(), subtitle:'Requests for Information | Discipline: '+discLabel, module:'RFI',
+    kpis:[{label:'Total RFIs',value:data.length,color:'#1d4ed8'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'#f59e0b'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'#059669'},{label:'High Priority',value:data.filter(d=>d.priority==='high').length,color:'#dc2626'}],
     tableHeaders:['RFI ID','Title','Discipline','Priority','Status','Date','Closure Date','Remarks'],
-    tableRows:D.mockRFIData.map(r=>[r.id,r.title,r.discipline||'—',r.priority.toUpperCase(),pdfBadge(r.status),r.date,r.closureDate||'Open',r.remarks||'—']),
+    tableRows:data.map(r=>[r.id,r.title,r.discipline||'General',r.priority.toUpperCase(),pdfBadge(r.status),r.date,r.closureDate||'Open',r.remarks||'—']),
   });
 }
 
 function printSIPDF() {
-  const D=window.APP_DATA;
-  generatePDF({ title:'SITE INSTRUCTIONS', subtitle:'Issued by Consultant / Engineer', module:'SI',
-    kpis:[{label:'Total SIs',value:D.mockSIData.length,color:'#1d4ed8'},{label:'Open',value:D.mockSIData.filter(d=>d.status==='open').length,color:'#f59e0b'},{label:'Closed',value:D.mockSIData.filter(d=>d.status==='closed').length,color:'#059669'},{label:'High Priority',value:D.mockSIData.filter(d=>d.priority==='high').length,color:'#dc2626'}],
-    tableHeaders:['SI ID','Title','Ref / SKT','Priority','Status','Date','Cost Impact','Remarks'],
-    tableRows:D.mockSIData.map(s=>[s.id,s.title,s.ref||'—',s.priority.toUpperCase(),pdfBadge(s.status),s.date,s.costImpact||'—',s.remarks||'—']),
+  let data=window.APP_DATA.mockSIData;
+  const df=STATE.siDiscFilter;
+  if(df&&df!=='all') data=data.filter(s=>(s.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df&&df!=='all'?df:'All Disciplines';
+  generatePDF({ title:'SITE INSTRUCTIONS — '+discLabel.toUpperCase(), subtitle:'Issued by Consultant / Engineer | Discipline: '+discLabel, module:'SI',
+    kpis:[{label:'Total SIs',value:data.length,color:'#1d4ed8'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'#f59e0b'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'#059669'},{label:'High Priority',value:data.filter(d=>d.priority==='high').length,color:'#dc2626'}],
+    tableHeaders:['SI ID','Title','Discipline','Ref / SKT','Priority','Status','Date','Cost Impact','Remarks'],
+    tableRows:data.map(s=>[s.id,s.title,s.discipline||'General',s.ref||'—',s.priority.toUpperCase(),pdfBadge(s.status),s.date,s.costImpact||'—',s.remarks||'—']),
   });
 }
 
 // ── PROCUREMENT ───────────────────────────────────────────────
 function renderProcurement() {
-  const data=window.APP_DATA.mockProcurementData;
+  let data=window.APP_DATA.mockProcurementData;
+  const df=STATE.procurementDiscFilter;
+  if(df&&df!=='all') data=data.filter(p=>(p.discipline||'').toLowerCase()===df.toLowerCase());
   const total=data.reduce((a,p)=>a+p.poValue,0);
   renderRegisterStats('procurement-stats',[{label:'Total PO Value',value:formatMillions(total),color:'blue'},{label:'Active POs',value:data.filter(p=>p.status==='active').length,color:'emerald'},{label:'Pending Delivery',value:data.filter(p=>p.status==='pending'||p.status==='partially-delivered').length,color:'amber'},{label:'Delivered',value:data.filter(p=>p.status==='delivered').length,color:'violet'}]);
   renderTable('procurement-table-body',data,p=>{
@@ -1450,6 +1736,7 @@ function renderProcurement() {
     return `<tr>
       <td class="td-mono" style="color:var(--accent-amber)">${p.id}</td>
       <td style="font-weight:600;color:var(--text-primary)">${p.item}</td>
+      <td><span class="tag">${p.discipline||'General'}</span></td>
       <td style="color:var(--text-secondary)">${p.vendor}</td>
       <td class="td-mono">${formatCurrency(p.poValue)}</td>
       <td>${statusBadge(p.status)}</td>
@@ -1458,7 +1745,7 @@ function renderProcurement() {
       <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${p.performance}%;background:${pc};transition:width 1s"></div></div><span style="font-family:'DM Mono',monospace;font-size:10px;color:${pc}">${p.performance||'—'}${p.performance?'%':''}</span></div></td>
       <td style="font-size:11px;color:var(--text-secondary)">${p.remarks||'—'}</td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('procurement','${p.id}.pdf')">📂 Open</button>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.procurement}${encodeURIComponent(p.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewPO('${p.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editPO('${p.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deletePO('${p.id}')">Delete</button>
@@ -1467,23 +1754,14 @@ function renderProcurement() {
     </tr>`;
   });
   setupTableFilter('procurement-filter-input','procurement-table-body');
+  setupDiscTabs('procurement-disc-tabs','procurementDiscFilter',renderProcurement);
   renderProcurementChart();
 }
 
 function renderProcurementChart() {
   const ctx=document.getElementById('procurement-chart'); if(!ctx)return;
-  if(STATE.charts.procurement){STATE.charts.procurement.destroy();STATE.charts.procurement=null;}
+  if(STATE.charts.procurement) STATE.charts.procurement.destroy();
   const data=window.APP_DATA.mockProcurementData;
-  if(!data||!data.length){
-    const parent=ctx.parentElement;
-    const existing=parent.querySelector('.empty-chart-msg');
-    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No purchase orders yet';parent.appendChild(e);}
-    ctx.style.display='none'; return;
-  }
-  ctx.style.display='';
-  const parent=ctx.parentElement;
-  const existing=parent.querySelector('.empty-chart-msg');
-  if(existing) existing.remove();
   STATE.charts.procurement=new Chart(ctx,{type:'doughnut',data:{labels:data.map(p=>p.id),datasets:[{data:data.map(p=>p.poValue),backgroundColor:['#3b82f6','#10b981','#f59e0b','#f43f5e','#8b5cf6','#06b6d4'],borderWidth:0}]},options:{...chartDefaults(),cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#8a9bb8',font:{size:10}}}}}});
 }
 
@@ -1499,7 +1777,7 @@ function viewPO(id) {
     <div style="margin-top:14px">${inf('Remarks',p.remarks||'—')}</div>`);
 }
 
-function deletePO(id) { const data=window.APP_DATA.mockProcurementData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete PO <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderProcurement(); showToast('Deleted',`${id} deleted`,'success'); }); }
+function deletePO(id) { const data=window.APP_DATA.mockProcurementData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete PO <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderProcurement(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); }); }
 
 function editPO(id) {
   const p=window.APP_DATA.mockProcurementData.find(x=>x.id===id); if(!p)return;
@@ -1507,6 +1785,9 @@ function editPO(id) {
     <div class="form-row">
       <div class="form-group"><label class="form-label">PO No.</label><input class="form-control" id="ep-id" value="${p.id}"></div>
       <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="ep-item" value="${p.item}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Discipline</label>
+      <select class="form-control" id="ep-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(p.discipline||'')?'selected':''}>${d}</option>`).join('')}</select>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
@@ -1522,12 +1803,13 @@ function editPO(id) {
   ()=>{
     p.id=document.getElementById('ep-id').value||p.id;
     p.item=document.getElementById('ep-item').value||p.item;
+    p.discipline=document.getElementById('ep-disc').value;
     p.status=document.getElementById('ep-status').value;
     p.performance=parseInt(document.getElementById('ep-perf').value)||0;
     p.deliveryDate=document.getElementById('ep-deldate').value;
     p.payStatus=document.getElementById('ep-pay').value;
     p.remarks=document.getElementById('ep-remarks').value;
-    renderProcurement(); showToast('Updated',`${p.id} updated`,'success');
+    renderProcurement(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${p.id} updated`,'success');
   });
 }
 
@@ -1543,14 +1825,18 @@ function openAddPOModal() {
       <div class="form-group"><label class="form-label">PO Date</label><input class="form-control" id="np-podate" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
       <div class="form-group"><label class="form-label">Delivery Date</label><input class="form-control" id="np-deldate" type="date"></div>
     </div>
+    <div class="form-group"><label class="form-label">Discipline</label>
+      <select class="form-control" id="np-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+    </div>
     <div class="form-group"><label class="form-label">Status</label>
       <select class="form-control" id="np-status"><option value="pending">Pending</option><option value="active">Active</option><option value="partially-delivered">Partially Delivered</option><option value="delivered">Delivered</option></select>
     </div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="np-remarks" rows="2"></textarea></div>`,
   ()=>{
     const id=document.getElementById('np-id').value||('PO-0'+String(window.APP_DATA.mockProcurementData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockProcurementData.unshift({
+    window.APP_DATA.mockProcurementData.push({
       id, item: document.getElementById('np-item').value || 'New PO',
+      discipline: document.getElementById('np-disc').value||'General',
       vendor: document.getElementById('np-vendor').value,
       poValue: parseFloat(document.getElementById('np-value').value) || 0,
       status: document.getElementById('np-status').value,
@@ -1560,14 +1846,17 @@ function openAddPOModal() {
       performance: 0,
       remarks: document.getElementById('np-remarks').value
     });
-    renderProcurement(); showToast('Added',`${id} added to Procurement`,'success');
+    renderProcurement(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Procurement`,'success');
   });
 }
 
 function printProcurementPDF() {
-  const data=window.APP_DATA.mockProcurementData;
+  let data=window.APP_DATA.mockProcurementData;
+  const df=STATE.procurementDiscFilter;
+  if(df&&df!=='all') data=data.filter(p=>(p.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df==='all'?'All Disciplines':df;
   const total=data.reduce((a,p)=>a+p.poValue,0);
-  generatePDF({ title:'PROCUREMENT TRACKER', subtitle:'Purchase Orders, Delivery & Vendor Performance', module:'PO',
+  generatePDF({ title:'PROCUREMENT TRACKER — '+discLabel.toUpperCase(), subtitle:'Purchase Orders & Vendor Performance | Discipline: '+discLabel, module:'PO',
     kpis:[{label:'Total PO Value',value:formatMillions(total),color:'#1d4ed8'},{label:'Active POs',value:data.filter(d=>d.status==='active').length,color:'#059669'},{label:'Pending Delivery',value:data.filter(d=>d.status==='pending').length,color:'#f59e0b'},{label:'Avg Performance',value:(data.filter(d=>d.performance>0).reduce((a,d)=>a+d.performance,0)/data.filter(d=>d.performance>0).length||0).toFixed(0)+'%',color:'#7c3aed'}],
     tableHeaders:['PO No.','Description','Vendor','PO Value','Status','Delivery Date','Payment','Performance','Remarks'],
     tableRows:data.map(p=>[p.id,p.item,p.vendor,formatCurrency(p.poValue),pdfBadge(p.status),p.deliveryDate,p.payStatus,p.performance?p.performance+'%':'—',p.remarks||'—']),
@@ -1583,22 +1872,10 @@ function renderProgress() {
 
 function renderFullSCurve() {
   const ctx=document.getElementById('progress-scurve-chart'); if(!ctx)return;
-  if(STATE.charts.progressScurve) { STATE.charts.progressScurve.destroy(); STATE.charts.progressScurve=null; }
+  if(STATE.charts.progressScurve) STATE.charts.progressScurve.destroy();
   const d=window.APP_DATA.mockProgressData.sCurveData;
-  if(!d || !d.length) {
-    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
-    const parent=ctx.parentElement;
-    const existing=parent.querySelector('.empty-chart-msg');
-    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:40px;color:var(--text-muted);font-size:12px';e.textContent='No S-Curve data yet — update progress milestones to see chart';parent.appendChild(e);}
-    return;
-  }
-  const emptyMsg=ctx.parentElement.querySelector('.empty-chart-msg');
-  if(emptyMsg) emptyMsg.remove();
-  const pvAll = d.flatMap(x=>[x.planned,x.actual]).filter(v=>v!=null);
-  const pvMax = pvAll.length ? Math.max(...pvAll) : 100;
-  const pvYMax = Math.ceil(Math.min(100, pvMax * 1.15) / 10) * 10;
   // Use same options as dashboard for consistency
-  STATE.charts.progressScurve=new Chart(ctx,{type:'line',data:{labels:d.map(x=>x.month),datasets:[{label:'Planned %',data:d.map(x=>x.planned),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true},{label:'Actual %',data:d.map(x=>x.actual),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.08)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true,spanGaps:false}]},options:chartDefaults({scales:{y:{min:0,max:pvYMax,ticks:{callback:v=>v+'%'}}}})});
+  STATE.charts.progressScurve=new Chart(ctx,{type:'line',data:{labels:d.map(x=>x.month),datasets:[{label:'Planned %',data:d.map(x=>x.planned),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true},{label:'Actual %',data:d.map(x=>x.actual),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.08)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true,spanGaps:false}]},options:chartDefaults({scales:{y:{max:60,ticks:{callback:v=>v+'%'}}}})});
 }
 
 function renderDisciplineProgressBars() {
@@ -1615,13 +1892,6 @@ function renderDisciplineProgressBars() {
 
 function openUpdateProgressModal() {
   const data = window.APP_DATA.mockProgressData;
-  // Seed default disciplines for brand new projects
-  if (data.disciplineProgress.length === 0) {
-    data.disciplineProgress = window.APP_DATA.DISCIPLINES.slice(0,8).map(n=>({name:n,progress:0,planned:0}));
-  }
-  if (data.milestones.length === 0) {
-    data.milestones = [{id:'MS01',name:'Project Start',planned:window.APP_DATA.ACTIVE_PROJECT.startDate||'',actual:'',status:'on-track',delay:0},{id:'MS02',name:'Practical Completion',planned:window.APP_DATA.ACTIVE_PROJECT.plannedEnd||'',actual:'',status:'on-track',delay:0}];
-  }
   const milestonesHTML = data.milestones.map((m, i) => `
     <div class="form-row" style="margin-bottom:8px">
       <div class="form-group"><label>${m.name}</label><input class="form-control" id="ms-${i}" type="date" value="${m.actual || ''}" placeholder="Actual date"></div>
@@ -1659,21 +1929,10 @@ function openUpdateProgressModal() {
       });
       data.disciplineProgress.forEach((d, i) => {
         const input = document.getElementById(`disc-${i}`);
-        if (input) d.progress = Math.min(100, Math.max(0, parseInt(input.value) || 0));
+        if (input) d.progress = parseInt(input.value) || 0;
       });
-      // Recalculate overall project progress as weighted average of discipline progress
-      if (data.disciplineProgress.length > 0) {
-        const avg = Math.round(data.disciplineProgress.reduce((s,d)=>s+d.progress,0) / data.disciplineProgress.length);
-        window.APP_DATA.ACTIVE_PROJECT.currentProgress = avg;
-        // Persist updated progress on project record
-        const pRec = window.APP_DATA.PROJECTS.find(p=>p.id===window.APP_DATA.ACTIVE_PROJECT.id);
-        if (pRec) pRec.currentProgress = avg;
-      }
-      if (window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
       renderProgress();
       renderDashboard();
-      updateProjectDisplay(window.APP_DATA.ACTIVE_PROJECT);
-      updateNavBadges();
       showToast('Progress Updated', 'All progress values have been refreshed', 'success');
     });
 }
@@ -1693,35 +1952,8 @@ async function printProgressPDF() {
 
 // ── HSE ───────────────────────────────────────────────────────
 function renderHSE() {
-  // Always read directly from getPD() — never from any cached reference
-  const pd = window.APP_DATA.getPD();
-  const hseData = pd.hse || { incidents:[], stats:{lti:0,nearMiss:0,toolboxTalks:0,safeManHours:0,ltir:0} };
-  const incidents = Array.isArray(hseData.incidents) ? hseData.incidents : [];
-  const stats = hseData.stats || {lti:0,nearMiss:0,toolboxTalks:0,safeManHours:0,ltir:0};
-  // Compute ALL counts live from incidents — no fallback to old stored totals
-  const liveNearMiss = incidents.filter(i=>i.type==='near-miss').length;
-  const liveLTIs     = incidents.filter(i=>i.type==='incident' && (i.casualties||0)>0).length;
-  // safeManHours and ltir are manually logged — read from stats but default strictly to 0
-  const liveSafeHours = (typeof stats.safeManHours === 'number') ? stats.safeManHours : 0;
-  const liveLTIR      = (typeof stats.ltir === 'number') ? stats.ltir : 0;
-  const liveToolboxTalks = (typeof stats.toolboxTalks === 'number') ? stats.toolboxTalks : 0;
-  const liveLTICount  = (typeof stats.lti === 'number') ? stats.lti : 0;
-  const safeHoursDisplay = liveSafeHours >= 1000 ? (liveSafeHours/1000).toFixed(0)+'K' : liveSafeHours.toString();
-  renderRegisterStats('hse-stats',[
-    {label:'Safe Man Hours', value:safeHoursDisplay, color:'emerald'},
-    {label:'LTIR Score',     value:liveLTIR,          color:'amber'},
-    {label:'Toolbox Talks',  value:liveToolboxTalks,  color:'blue'},
-    {label:'LTIs Recorded',  value:liveLTICount,      color:'rose'}
-  ]);
-  // Update the HSE Performance panel (these have IDs, not hardcoded anymore)
-  const ph=document.getElementById('hse-perf-hours');
-  const pl=document.getElementById('hse-perf-ltir');
-  const pt=document.getElementById('hse-perf-toolbox');
-  const pi=document.getElementById('hse-perf-lti');
-  if(ph) ph.textContent = safeHoursDisplay;
-  if(pl) pl.textContent = liveLTIR.toFixed ? liveLTIR.toFixed(2) : liveLTIR;
-  if(pt) pt.textContent = liveToolboxTalks;
-  if(pi) pi.textContent = liveLTICount;
+  const {incidents,stats}=window.APP_DATA.mockHSEData;
+  renderRegisterStats('hse-stats',[{label:'Safe Man Hours',value:(stats.safeManHours/1000).toFixed(0)+'K',color:'emerald'},{label:'LTIR',value:stats.ltir,color:'amber'},{label:'Near Misses',value:stats.nearMiss,color:'rose'},{label:'Toolbox Talks',value:stats.toolboxTalks,color:'blue'}]);
   renderTable('hse-table-body',incidents,i=>`
     <tr>
       <td class="td-mono">${i.id}</td>
@@ -1734,7 +1966,7 @@ function renderHSE() {
       <td style="font-size:11px;color:var(--text-secondary)">${i.location||'—'}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${i.correctiveAction||'—'}</td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('hse','${i.id}.pdf')">📂 Open</button>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.hse}${encodeURIComponent(i.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewHSE('${i.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editHSE('${i.id}')">Edit</button>
         ${i.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeHSE('${i.id}')">Close</button>`:''}
@@ -1747,25 +1979,8 @@ function renderHSE() {
 
 function renderHSEChart() {
   const ctx=document.getElementById('hse-chart'); if(!ctx)return;
-  if(STATE.charts.hse){STATE.charts.hse.destroy();STATE.charts.hse=null;}
-  const pd=window.APP_DATA.getPD();
-  const incidents = (pd.hse && Array.isArray(pd.hse.incidents)) ? pd.hse.incidents : [];
-  const nearMiss = incidents.filter(i=>i.type==='near-miss').length;
-  const incident  = incidents.filter(i=>i.type==='incident').length;
-  const lti       = incidents.filter(i=>i.type==='incident' && i.casualties>0).length;
-  const data = [nearMiss, incident, lti];
-  const hasData = data.some(v=>v>0);
-  if(!hasData){
-    const parent=ctx.parentElement;
-    const existing=parent.querySelector('.empty-chart-msg');
-    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No HSE incidents logged yet';parent.appendChild(e);}
-    ctx.style.display='none'; return;
-  }
-  ctx.style.display='';
-  const parent=ctx.parentElement;
-  const existing=parent.querySelector('.empty-chart-msg');
-  if(existing) existing.remove();
-  STATE.charts.hse=new Chart(ctx,{type:'doughnut',data:{labels:['Near Miss','Incident','LTI'],datasets:[{data,backgroundColor:['#f59e0b','#f43f5e','#8b5cf6'],borderWidth:0}]},options:{...chartDefaults(),cutout:'60%',plugins:{legend:{labels:{color:'#8a9bb8',font:{size:11}}}}}});
+  if(STATE.charts.hse) STATE.charts.hse.destroy();
+  STATE.charts.hse=new Chart(ctx,{type:'doughnut',data:{labels:['Near Miss','Incident','LTI'],datasets:[{data:[15,3,1],backgroundColor:['#f59e0b','#f43f5e','#8b5cf6'],borderWidth:0}]},options:{...chartDefaults(),cutout:'60%',plugins:{legend:{labels:{color:'#8a9bb8',font:{size:11}}}}}});
 }
 
 function openAddHSEModal() {
@@ -1786,17 +2001,16 @@ function openAddHSEModal() {
     <div class="form-group"><label class="form-label">Root Cause</label><input class="form-control" id="nh-root" placeholder="Root cause analysis"></div>
     <div class="form-group"><label class="form-label">Corrective Action</label><textarea class="form-control" id="nh-action" rows="2" placeholder="Corrective actions taken"></textarea></div>`,
   ()=>{
-    const hseInc=window.APP_DATA.getPD().hse.incidents;
-    const id='HSE-0'+String(hseInc.length+1).padStart(2,'0');
-    hseInc.unshift({id,type:document.getElementById('nh-type').value,desc:document.getElementById('nh-desc').value||'HSE Event',date:new Date().toISOString().split('T')[0],severity:document.getElementById('nh-sev').value,status:'open',casualties:parseInt(document.getElementById('nh-cas').value)||0,location:document.getElementById('nh-loc').value,rootCause:document.getElementById('nh-root').value,correctiveAction:document.getElementById('nh-action').value,investigator:'U001'});
-    renderHSE(); showToast('Logged',`${id} has been logged`,'warning');
+    const id='HSE-0'+String(window.APP_DATA.mockHSEData.incidents.length+1).padStart(2,'0');
+    window.APP_DATA.mockHSEData.incidents.push({id,type:document.getElementById('nh-type').value,desc:document.getElementById('nh-desc').value||'HSE Event',date:new Date().toISOString().split('T')[0],severity:document.getElementById('nh-sev').value,status:'open',casualties:parseInt(document.getElementById('nh-cas').value)||0,location:document.getElementById('nh-loc').value,rootCause:document.getElementById('nh-root').value,correctiveAction:document.getElementById('nh-action').value,investigator:'U001'});
+    renderHSE(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Logged',`${id} has been logged`,'warning');
   });
 }
 
-function closeHSE(id) { const i=window.APP_DATA.getPD().hse.incidents.find(x=>x.id===id); if(i){i.status='closed';renderHSE();showToast('Closed',`${id} closed`,'success');} }
-function deleteHSE(id) { const data=window.APP_DATA.getPD().hse.incidents; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete HSE <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderHSE(); showToast('Deleted',`${id} deleted`,'success'); }); }
+function closeHSE(id) { const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(i){i.status='closed';saveProjectDataAuto();refreshDashboardKPIs();renderHSE();showToast('Closed',`${id} closed`,'success');} }
+function deleteHSE(id) { const data=window.APP_DATA.mockHSEData.incidents; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete HSE <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); saveProjectDataAuto(); refreshDashboardKPIs(); renderHSE(); showToast('Deleted',`${id} deleted`,'success'); }); }
 function editHSE(id) {
-  const i=window.APP_DATA.getPD().hse.incidents.find(x=>x.id===id); if(!i)return;
+  const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(!i)return;
   openModal('Edit HSE Incident','',`
     <div class="form-row">
       <div class="form-group"><label class="form-label">HSE ID</label><input class="form-control" id="eh-id" value="${i.id}"></div>
@@ -1825,36 +2039,12 @@ function editHSE(id) {
     i.casualties=parseInt(document.getElementById('eh-cas').value)||0;
     i.rootCause=document.getElementById('eh-root').value;
     i.correctiveAction=document.getElementById('eh-action').value;
-    renderHSE(); showToast('Updated',`${i.id} updated`,'success');
+    renderHSE(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${i.id} updated`,'success');
   });
 }
 
-function openUpdateHSEStatsModal() {
-  const stats = window.APP_DATA.getPD().hse.stats;
-  openModal('Update HSE Statistics','',`
-    <div style="margin-bottom:8px;font-size:12px;color:var(--text-muted)">Enter cumulative project HSE statistics. These are manually tracked values.</div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Safe Man Hours</label><input class="form-control" id="hs-hours" type="number" min="0" value="${stats.safeManHours||0}" placeholder="e.g. 284000"></div>
-      <div class="form-group"><label class="form-label">LTIR Score</label><input class="form-control" id="hs-ltir" type="number" min="0" step="0.01" value="${stats.ltir||0}" placeholder="e.g. 0.35"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Toolbox Talks Conducted</label><input class="form-control" id="hs-toolbox" type="number" min="0" value="${stats.toolboxTalks||0}" placeholder="e.g. 48"></div>
-      <div class="form-group"><label class="form-label">LTIs Recorded</label><input class="form-control" id="hs-lti" type="number" min="0" value="${stats.lti||0}" placeholder="e.g. 1"></div>
-    </div>`,
-  ()=>{
-    const s = window.APP_DATA.getPD().hse.stats;
-    s.safeManHours = parseFloat(document.getElementById('hs-hours').value) || 0;
-    s.ltir         = parseFloat(document.getElementById('hs-ltir').value)  || 0;
-    s.toolboxTalks = parseInt(document.getElementById('hs-toolbox').value) || 0;
-    s.lti          = parseInt(document.getElementById('hs-lti').value)     || 0;
-    if(window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
-    renderHSE();
-    showToast('HSE Stats Updated', 'Safety statistics saved for this project', 'success');
-  }, 'Save Stats');
-}
-
 function viewHSE(id) {
-  const i=window.APP_DATA.getPD().hse.incidents.find(x=>x.id===id); if(!i)return;
+  const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(!i)return;
   openModal('HSE Incident Detail','',`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       ${inf('ID',i.id)}${inf('Type',i.type)}
@@ -1878,7 +2068,9 @@ function printHSEPDF() {
 
 // ── SUBCONTRACTORS ────────────────────────────────────────────
 function renderSubcontractors() {
-  const data=window.APP_DATA.mockSubcontractorData;
+  let data=window.APP_DATA.mockSubcontractorData;
+  const df=STATE.subDiscFilter;
+  if(df&&df!=='all') data=data.filter(s=>(s.discipline||s.scope||'').toLowerCase().includes(df.toLowerCase()));
   const totalContract=data.reduce((a,s)=>a+s.contractValue,0);
   const totalPaid=data.reduce((a,s)=>a+s.paidToDate,0);
   renderRegisterStats('sub-stats',[{label:'Active Subcontractors',value:data.filter(s=>s.status==='active').length,color:'blue'},{label:'Total Contract',value:formatMillions(totalContract),color:'violet'},{label:'Total Paid',value:formatMillions(totalPaid),color:'emerald'},{label:'Active Workers',value:data.reduce((a,s)=>a+s.workers,0),color:'cyan'}]);
@@ -1887,6 +2079,7 @@ function renderSubcontractors() {
     return `<tr>
       <td class="td-mono">${s.id}</td>
       <td style="font-weight:600;color:var(--text-primary)">${s.name}</td>
+      <td><span class="tag">${s.discipline||'General'}</span></td>
       <td style="font-size:12px;color:var(--text-secondary)">${s.scope}</td>
       <td class="td-mono" style="color:var(--accent-amber)">${s.poRef||'—'}</td>
       <td><span class="badge badge-${s.status}">${s.status}</span></td>
@@ -1895,7 +2088,7 @@ function renderSubcontractors() {
       <td class="td-mono">${formatCurrency(s.paidToDate)}</td>
       <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${s.performance}%;background:${pc}"></div></div><span style="font-family:'DM Mono',monospace;font-size:11px;color:${pc}">${s.performance||'—'}${s.performance?'%':''}</span></div></td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('subcontractors','${s.id}.pdf')">📂 Open</button>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.subcontractors}${encodeURIComponent(s.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewSub('${s.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editSub('${s.id}')">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteSub('${s.id}')">Delete</button>
@@ -1903,6 +2096,7 @@ function renderSubcontractors() {
       </td>
     </tr>`;
   });
+  setupDiscTabs('sub-disc-tabs','subDiscFilter',renderSubcontractors);
 }
 
 function viewSub(id) {
@@ -1922,7 +2116,7 @@ function viewSub(id) {
     </div>`);
 }
 
-function deleteSub(id) { const data=window.APP_DATA.mockSubcontractorData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderSubcontractors(); showToast('Deleted',`${id} deleted`,'success'); }); }
+function deleteSub(id) { const data=window.APP_DATA.mockSubcontractorData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderSubcontractors(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); }); }
 
 function editSub(id) {
   const s=window.APP_DATA.mockSubcontractorData.find(x=>x.id===id); if(!s)return;
@@ -1930,6 +2124,9 @@ function editSub(id) {
     <div class="form-row">
       <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="es-id" value="${s.id}"></div>
       <div class="form-group"><label class="form-label">Company Name</label><input class="form-control" id="es-name" value="${s.name}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Discipline</label>
+      <select class="form-control" id="es-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(s.discipline||'')?'selected':''}>${d}</option>`).join('')}</select>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
@@ -1951,13 +2148,14 @@ function editSub(id) {
   ()=>{
     s.id=document.getElementById('es-id').value||s.id;
     s.name=document.getElementById('es-name').value||s.name;
+    s.discipline=document.getElementById('es-disc').value;
     s.status=document.getElementById('es-status').value;
     s.workers=parseInt(document.getElementById('es-workers').value)||0;
     s.paidToDate=parseFloat(document.getElementById('es-paid').value)||0;
     s.performance=parseInt(document.getElementById('es-perf').value)||0;
     s.contactPerson=document.getElementById('es-contact').value;
     s.phone=document.getElementById('es-phone').value;
-    renderSubcontractors(); showToast('Updated',`${s.id} updated`,'success');
+    renderSubcontractors(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${s.id} updated`,'success');
   });
 }
 
@@ -1985,15 +2183,18 @@ function openAddSubModal() {
     </div>`,
   ()=>{
     const id=document.getElementById('ns-id').value||('SC-0'+String(window.APP_DATA.mockSubcontractorData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockSubcontractorData.unshift({id,name:document.getElementById('ns-name').value||'New Subcontractor',scope:document.getElementById('ns-scope').value,status:document.getElementById('ns-status').value,workers:0,contractValue:parseFloat(document.getElementById('ns-val').value)||0,paidToDate:0,performance:0,safety:0,poRef:document.getElementById('ns-po').value,contactPerson:document.getElementById('ns-contact').value,phone:document.getElementById('ns-phone').value,startDate:document.getElementById('ns-start').value,endDate:document.getElementById('ns-end').value});
-    renderSubcontractors(); showToast('Added',`${id} added to Subcontractor Register`,'success');
+    window.APP_DATA.mockSubcontractorData.push({id,name:document.getElementById('ns-name').value||'New Subcontractor',scope:document.getElementById('ns-scope').value,status:document.getElementById('ns-status').value,workers:0,contractValue:parseFloat(document.getElementById('ns-val').value)||0,paidToDate:0,performance:0,safety:0,poRef:document.getElementById('ns-po').value,contactPerson:document.getElementById('ns-contact').value,phone:document.getElementById('ns-phone').value,startDate:document.getElementById('ns-start').value,endDate:document.getElementById('ns-end').value});
+    renderSubcontractors(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Subcontractor Register`,'success');
   });
 }
 
 function printSubPDF() {
-  const data=window.APP_DATA.mockSubcontractorData;
+  let data=window.APP_DATA.mockSubcontractorData;
+  const df=STATE.subDiscFilter;
+  if(df&&df!=='all') data=data.filter(s=>(s.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df==='all'?'All Disciplines':df;
   const totalContract=data.reduce((a,s)=>a+s.contractValue,0);
-  generatePDF({ title:'SUBCONTRACTOR REGISTER', subtitle:'Scope, Payments, Performance & PO References', module:'SUB',
+  generatePDF({ title:'SUBCONTRACTOR REGISTER — '+discLabel.toUpperCase(), subtitle:'Scope, Payments, Performance | Discipline: '+discLabel, module:'SUB',
     kpis:[{label:'Active Subcontractors',value:data.filter(d=>d.status==='active').length,color:'#1d4ed8'},{label:'Total Contract Value',value:formatMillions(totalContract),color:'#7c3aed'},{label:'Total Workers',value:data.reduce((a,s)=>a+s.workers,0),color:'#059669'},{label:'Mobilizing',value:data.filter(d=>d.status==='mobilizing').length,color:'#f59e0b'}],
     tableHeaders:['ID','Company','Scope','PO Ref','Status','Workers','Contract Value','Paid to Date','Performance'],
     tableRows:data.map(s=>[s.id,s.name,s.scope,s.poRef||'—',s.status.toUpperCase(),formatCurrency(s.contractValue),formatCurrency(s.paidToDate),s.performance?s.performance+'%':'—']),
@@ -2003,24 +2204,11 @@ function printSubPDF() {
 // ── COST ─────────────────────────────────────────────────────
 function renderCost() {
   const D=window.APP_DATA.mockCostData;
-  // Always compute live totals purely from categories — never fall back to stale stored fields
-  const liveRevBudget = D.categories.reduce((a,c)=>a+(c.budget||0), 0);
-  const liveActual    = D.categories.reduce((a,c)=>a+(c.actual||0), 0);
-  const liveForecast  = D.categories.reduce((a,c)=>a+(c.forecast||0), 0);
-  const liveVariance  = liveForecast - liveRevBudget;
-  // Update hero summary cards
-  const heroB=document.getElementById('cost-hero-budget');
-  const heroA=document.getElementById('cost-hero-actual');
-  const heroF=document.getElementById('cost-hero-forecast');
-  if(heroB) heroB.textContent=formatMillions(liveRevBudget);
-  if(heroA) heroA.textContent=formatMillions(liveActual);
-  if(heroF){
-    const varianceFmt=Math.abs(liveVariance/1e6).toFixed(1)+'M';
-    const arrow=liveVariance>0?'▲':'▼';
-    heroF.innerHTML=formatMillions(liveForecast)+(liveVariance!==0?` <span style="font-size:11px">${arrow} ${varianceFmt}</span>`:'');
-  }
-  renderRegisterStats('cost-stats',[{label:'Revised Budget',value:formatMillions(liveRevBudget),color:'blue'},{label:'Actual Cost',value:formatMillions(liveActual),color:'emerald'},{label:'Forecast Final',value:formatMillions(liveForecast),color:'amber'},{label:'Cost Variance',value:formatMillions(liveVariance),color:liveVariance>0?'rose':'emerald'}]);
-  renderTable('cost-table-body',D.categories,c=>{
+  let cats=D.categories;
+  const df=STATE.costDiscFilter;
+  if(df&&df!=='all') cats=cats.filter(c=>(c.discipline||'').toLowerCase()===df.toLowerCase());
+  renderRegisterStats('cost-stats',[{label:'Revised Budget',value:formatMillions(cats.reduce((a,c)=>a+c.budget,0)||D.revisedBudget),color:'blue'},{label:'Actual Cost',value:formatMillions(cats.reduce((a,c)=>a+c.actual,0)||D.actualCost),color:'emerald'},{label:'Forecast Final',value:formatMillions(cats.reduce((a,c)=>a+c.forecast,0)||D.forecastFinalCost),color:'amber'},{label:'Cost Variance',value:formatMillions(cats.reduce((a,c)=>a+(c.forecast-c.budget),0)||D.costVariance),color:'rose'}]);
+  renderTable('cost-table-body',cats,c=>{
     const fv=c.forecast-c.budget, vc=fv>0?'var(--accent-rose)':'var(--accent-emerald)';
     return `<tr>
       <td style="font-weight:600;color:var(--text-primary)">${c.name}</td>
@@ -2031,30 +2219,22 @@ function renderCost() {
       <td class="td-mono" style="color:${vc}">${fv>0?'+':''}${formatCurrency(fv)}</td>
       <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,(c.actual/c.budget*100)).toFixed(0)}%"></div></div></td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('cost','${c.name.replace(/ /g,'-')}'+'.pdf')">📂 Open</button>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.cost}${encodeURIComponent(c.name.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewCostCategory('${c.name}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCostCategory('${c.name}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteCostCategory('${c.name}')">Delete</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteCostCategory('${c.name}')">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport('cost')">Import</button>`:''}
       </td>
     </tr>`;
   });
+  setupDiscTabs('cost-disc-tabs','costDiscFilter',renderCost);
   renderCostChart();
 }
 
 function renderCostChart() {
   const ctx=document.getElementById('cost-chart'); if(!ctx)return;
-  if(STATE.charts.cost){STATE.charts.cost.destroy();STATE.charts.cost=null;}
+  if(STATE.charts.cost) STATE.charts.cost.destroy();
   const cats=window.APP_DATA.mockCostData.categories;
-  if(!cats||!cats.length){
-    const parent=ctx.parentElement;
-    const existing=parent.querySelector('.empty-chart-msg');
-    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No cost categories yet — click ➕ Add Category to begin';parent.appendChild(e);}
-    ctx.style.display='none'; return;
-  }
-  ctx.style.display='';
-  const parent=ctx.parentElement;
-  const existing=parent.querySelector('.empty-chart-msg');
-  if(existing) existing.remove();
   STATE.charts.cost=new Chart(ctx,{type:'bar',data:{labels:cats.map(c=>c.name.length>12?c.name.substring(0,12)+'…':c.name),datasets:[{label:'Budget',data:cats.map(c=>+(c.budget/1e6).toFixed(2)),backgroundColor:'rgba(59,130,246,0.3)',borderColor:'#3b82f6',borderWidth:1,borderRadius:4},{label:'Forecast',data:cats.map(c=>+(c.forecast/1e6).toFixed(2)),backgroundColor:'rgba(244,63,94,0.5)',borderColor:'#f43f5e',borderWidth:1,borderRadius:4},{label:'Actual',data:cats.map(c=>+(c.actual/1e6).toFixed(2)),backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10b981',borderWidth:1,borderRadius:4}]},options:chartDefaults({scales:{y:{ticks:{callback:v=>'SAR '+v+'M'}}}})});
 }
 
@@ -2070,7 +2250,7 @@ function viewCostCategory(name) {
     </div>`);
 }
 
-function deleteCostCategory(name) { const data=window.APP_DATA.mockCostData.categories; const idx=data.findIndex(x=>x.name===name); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete category <span style="color:var(--accent-rose)">${name}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderCost(); showToast('Deleted',`${name} deleted`,'success'); }); }
+function deleteCostCategory(name) { const data=window.APP_DATA.mockCostData.categories; const idx=data.findIndex(x=>x.name===name); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete category <span style="color:var(--accent-rose)">${name}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderCost(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${name} deleted`,'success'); }); }
 
 function editCostCategory(name) {
   const c=window.APP_DATA.mockCostData.categories.find(x=>x.name===name); if(!c)return;
@@ -2090,33 +2270,8 @@ function editCostCategory(name) {
     c.committed=parseFloat(document.getElementById('ec-committed').value)||c.committed;
     c.actual=parseFloat(document.getElementById('ec-actual').value)||c.actual;
     c.forecast=parseFloat(document.getElementById('ec-forecast').value)||c.forecast;
-    if (window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
-    renderCost(); showToast('Updated',`${c.name} updated`,'success');
+    renderCost(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${c.name} updated`,'success');
   });
-}
-
-function openAddCostCategoryModal() {
-  openModal('Add Cost Category','',`
-    <div class="form-group"><label class="form-label">Category Name</label><input class="form-control" id="ac-name" placeholder="e.g. Structural Works"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Budget (SAR)</label><input class="form-control" id="ac-budget" type="number" placeholder="0" value="0"></div>
-      <div class="form-group"><label class="form-label">Committed (SAR)</label><input class="form-control" id="ac-committed" type="number" placeholder="0" value="0"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Actual (SAR)</label><input class="form-control" id="ac-actual" type="number" placeholder="0" value="0"></div>
-      <div class="form-group"><label class="form-label">Forecast (SAR)</label><input class="form-control" id="ac-forecast" type="number" placeholder="0" value="0"></div>
-    </div>`,
-  ()=>{
-    const name=document.getElementById('ac-name').value.trim();
-    if(!name){showToast('Error','Category name is required','error');return;}
-    const budget=parseFloat(document.getElementById('ac-budget').value)||0;
-    const committed=parseFloat(document.getElementById('ac-committed').value)||0;
-    const actual=parseFloat(document.getElementById('ac-actual').value)||0;
-    const forecast=parseFloat(document.getElementById('ac-forecast').value)||budget;
-    window.APP_DATA.mockCostData.categories.push({name,budget,committed,actual,forecast});
-    if (window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
-    renderCost(); showToast('Added',`${name} added to Cost Control`,'success');
-  },'Add Category');
 }
 
 function openAddVariationOrderModal() {
@@ -2147,12 +2302,16 @@ function openAddVariationOrderModal() {
       D.costVariance=D.forecastFinalCost-D.revisedBudget;
     }
     const ref=document.getElementById('vo-ref').value||'VO-'+Date.now();
-    renderCost(); showToast('Variation Order Added',`${ref} applied to ${catName}`,'success');
+    renderCost(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Variation Order Added',`${ref} applied to ${catName}`,'success');
   });
 }
 
 function printCostPDF() {
   const D=window.APP_DATA.mockCostData;
+  let cats=D.categories;
+  const df=STATE.costDiscFilter;
+  if(df&&df!=='all') cats=cats.filter(c=>(c.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df==='all'?'All Disciplines':df;
   generatePDF({ title:'COST CONTROL REPORT', subtitle:'Budget vs Actual vs Forecast — Full Breakdown', module:'COST',
     kpis:[{label:'Revised Budget',value:formatMillions(D.revisedBudget),color:'#1d4ed8'},{label:'Actual Cost',value:formatMillions(D.actualCost),color:'#059669'},{label:'Forecast Final',value:formatMillions(D.forecastFinalCost),color:'#f59e0b'},{label:'Cost Variance',value:formatMillions(D.costVariance),color:'#dc2626'}],
     tableHeaders:['Category','Budget','Committed','Actual','Forecast','Variance','% Spent'],
@@ -2175,7 +2334,7 @@ function renderManpower() {
       <td>${w.actual?`<div class="progress-bar"><div class="progress-fill ${w.actual<w.target*0.9?'amber':''}" style="width:${Math.min(100,w.actual/w.target*100).toFixed(0)}%"></div></div>`:'—'}</td>
       <td>${w.actual?`<span style="font-family:'DM Mono',monospace;font-size:11px;color:${w.actual>=w.target*0.95?'var(--accent-emerald)':'var(--accent-amber)'}">${(w.actual/w.target*100).toFixed(0)}%</span>`:'—'}</td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('progress',w.week.replace(/ /g,'-')+'.pdf')">📂 Open</button>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.manpower}${encodeURIComponent(w.week.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewManpowerWeek('${w.week}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editManpowerWeek('${w.week}')">Edit</button>
         <button class="btn btn-sm btn-secondary" onclick="triggerImport('manpower')">Import</button>`:''}
@@ -2197,18 +2356,8 @@ function renderManpower() {
 }
 function renderManpowerChart() {
   const ctx=document.getElementById('manpower-chart'); if(!ctx)return;
-  if(STATE.charts.manpower) { STATE.charts.manpower.destroy(); STATE.charts.manpower=null; }
+  if(STATE.charts.manpower) STATE.charts.manpower.destroy();
   const w=window.APP_DATA.mockManpowerData.weekly;
-  if(!w || !w.length){
-    const parent=ctx.parentElement;
-    const existing=parent.querySelector('.empty-chart-msg');
-    if(!existing){const e=document.createElement('div');e.className='empty-chart-msg';e.style.cssText='text-align:center;padding:24px;color:var(--text-muted);font-size:12px';e.textContent='No weekly manpower logs yet — add a Daily Log Entry to begin';parent.appendChild(e);}
-    ctx.style.display='none'; return;
-  }
-  ctx.style.display='';
-  const parent=ctx.parentElement;
-  const existing=parent.querySelector('.empty-chart-msg');
-  if(existing) existing.remove();
   STATE.charts.manpower=new Chart(ctx,{type:'bar',data:{labels:w.map(x=>x.week),datasets:[{label:'Target',data:w.map(x=>x.target),backgroundColor:'rgba(59,130,246,0.3)',borderColor:'#3b82f6',borderWidth:1,borderRadius:4},{label:'Actual',data:w.map(x=>x.actual),backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10b981',borderWidth:1,borderRadius:4}]},options:chartDefaults()});
 }
 
@@ -2377,19 +2526,22 @@ function printManpowerPDF() {
 
 // ── CLOSEOUT ──────────────────────────────────────────────────
 function renderCloseout() {
-  const data=window.APP_DATA.mockCloseoutData;
+  let data=window.APP_DATA.mockCloseoutData;
+  const df=STATE.closeoutDiscFilter;
+  if(df&&df!=='all') data=data.filter(c=>(c.discipline||'').toLowerCase()===df.toLowerCase());
   renderRegisterStats('closeout-stats',[{label:'Total Items',value:data.length,color:'blue'},{label:'In Progress',value:data.filter(c=>c.status==='in-progress').length,color:'amber'},{label:'Not Started',value:data.filter(c=>c.status==='not-started').length,color:'rose'},{label:'Complete',value:data.filter(c=>c.status==='complete').length,color:'emerald'}]);
   renderTable('closeout-table-body',data,c=>`
     <tr>
       <td class="td-mono">${c.id}</td>
       <td style="font-weight:600;color:var(--text-primary)">${c.item}</td>
+      <td><span class="tag">${c.discipline||'General'}</span></td>
       <td><span class="tag">${c.category||'—'}</span></td>
       <td><span class="badge badge-${c.status==='in-progress'?'pending':c.status==='complete'?'approved':'draft'}">${c.status.replace('-',' ')}</span></td>
       <td class="td-mono">${c.due}</td>
       <td class="td-mono">${c.assignedTo}</td>
       <td style="font-size:11px;color:var(--text-secondary)">${c.remarks||'—'}</td>
       <td>
-        <button class="drive-link" onclick="openDriveFile('closeout','${c.id}.pdf')">📂 Open</button>
+        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.closeout}${encodeURIComponent(c.id+'.pdf')}" target="_blank">Open</a>
         <button class="btn btn-sm btn-secondary" onclick="viewCloseout('${c.id}')">View</button>
         ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCloseout('${c.id}')">Edit</button>
         ${c.status!=='complete'?`<button class="btn btn-sm btn-success" onclick="completeCloseout('${c.id}')">✓ Complete</button>`:'<span style="color:var(--accent-emerald);font-size:12px">✓ Done</span>'}
@@ -2397,6 +2549,7 @@ function renderCloseout() {
         <button class="btn btn-sm btn-secondary" onclick="triggerImport('closeout')">Import</button>`:c.status==='complete'?'<span style="color:var(--accent-emerald);font-size:12px">✓ Done</span>':''}
       </td>
     </tr>`);
+  setupDiscTabs('closeout-disc-tabs','closeoutDiscFilter',renderCloseout);
 }
 
 function viewCloseout(id) {
@@ -2410,7 +2563,7 @@ function viewCloseout(id) {
     <div style="margin-top:14px">${inf('Remarks',c.remarks||'—')}</div>`);
 }
 
-function deleteCloseout(id) { const data=window.APP_DATA.mockCloseoutData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderCloseout(); showToast('Deleted',`${id} deleted`,'success'); }); }
+function deleteCloseout(id) { const data=window.APP_DATA.mockCloseoutData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderCloseout(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); }); }
 
 function editCloseout(id) {
   const c=window.APP_DATA.mockCloseoutData.find(x=>x.id===id); if(!c)return;
@@ -2428,21 +2581,23 @@ function editCloseout(id) {
     <div class="form-group"><label class="form-label">Assigned To</label>
       <select class="form-control" id="ecl-assign">${window.APP_DATA.USERS.map(u=>`<option value="${u.id}"${u.id===c.assignedTo?' selected':''}>${u.name}</option>`).join('')}</select>
     </div>
+    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="ecl-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(c.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
     <div class="form-group"><label class="form-label">Category</label><input class="form-control" id="ecl-cat" value="${c.category||''}"></div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="ecl-rem" rows="2">${c.remarks||''}</textarea></div>`,
   ()=>{
     c.id=document.getElementById('ecl-id').value||c.id;
     c.item=document.getElementById('ecl-item').value||c.item;
+    c.discipline=document.getElementById('ecl-disc').value;
     c.status=document.getElementById('ecl-status').value;
     c.due=document.getElementById('ecl-due').value;
     c.assignedTo=document.getElementById('ecl-assign').value;
     c.category=document.getElementById('ecl-cat').value;
     c.remarks=document.getElementById('ecl-rem').value;
-    renderCloseout(); showToast('Updated',`${c.id} updated`,'success');
+    renderCloseout(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${c.id} updated`,'success');
   });
 }
 
-function completeCloseout(id) { const c=window.APP_DATA.mockCloseoutData.find(x=>x.id===id); if(c){c.status='complete';renderCloseout();showToast('Complete',`${id} marked complete`,'success');} }
+function completeCloseout(id) { const c=window.APP_DATA.mockCloseoutData.find(x=>x.id===id); if(c){c.status='complete';renderCloseout();saveProjectDataAuto();refreshDashboardKPIs();showToast('Complete',`${id} marked complete`,'success');} }
 
 function openAddCloseoutItemModal() {
   openModal('Add Closeout Item','',`
@@ -2457,30 +2612,35 @@ function openAddCloseoutItemModal() {
         <select class="form-control" id="nc-assign">${window.APP_DATA.USERS.map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}</select>
       </div>
     </div>
+    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="nc-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}">${d}</option>`).join('')}</select></div>
     <div class="form-group"><label class="form-label">Status</label>
       <select class="form-control" id="nc-status"><option value="not-started">Not Started</option><option value="in-progress">In Progress</option><option value="complete">Complete</option></select>
     </div>
     <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nc-remarks" rows="2"></textarea></div>`,
   ()=>{
     const id=document.getElementById('nc-id').value||('CL-0'+String(window.APP_DATA.mockCloseoutData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockCloseoutData.unshift({
+    window.APP_DATA.mockCloseoutData.push({
       id, item: document.getElementById('nc-item').value || 'New Closeout Item',
+      discipline: document.getElementById('nc-disc').value||'General',
       category: document.getElementById('nc-cat').value,
       due: document.getElementById('nc-due').value,
       assignedTo: document.getElementById('nc-assign').value,
       status: document.getElementById('nc-status').value,
       remarks: document.getElementById('nc-remarks').value
     });
-    renderCloseout(); showToast('Added',`${id} added to Closeout Register`,'success');
+    renderCloseout(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Closeout Register`,'success');
   });
 }
 
 function printCloseoutPDF() {
-  const data=window.APP_DATA.mockCloseoutData;
-  generatePDF({ title:'PROJECT CLOSEOUT REGISTER', subtitle:'Handover Documents, As-Built Drawings & O&M Manuals', module:'CLO',
+  let data=window.APP_DATA.mockCloseoutData;
+  const df=STATE.closeoutDiscFilter;
+  if(df&&df!=='all') data=data.filter(c=>(c.discipline||'').toLowerCase()===df.toLowerCase());
+  const discLabel=df==='all'?'All Disciplines':df;
+  generatePDF({ title:'PROJECT CLOSEOUT — '+discLabel.toUpperCase(), subtitle:'Handover Documents & O&M Manuals | Discipline: '+discLabel, module:'CLO',
     kpis:[{label:'Total Items',value:data.length,color:'#1d4ed8'},{label:'In Progress',value:data.filter(d=>d.status==='in-progress').length,color:'#f59e0b'},{label:'Not Started',value:data.filter(d=>d.status==='not-started').length,color:'#dc2626'},{label:'Complete',value:data.filter(d=>d.status==='complete').length,color:'#059669'}],
-    tableHeaders:['ID','Closeout Item','Category','Status','Due Date','Assigned To','Remarks'],
-    tableRows:data.map(c=>[c.id,c.item,c.category||'—',c.status.replace('-',' ').toUpperCase(),c.due,c.assignedTo,c.remarks||'—']),
+    tableHeaders:['ID','Closeout Item','Discipline','Category','Status','Due Date','Assigned To','Remarks'],
+    tableRows:data.map(c=>[c.id,c.item,c.discipline||'General',c.category||'—',c.status.replace('-',' ').toUpperCase(),c.due,c.assignedTo,c.remarks||'—']),
   });
 }
 
@@ -2512,18 +2672,13 @@ function openAddProjectModal() {
   ()=>{
     const proj={id:document.getElementById('np-id').value||('PRJ-0'+String(window.APP_DATA.PROJECTS.length+1).padStart(2,'0')),code:document.getElementById('np-code').value||'NEW-2026',name:document.getElementById('np-name').value||'New Project',client:document.getElementById('np-client').value,contractor:document.getElementById('np-contractor').value,consultant:document.getElementById('np-consultant').value,location:document.getElementById('np-location').value,contractValue:parseFloat(document.getElementById('np-value').value)||0,currency:'SAR',currentProgress:0,status:document.getElementById('np-status').value,startDate:document.getElementById('np-start').value,plannedEnd:document.getElementById('np-end').value,description:document.getElementById('np-desc').value};
     window.APP_DATA.PROJECTS.push(proj);
-    // Initialize empty data store for new project
-    window.APP_DATA.getProjectStore(proj.id);
-    // Switch to the new project
-    window.APP_DATA.switchProjectData(proj.id);
-    updateProjectDisplay(proj);
     const switcher=document.getElementById('project-switcher');
-    if(switcher){ const opt=document.createElement('option'); opt.value=proj.id; opt.textContent=proj.code+' — '+(proj.name.length>28?proj.name.substring(0,28)+'…':proj.name); switcher.appendChild(opt); switcher.value=proj.id; }
-    updateNavBadges();
-    if(window.APP_DATA.saveProjectData) window.APP_DATA.saveProjectData();
-    // Navigate to dashboard so user sees fresh empty project
-    navigateTo('dashboard');
-    showToast('Project Added ✓', proj.name + ' — active with empty registers', 'success');
+    if(switcher){ const opt=document.createElement('option'); opt.value=proj.id; opt.textContent=proj.code+' — '+proj.name.substring(0,28)+'…'; switcher.appendChild(opt); }
+    renderProjects();
+    saveProjectDataAuto(); refreshDashboardKPIs();
+    try { updateSidebarProject(); } catch(e) {}
+    try { if(STATE.currentPage==='dashboard') renderDashboard(); } catch(e) {}
+    showToast('Project Added',proj.name+' — Dashboard updated','success');
   });
 }
 
@@ -2545,13 +2700,87 @@ function triggerImport(module) {
   input.onchange=e=>{
     const file=e.target.files[0]; if(!file)return;
     parseCSVFile(file,rows=>{
-      if(module==='drawings') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockDrawingsData.push({id:r.id,title:r.title,discipline:r.discipline||'Civil',rev:parseInt(r.rev)||1,status:r.status||'submitted',submittedBy:'U001',date:r.date||new Date().toISOString().split('T')[0],consultant:r.consultant||'',file:r.file||'',comments:r.comments||''});});
-      else if(module==='materials') rows.forEach(r=>{if(r.id&&r.item)window.APP_DATA.mockMaterialsData.push({id:r.id,item:r.item,boqRef:r.boqRef||'',poNo:r.poNo||'',supplier:r.supplier||'',rev:parseInt(r.rev)||1,status:r.status||'submitted',submitDate:r.submitDate||new Date().toISOString().split('T')[0],approveDate:r.approveDate||'',deliveryDate:r.deliveryDate||'',qty:parseFloat(r.qty)||0,unit:r.unit||'',remarks:r.remarks||''});});
+      const today=new Date().toISOString().split('T')[0];
+      if(module==='drawings') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockDrawingsData.push({id:r.id,title:r.title,discipline:r.discipline||'Civil',rev:parseInt(r.rev)||1,status:r.status||'submitted',submittedBy:'U001',date:r.date||today,consultant:r.consultant||'',file:r.file||'',comments:r.comments||''});});
+      else if(module==='materials') rows.forEach(r=>{if(r.id&&r.item)window.APP_DATA.mockMaterialsData.push({id:r.id,item:r.item,discipline:r.discipline||'General',boqRef:r.boqRef||'',poNo:r.poNo||'',supplier:r.supplier||'',rev:parseInt(r.rev)||1,status:r.status||'submitted',submitDate:r.submitDate||today,approveDate:r.approveDate||'',deliveryDate:r.deliveryDate||'',qty:parseFloat(r.qty)||0,unit:r.unit||'',remarks:r.remarks||''});});
+      else if(module==='methods') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockMethodsData.push({id:r.id,title:r.title,discipline:r.discipline||'General',category:r.category||'General',risk:r.risk||'Low',rev:parseInt(r.rev)||1,status:r.status||'submitted',submittedBy:'U001',date:r.date||today,hseReview:r.hseReview||'Pending',file:r.file||r.id+'-Rev1.pdf'});});
+      else if(module==='testing') rows.forEach(r=>{if(r.id&&r.system)window.APP_DATA.mockTestingData.push({id:r.id,system:r.system,discipline:r.discipline||'General',type:r.type||'General',date:r.date||today,rev:parseInt(r.rev)||1,status:r.status||'pending',cert:r.cert||'',file:r.file||'',remarks:r.remarks||''});});
+      else if(module==='ncr') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockNCRData.push({id:r.id,title:r.title,discipline:r.discipline||'General',raised:'U001',date:r.date||today,status:r.status||'open',priority:r.priority||'medium',assignedTo:r.assignedTo||'',closureDate:r.closureDate||'',file:r.file||r.id+'.pdf',remarks:r.remarks||'',location:r.location||''});});
+      else if(module==='rfi') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockRFIData.push({id:r.id,title:r.title,discipline:r.discipline||'General',priority:r.priority||'medium',status:r.status||'open',date:r.date||today,closureDate:r.closureDate||'',file:r.file||r.id+'.pdf',remarks:r.remarks||''});});
+      else if(module==='si') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockSIData.push({id:r.id,title:r.title,discipline:r.discipline||'General',ref:r.ref||'',priority:r.priority||'medium',status:r.status||'open',date:r.date||today,costImpact:r.costImpact||'',file:r.file||r.id+'.pdf',remarks:r.remarks||''});});
+      else if(module==='wir') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockWIRData.push({id:r.id,title:r.title,discipline:r.discipline||'General',requestedBy:'U001',date:r.date||today,status:'WIR',priority:r.priority||'medium',assignedTo:r.assignedTo||'',closureDate:r.closureDate||'',file:r.file||r.id+'.pdf',location:r.location||'',inspectionDate:r.inspectionDate||'',result:r.result||'Pending',remarks:r.remarks||''});});
+      else if(module==='mdr') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockMDRData.push({id:r.id,title:r.title,discipline:r.discipline||'General',deliveredBy:r.deliveredBy||'',date:r.date||today,status:'MDR',priority:'medium',receivedBy:'U001',file:r.file||r.id+'.pdf',location:r.location||'',poRef:r.poRef||'',qty:r.qty||'0',condition:r.condition||'Pending',remarks:r.remarks||''});});
+      else if(module==='hse') rows.forEach(r=>{if(r.id&&r.desc)window.APP_DATA.mockHSEData.incidents.push({id:r.id,type:r.type||'near-miss',desc:r.desc,date:r.date||today,severity:r.severity||'low',status:r.status||'open',casualties:parseInt(r.casualties)||0,location:r.location||'',rootCause:r.rootCause||'',correctiveAction:r.correctiveAction||'',investigator:'U001'});});
+      else if(module==='procurement') rows.forEach(r=>{if(r.id&&r.item)window.APP_DATA.mockProcurementData.push({id:r.id,item:r.item,vendor:r.vendor||'',poValue:parseFloat(r.poValue)||0,status:r.status||'pending',poDate:r.poDate||today,deliveryDate:r.deliveryDate||'',payStatus:r.payStatus||'0% paid',performance:parseInt(r.performance)||0,remarks:r.remarks||''});});
+      else if(module==='subcontractors') rows.forEach(r=>{if(r.id&&r.name)window.APP_DATA.mockSubcontractorData.push({id:r.id,name:r.name,scope:r.scope||'',status:r.status||'active',workers:parseInt(r.workers)||0,contractValue:parseFloat(r.contractValue)||0,paidToDate:parseFloat(r.paidToDate)||0,performance:parseInt(r.performance)||0,safety:parseInt(r.safety)||0,poRef:r.poRef||'',contactPerson:r.contactPerson||'',phone:r.phone||''});});
+      else if(module==='closeout') rows.forEach(r=>{if(r.id&&r.item)window.APP_DATA.mockCloseoutData.push({id:r.id,item:r.item,category:r.category||'',status:r.status||'not-started',due:r.due||'',assignedTo:r.assignedTo||'',remarks:r.remarks||''});});
+      saveProjectDataAuto(); refreshDashboardKPIs();
       renderPage(STATE.currentPage);
-      showToast('CSV Imported',`${rows.length} records imported from ${file.name}`,'success');
+      showToast('CSV Imported',`${rows.length} records imported from ${file.name}. Platform data updated.`,'success');
     });
   };
   input.click();
+}
+
+// ── DISCIPLINE TAB HELPER ─────────────────────────────────────
+function setupDiscTabs(tabsContainerId, stateKey, renderFn) {
+  const container = document.getElementById(tabsContainerId);
+  if (!container) return;
+  // Only attach once
+  if (container._discTabsReady) return;
+  container._discTabsReady = true;
+  container.querySelectorAll('.mep-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      container.querySelectorAll('.mep-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      STATE[stateKey] = tab.dataset.disc || 'all';
+      renderFn();
+    });
+  });
+}
+
+// ── LOCAL FILE PATH HELPERS (Amendment 4) ─────────────────────
+// Save path to localStorage for reuse
+function saveFilePath(module, href) {
+  if (!href || href.startsWith('file:///')) {
+    try { localStorage.setItem('CI_filePath_'+module, href); } catch(e) {}
+  }
+}
+
+// Get saved base path or use default from LOCAL_DRIVE
+function openLocalFile(module, filename) {
+  let base;
+  try {
+    const saved = localStorage.getItem('CI_filePath_'+module);
+    if (saved) {
+      // saved is a full path to a previous file — extract folder
+      const parts = saved.replace(/\\/g,'/').split('/');
+      parts.pop(); // remove filename
+      base = parts.join('/') + '/';
+      if (!base.startsWith('file:///')) base = 'file:///' + base.replace(/^\/+/,'');
+    }
+  } catch(e) {}
+  if (!base) {
+    const driveMap = {
+      drawings: window.APP_DATA.LOCAL_DRIVE.drawings,
+      materials: window.APP_DATA.LOCAL_DRIVE.materials,
+      methods: window.APP_DATA.LOCAL_DRIVE.methods,
+      testing: window.APP_DATA.LOCAL_DRIVE.testing,
+      ncr: window.APP_DATA.LOCAL_DRIVE.ncr,
+      rfi: window.APP_DATA.LOCAL_DRIVE.rfi,
+      si: window.APP_DATA.LOCAL_DRIVE.si,
+      wir: window.APP_DATA.LOCAL_DRIVE.wir,
+      mdr: window.APP_DATA.LOCAL_DRIVE.mdr,
+      hse: window.APP_DATA.LOCAL_DRIVE.hse,
+      procurement: window.APP_DATA.LOCAL_DRIVE.procurement,
+      subcontractors: window.APP_DATA.LOCAL_DRIVE.subcontractors,
+      cost: window.APP_DATA.LOCAL_DRIVE.cost,
+      manpower: window.APP_DATA.LOCAL_DRIVE.manpower,
+      closeout: window.APP_DATA.LOCAL_DRIVE.closeout,
+    };
+    base = driveMap[module] || window.APP_DATA.LOCAL_DRIVE.root;
+  }
+  return base + encodeURIComponent(filename||'');
 }
 
 // ── SHARED UTILITIES ──────────────────────────────────────────
@@ -2572,22 +2801,12 @@ function capitalize(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 function debounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms);};}
 
 // ── MODAL ─────────────────────────────────────────────────────
-function openModal(title,subtitle,content,onSave,_btnLabel) {
+function openModal(title,subtitle,content,onSave) {
   document.getElementById('modal-title').textContent=title;
   document.getElementById('modal-body').innerHTML=content;
-  // Replace save button to remove stale event listeners
-  const oldBtn = document.getElementById('modal-save-btn');
-  const newBtn = oldBtn.cloneNode(true);
-  oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-  newBtn.style.display = onSave ? '' : 'none';
-  newBtn.textContent = (typeof _btnLabel==='string' && _btnLabel) ? _btnLabel : 'Save';
-  newBtn.addEventListener('click', async () => {
-    if (!onSave) { closeModal(); return; }
-    try {
-      const result = await Promise.resolve(onSave());
-      if (result !== false) closeModal();
-    } catch(e) { console.error('Modal save error:',e); closeModal(); }
-  });
+  const saveBtn=document.getElementById('modal-save-btn');
+  saveBtn.style.display=onSave?'':'none';
+  saveBtn.onclick=()=>{if(onSave)onSave();closeModal();};
   document.getElementById('modal-overlay').classList.add('active');
 }
 
@@ -2612,202 +2831,138 @@ function chartDefaults(o={}){
   return {...base,...o};
 }
 
-// ── LOCAL DRIVE FILE OPENER ──────────────────────────────────
-// Browsers block file:/// from http:// pages. This function:
-// 1. Tries direct href (works when HTML opened as local file)  
-// 2. Falls back to showing the path with copy-to-clipboard
-function openDriveFile(folder, filename) {
-  var folderMap = window.APP_DATA.LOCAL_DRIVE;
-  var base = (folderMap[folder] || folderMap.root || '').replace(/\/+$/, '') + '/';
-  var safeName = String(filename).replace(/ /g, '%20');
-  var fileUrl = base + safeName;
+// ── LANGUAGE TOGGLE (EN / AR) ──────────────────────────────────
+const TRANSLATIONS = {
+  en: {
+    'Dashboard Overview': 'Dashboard Overview',
+    'Project Management': 'Project Management',
+    'Drawing Register': 'Drawing Register',
+    'Material Submittal Register': 'Material Submittal Register',
+    'Method Statement Register': 'Method Statement Register',
+    'Test & Commissioning Register': 'Test & Commissioning Register',
+    'NCR / RFI / Site Instructions': 'NCR / RFI / Site Instructions',
+    'Procurement Tracker': 'Procurement Tracker',
+    'Progress Tracker': 'Progress Tracker',
+    'HSE Register': 'HSE Register',
+    'Subcontractor Management': 'Subcontractor Management',
+    'Cost Control': 'Cost Control',
+    'Manpower & Equipment': 'Manpower & Equipment',
+    'Project Closeout': 'Project Closeout',
+    'Active Project': 'Active Project',
+    'ADMIN': 'ADMIN', 'OPERATOR': 'OPERATOR',
+    'Overview': 'Overview',
+    'Document Control': 'Document Control',
+    'Site Management': 'Site Management',
+    'Commercial': 'Commercial',
+    'Closeout': 'Closeout',
+  },
+  ar: {
+    'Dashboard Overview': 'نظرة عامة على لوحة القيادة',
+    'Project Management': 'إدارة المشاريع',
+    'Drawing Register': 'سجل الرسومات',
+    'Material Submittal Register': 'سجل تقديم المواد',
+    'Method Statement Register': 'سجل بيانات الطريقة',
+    'Test & Commissioning Register': 'سجل الاختبار والتشغيل',
+    'NCR / RFI / Site Instructions': 'تقارير عدم المطابقة / استفسارات المعلومات',
+    'Procurement Tracker': 'متابعة المشتريات',
+    'Progress Tracker': 'متابعة التقدم',
+    'HSE Register': 'سجل الصحة والسلامة والبيئة',
+    'Subcontractor Management': 'إدارة المقاولين من الباطن',
+    'Cost Control': 'التحكم في التكاليف',
+    'Manpower & Equipment': 'القوى العاملة والمعدات',
+    'Project Closeout': 'إغلاق المشروع',
+    'Active Project': 'المشروع النشط',
+    'ADMIN': 'مسؤول', 'OPERATOR': 'مشغّل',
+    'Overview': 'نظرة عامة',
+    'Document Control': 'التحكم في الوثائق',
+    'Site Management': 'إدارة الموقع',
+    'Commercial': 'التجاري',
+    'Closeout': 'الإغلاق',
+  }
+};
 
-  var folderNames = {
-    drawings:'Drawings', materials:'Materials', methods:'Methods', testing:'Testing',
-    ncr:'NCR', rfi:'RFI', si:'SI', hse:'HSE', procurement:'Procurement',
-    subcontractors:'Subcontractors', closeout:'Closeout', progress:'Progress', root:''
-  };
-  var sub = folderNames[folder] !== undefined ? folderNames[folder] : folder;
-  var winPath = sub
-    ? 'D:\\Construction Innovation\\Projects\\' + sub + '\\' + filename
-    : 'D:\\Construction Innovation\\Projects\\' + filename;
+STATE.language = 'en';
 
-  // Show toast with clickable link — user clicks it directly (bypasses popup blocker)
-  var toastId = 'drv-' + Date.now();
-  var toast = document.createElement('div');
-  toast.className = 'toast info';
-  toast.id = toastId;
-  toast.style.cssText = 'max-width:460px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px';
-
-  var icon = document.createElement('span');
-  icon.style.fontSize = '20px';
-  icon.textContent = '📂';
-
-  var body = document.createElement('div');
-  body.style.cssText = 'flex:1;min-width:0';
-
-  var label = document.createElement('div');
-  label.style.cssText = 'font-weight:700;font-size:12px;color:var(--text-primary);margin-bottom:6px';
-  label.textContent = filename;
-
-  // The clickable file link
-  var fileLink = document.createElement('a');
-  fileLink.href = fileUrl;
-  fileLink.target = '_blank';
-  fileLink.style.cssText = [
-    'display:block;padding:6px 10px;margin-bottom:8px',
-    'background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3)',
-    'border-radius:6px;cursor:pointer;text-decoration:none',
-    'font-family:DM Mono,monospace;font-size:10.5px',
-    'color:var(--accent-emerald);word-break:break-all',
-    'transition:background 0.2s'
-  ].join(';');
-  fileLink.textContent = '🔗 ' + fileUrl;
-  fileLink.onmouseover = function(){ this.style.background = 'rgba(16,185,129,0.25)'; };
-  fileLink.onmouseout  = function(){ this.style.background = 'rgba(16,185,129,0.12)'; };
-
-  // Copy Windows path button
-  var copyBtn = document.createElement('button');
-  copyBtn.textContent = '📋 Copy Windows Path';
-  copyBtn.style.cssText = [
-    'background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3)',
-    'color:var(--accent-blue);padding:4px 12px;border-radius:4px',
-    'cursor:pointer;font-size:11px;font-family:inherit'
-  ].join(';');
-  copyBtn.onclick = function() {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(winPath).then(function() {
-        copyBtn.textContent = '✅ Copied!';
-        copyBtn.style.background = 'rgba(16,185,129,0.2)';
-        copyBtn.style.borderColor = 'rgba(16,185,129,0.4)';
-        copyBtn.style.color = 'var(--accent-emerald)';
-      }).catch(function() {
-        copyBtn.textContent = winPath;
-      });
-    } else {
-      copyBtn.textContent = winPath;
+function toggleLanguage() {
+  STATE.language = STATE.language === 'en' ? 'ar' : 'en';
+  const isAr = STATE.language === 'ar';
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = isAr ? 'AR' : 'EN';
+  document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('lang', isAr ? 'ar' : 'en');
+  // Translate nav section labels
+  document.querySelectorAll('.nav-section-label').forEach(el => {
+    const t = TRANSLATIONS[STATE.language][el.textContent.trim()];
+    if (t) el.textContent = t;
+  });
+  // Translate nav items (text nodes, not the icon/badge)
+  document.querySelectorAll('.nav-item').forEach(el => {
+    const icon = el.querySelector('.nav-icon');
+    const badge = el.querySelector('.nav-badge');
+    const pageTitles = { dashboard: isAr?'لوحة القيادة':'Dashboard', projects: isAr?'المشاريع':'Projects', drawings: isAr?'سجل الرسومات':'Drawing Register', materials: isAr?'تقديم المواد':'Material Submittals', methods: isAr?'بيانات الطريقة':'Method Statements', testing: isAr?'الاختبار والتشغيل':'Test & Commissioning', ncr: isAr?'تقارير عدم المطابقة':'NCR / RFI / SI', procurement: isAr?'المشتريات':'Procurement Tracker', progress: isAr?'التقدم':'Progress Tracker', hse: isAr?'سجل HSE':'HSE Register', subcontractors: isAr?'المقاولون':'Subcontractors', cost: isAr?'التكاليف':'Cost Control', manpower: isAr?'القوى العاملة':'Manpower & Equipment', closeout: isAr?'الإغلاق':'Project Closeout' };
+    const page = el.dataset.page;
+    if (page && pageTitles[page]) {
+      el.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) n.textContent = ' ' + pageTitles[page]; });
     }
-  };
-
-  var note = document.createElement('div');
-  note.style.cssText = 'font-size:10px;color:var(--text-muted);margin-top:6px';
-  note.textContent = 'Click the green link above to open • Paste Windows path in Explorer if needed';
-
-  body.appendChild(label);
-  body.appendChild(fileLink);
-  body.appendChild(copyBtn);
-  body.appendChild(note);
-
-  var closeBtn = document.createElement('button');
-  closeBtn.textContent = '✕';
-  closeBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0';
-  closeBtn.onclick = function() { toast.remove(); };
-
-  toast.appendChild(icon);
-  toast.appendChild(body);
-  toast.appendChild(closeBtn);
-
-  var container = document.getElementById('toast-container');
-  if (container) container.appendChild(toast);
-
-  // Auto dismiss after 15 seconds
-  setTimeout(function() {
-    if (toast.parentNode) {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(100%)';
-      toast.style.transition = 'all 0.3s';
-      setTimeout(function() { toast.remove(); }, 300);
-    }
-  }, 15000);
+  });
+  // Translate sidebar labels
+  const projLabel = document.querySelector('.proj-label');
+  if (projLabel) projLabel.textContent = isAr ? 'المشروع النشط' : 'Active Project';
+  // Translate header title
+  const titleMap = TRANSLATIONS[STATE.language];
+  const hTitle = document.getElementById('header-page-title');
+  if (hTitle) { const t = titleMap[hTitle.textContent]; if(t) hTitle.textContent = t; }
+  // Re-render page for table labels update
+  renderPage(STATE.currentPage);
+  showToast(isAr ? 'اللغة' : 'Language', isAr ? 'تم التبديل إلى العربية' : 'Switched to English', 'info');
 }
 
-
-function openDriveFolder(folder) {
-  var folderNames = {
-    drawings:'Drawings', materials:'Materials', methods:'Methods', testing:'Testing',
-    ncr:'NCR', rfi:'RFI', si:'SI', hse:'HSE', procurement:'Procurement',
-    subcontractors:'Subcontractors', closeout:'Closeout', progress:'Progress', root:''
-  };
-  var sub = folderNames[folder] !== undefined ? folderNames[folder] : folder;
-  var folderUrl = window.APP_DATA.LOCAL_DRIVE[folder] || window.APP_DATA.LOCAL_DRIVE.root;
-  var winPath = sub
-    ? 'D:\\Construction Innovation\\Projects\\' + sub
-    : 'D:\\Construction Innovation\\Projects';
-
-  var toastId = 'fld-' + Date.now();
-  var toast = document.createElement('div');
-  toast.className = 'toast info';
-  toast.id = toastId;
-  toast.style.cssText = 'max-width:460px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px';
-
-  var icon = document.createElement('span');
-  icon.style.fontSize = '20px';
-  icon.textContent = '🗂';
-
-  var body = document.createElement('div');
-  body.style.cssText = 'flex:1;min-width:0';
-
-  var label = document.createElement('div');
-  label.style.cssText = 'font-weight:700;font-size:12px;color:var(--text-primary);margin-bottom:6px';
-  label.textContent = (sub || 'Projects') + ' Folder';
-
-  var folderLink = document.createElement('a');
-  folderLink.href = folderUrl;
-  folderLink.target = '_blank';
-  folderLink.style.cssText = [
-    'display:block;padding:6px 10px;margin-bottom:8px',
-    'background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3)',
-    'border-radius:6px;cursor:pointer;text-decoration:none',
-    'font-family:DM Mono,monospace;font-size:10.5px',
-    'color:var(--accent-emerald);word-break:break-all'
-  ].join(';');
-  folderLink.textContent = '🔗 ' + folderUrl;
-
-  var copyBtn = document.createElement('button');
-  copyBtn.textContent = '📋 Copy Folder Path';
-  copyBtn.style.cssText = 'background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:var(--accent-blue);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-family:inherit';
-  copyBtn.onclick = function() {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(winPath).then(function() {
-        copyBtn.textContent = '✅ Copied!';
-      }).catch(function() { copyBtn.textContent = winPath; });
-    } else {
-      copyBtn.textContent = winPath;
-    }
-  };
-
-  body.appendChild(label);
-  body.appendChild(folderLink);
-  body.appendChild(copyBtn);
-
-  var closeBtn = document.createElement('button');
-  closeBtn.textContent = '✕';
-  closeBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;flex-shrink:0';
-  closeBtn.onclick = function() { toast.remove(); };
-
-  toast.appendChild(icon);
-  toast.appendChild(body);
-  toast.appendChild(closeBtn);
-
-  var container = document.getElementById('toast-container');
-  if (container) container.appendChild(toast);
-
-  setTimeout(function() {
-    if (toast.parentNode) {
-      toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)';
-      toast.style.transition = 'all 0.3s';
-      setTimeout(function() { toast.remove(); }, 300);
-    }
-  }, 15000);
+// ── PROJECT DATA SAVE / IMPORT (UI wrappers) ───────────────────
+function saveAndExportProjectData() {
+  // First auto-save to localStorage
+  const lsOk = window.APP_DATA.saveProjectData();
+  // Then download JSON file
+  window.APP_DATA.exportProjectData();
+  showToast('Project Data Saved', lsOk ? 'Saved to local storage & downloaded as JSON backup' : 'Downloaded backup (localStorage save failed)', lsOk ? 'success' : 'warning');
 }
 
+function importProjectDataFromFile() {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.json';
+  fileInput.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      await window.APP_DATA.importProjectData(file);
+      // Reload entire app UI
+      const proj = window.APP_DATA.ACTIVE_PROJECT;
+      updateProjectDisplay(proj);
+      const switcher = document.getElementById('project-switcher');
+      if (switcher) {
+        switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===proj.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
+      }
+      renderPage(STATE.currentPage);
+      showToast('Project Data Imported', `All data loaded from ${file.name}`, 'success');
+    } catch (err) {
+      showToast('Import Error', err.message, 'error');
+    }
+  };
+  fileInput.click();
+}
+
+// Auto-save to localStorage whenever any data changes
+// Call saveProjectDataAuto() from key mutation points
+function saveProjectDataAuto() {
+  window.APP_DATA.saveProjectData();
+}
 
 // ── EXPOSE ────────────────────────────────────────────────────
 const exp={navigateTo,openModal,closeModal,showToast,generatePDF,
   openAddProjectModal,openAddDrawingModal,openAddMaterialModal,openAddSubModal,openAddNCRModal,openAddHSEModal,
   openAddMethodModal,openAddTestModal,openAddPOModal,openAddDailyLogModal,openAddCloseoutItemModal,
   openUpdateProgressModal,openEditProjectModal,confirmDeleteProject,exportProjectsCSV,printProjectsPDF,
-  openSettings, openAddCostCategoryModal,
+  openSettings,
   editDrawingStatus,viewDrawing,deleteDrawing,editMaterial,viewMaterial,deleteMaterial,editMethod,viewMethod,deleteMethod,editTesting,viewTest,deleteTesting,
   viewPO,editPO,deletePO,viewSub,editSub,deleteSub,viewHSE,editHSE,deleteHSE,viewNCR,editNCR,deleteNCR,viewRFI,editRFI,deleteRFI,viewSI,editSI,deleteSI,viewCloseout,editCloseout,deleteCloseout,
   viewCostCategory,editCostCategory,deleteCostCategory,viewManpowerWeek,editManpowerWeek,
@@ -2817,9 +2972,18 @@ const exp={navigateTo,openModal,closeModal,showToast,generatePDF,
   printTestingPDF,printNCRPDF,printRFIPDF,printSIPDF,
   printProcurementPDF,printProgressPDF,printHSEPDF,
  printSubPDF,printCostPDF,printManpowerPDF,printCloseoutPDF,addEquipment,deleteEquipment,
-  exportCurrentModule:(m)=>{const map={drawings:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockDrawingsData,'Drawing-Register'),materials:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMaterialsData,'Material-Submittals'),methods:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMethodsData,'Method-Statements'),ncr:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockNCRData,'NCR-Register'),rfi:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockRFIData,'RFI-Register'),si:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSIData,'SI-Register'),procurement:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockProcurementData,'Procurement-Tracker'),hse:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockHSEData.incidents,'HSE-Register'),subcontractors:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSubcontractorData,'Subcontractor-Register'),testing:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockTestingData,'Test-Commissioning'),cost:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCostData.categories,'Cost-Control'),closeout:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCloseoutData,'Project-Closeout')};if(map[m]){map[m]();showToast('Exported',m+' data exported as CSV','success');}},
+  exportCurrentModule:(m)=>{const map={drawings:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockDrawingsData,'Drawing-Register'),materials:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMaterialsData,'Material-Submittals'),methods:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMethodsData,'Method-Statements'),ncr:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockNCRData,'NCR-Register'),rfi:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockRFIData,'RFI-Register'),si:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSIData,'SI-Register'),wir:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockWIRData,'WIR-Register'),mdr:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMDRData,'MDR-Register'),procurement:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockProcurementData,'Procurement-Tracker'),hse:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockHSEData.incidents,'HSE-Register'),subcontractors:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSubcontractorData,'Subcontractor-Register'),testing:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockTestingData,'Test-Commissioning'),cost:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCostData.categories,'Cost-Control'),closeout:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCloseoutData,'Project-Closeout')};if(map[m]){map[m]();showToast('Exported',m+' data exported as CSV','success');}},
+  saveAndExportProjectData, importProjectDataFromFile, toggleLanguage,
+  // WIR
+  viewWIR, editWIR, deleteWIR, openAddWIRModal, printWIRPDF,
+  // MDR
+  viewMDR, editMDR, deleteMDR, openAddMDRModal, printMDRPDF,
+  // Separate page renders
+  renderRFIPage, renderSIPage, renderWIRPage, renderMDRPage,
+  // Discipline tab helpers
+  setupDiscTabs, openLocalFile, saveFilePath, refreshDashboardKPIs,
+  // setNCRTab kept for backwards compat
+  setNCRTab,
 };
-exp.openDriveFile = openDriveFile;
-exp.openDriveFolder = openDriveFolder;
 Object.assign(window,exp);
 window.STATE = STATE; // expose for HTML inline access
