@@ -17,28 +17,8 @@
 <aside class="sidebar">
   <div class="sidebar-brand">
     <a class="brand-logo" href="#" onclick="navigateTo('dashboard');return false;">
-      <div id="brand-logo-wrap">
-        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px;flex-shrink:0;">
-          <!-- Outer hex ring -->
-          <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="none" stroke="#3b82f6" stroke-width="1.2" opacity="0.5"/>
-          <!-- Tower body - tall building -->
-          <rect x="17" y="14" width="14" height="24" rx="1" fill="none" stroke="#3b82f6" stroke-width="1.8"/>
-          <!-- Tower windows row 1 -->
-          <rect x="20" y="17" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.8"/>
-          <rect x="25" y="17" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.8"/>
-          <!-- Tower windows row 2 -->
-          <rect x="20" y="22" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.5"/>
-          <rect x="25" y="22" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.5"/>
-          <!-- Tower windows row 3 -->
-          <rect x="20" y="27" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.3"/>
-          <rect x="25" y="27" width="3" height="3" rx="0.4" fill="#3b82f6" opacity="0.3"/>
-          <!-- Crane arm - amber/gold -->
-          <line x1="24" y1="14" x2="24" y2="6" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-          <line x1="16" y1="8" x2="34" y2="8" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="30" y1="8" x2="30" y2="13" stroke="#f59e0b" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="1.5 1.5"/>
-          <!-- Base ground line -->
-          <line x1="13" y1="38" x2="35" y2="38" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-        </svg>
+      <div id="brand-logo-wrap" style="width:80px;height:80px;overflow:hidden;border-radius:6px;background:var(--bg-surface,#161b26);display:flex;align-items:center;justify-content:center;">
+        <img id="sidebar-logo" style="width:76px;height:76px;object-fit:contain;" alt="CI" onerror="this.style.display='none'">
       </div>
       <div class="brand-text">
         <div class="brand-name">CONSTRUCTION INNOVATION</div>
@@ -77,8 +57,12 @@
       <button class="nav-item" data-page="testing"><span class="nav-icon">🔬</span>Test &amp; Commissioning</button>
 
       <div class="nav-section-label">Site Management</div>
-      <button class="nav-item" data-page="ncr"><span class="nav-icon">⚠️</span>NCR / RFI / SI<span class="nav-badge" id="nav-badge-ncr">7</span></button>
-      <button class="nav-item" data-page="hse"><span class="nav-icon">🦺</span>HSE Register<span class="nav-badge" id="nav-badge-hse">2</span></button>
+      <button class="nav-item" data-page="ncr"><span class="nav-icon">⚠️</span>NCR Register<span class="nav-badge" id="nav-badge-ncr">7</span></button>
+      <button class="nav-item" data-page="rfi"><span class="nav-icon">❓</span>RFI Register</button>
+      <button class="nav-item" data-page="si"><span class="nav-icon">📋</span>Site Instructions</button>
+      <button class="nav-item" data-page="wir"><span class="nav-icon">🔍</span>Work Inspections</button>
+      <button class="nav-item" data-page="mdr"><span class="nav-icon">📦</span>Material Delivery</button>
+      <button class="nav-item" data-page="hse"><span class="nav-icon">🦺</span>HSE Register<span class="nav-badge">2</span></button>
       <button class="nav-item" data-page="manpower"><span class="nav-icon">👷</span>Manpower &amp; Equipment</button>
 
       <div class="nav-section-label">Commercial</div>
@@ -245,9 +229,20 @@
         </div>
       </div>
       <div class="kpi-grid" id="materials-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="mep-tabs" id="materials-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
+      </div>
       <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="material-filter-input" placeholder="Search materials…"></div></div>
       <div class="card"><div class="table-container"><table>
-        <thead><tr><th>ID</th><th>Material Description</th><th>BOQ Ref</th><th>PO No.</th><th>Supplier</th><th>Rev</th><th>Status</th><th>Submitted</th><th>Approved</th><th>Delivery</th><th>Remarks</th><th>Actions</th></tr></thead>
+        <thead><tr><th>ID</th><th>Material Description</th><th>Discipline</th><th>BOQ Ref</th><th>PO No.</th><th>Supplier</th><th>Rev</th><th>Status</th><th>Submitted</th><th>Approved</th><th>Delivery</th><th>Remarks</th><th>Actions</th></tr></thead>
         <tbody id="materials-table-body"></tbody>
       </table></div></div>
     </section>
@@ -257,15 +252,27 @@
       <div class="page-header">
         <div><div class="page-title">📋 Method Statement Register</div><div class="page-subtitle">Construction methods, HSE reviews — Rev 1, Rev 2 format</div></div>
         <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('methods')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('methods')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printMethodsPDF()">🖨 Print PDF</button>
           <button class="btn btn-primary admin-only" onclick="openAddMethodModal()">➕ New MS</button>
         </div>
       </div>
       <div class="kpi-grid" id="methods-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="mep-tabs" id="methods-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
+      </div>
       <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="method-filter-input" placeholder="Search method statements…"></div></div>
       <div class="card"><div class="table-container"><table>
-        <thead><tr><th>MS ID</th><th>Title</th><th>Category</th><th>Risk Level</th><th>Rev</th><th>Status</th><th>HSE Review</th><th>Date</th><th>Actions</th></tr></thead>
+        <thead><tr><th>MS ID</th><th>Title</th><th>Discipline</th><th>Category</th><th>Risk Level</th><th>Rev</th><th>Status</th><th>HSE Review</th><th>Date</th><th>Actions</th></tr></thead>
         <tbody id="methods-table-body"></tbody>
       </table></div></div>
     </section>
@@ -275,54 +282,179 @@
       <div class="page-header">
         <div><div class="page-title">🔬 Test &amp; Commissioning Register</div><div class="page-subtitle">Test certificates, commissioning logs — Rev 1, Rev 2 format</div></div>
         <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('testing')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('testing')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printTestingPDF()">🖨 Print PDF</button>
           <button class="btn btn-primary admin-only" onclick="openAddTestModal()">➕ Add Test Record</button>
         </div>
       </div>
       <div class="kpi-grid" id="testing-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="mep-tabs" id="testing-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
+      </div>
+      <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="testing-filter-input" placeholder="Search tests…"></div></div>
       <div class="card"><div class="table-container"><table>
-        <thead><tr><th>ID</th><th>System / Test</th><th>Type</th><th>Date</th><th>Rev</th><th>Status</th><th>Certificate</th><th>Remarks</th><th>Actions</th></tr></thead>
+        <thead><tr><th>ID</th><th>System / Test</th><th>Discipline</th><th>Type</th><th>Date</th><th>Rev</th><th>Status</th><th>Certificate</th><th>Remarks</th><th>Actions</th></tr></thead>
         <tbody id="testing-table-body"></tbody>
       </table></div></div>
     </section>
 
-    <!-- ═══ NCR / RFI / SI ═══════════════════════════════════════ -->
+    <!-- ═══ NCR ═══════════════════════════════════════════════════ -->
     <section class="page-section" id="page-ncr">
       <div class="page-header">
-        <div><div class="page-title">⚠️ NCR / RFI / Site Instructions</div><div class="page-subtitle">Three separate registers — local drive file links enabled</div></div>
-        <div class="page-actions" id="ncr-page-actions">
-          <!-- dynamically updated -->
+        <div><div class="page-title">⚠️ NCR Register</div><div class="page-subtitle">Non-Conformance Reports — by Discipline</div></div>
+        <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('ncr')">📂 Import CSV</button>
+          <button class="btn btn-secondary" onclick="exportCurrentModule('ncr')">📥 Export CSV</button>
+          <button class="btn btn-pdf" onclick="printNCRPDF()">🖨 Print PDF</button>
+          <button class="btn btn-danger admin-only" onclick="openAddNCRModal()">🚨 Raise NCR</button>
         </div>
       </div>
-      <div class="register-tabs">
-        <button class="register-tab ncr-tab active" data-ncrtab="ncr" onclick="setNCRTab('ncr');updateNCRActions('ncr')">⚠️ Non-Conformance (NCR)</button>
-        <button class="register-tab ncr-tab" data-ncrtab="rfi" onclick="setNCRTab('rfi');updateNCRActions('rfi')">❓ Requests for Info (RFI)</button>
-        <button class="register-tab ncr-tab" data-ncrtab="si" onclick="setNCRTab('si');updateNCRActions('si')">📋 Site Instructions (SI)</button>
+      <div class="kpi-grid" id="ncr-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="mep-tabs" id="ncr-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
       </div>
-      <!-- NCR SECTION -->
-      <div class="ncr-sub-section" id="ncr-section-ncr">
-        <div class="kpi-grid" id="ncr-stats" style="grid-template-columns:repeat(4,1fr)"></div>
-        <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="ncr-filter-input" placeholder="Search NCRs…"></div></div>
-        <div class="card"><div class="table-container"><table>
-          <thead><tr><th>NCR ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Date Raised</th><th>Closure Date</th><th>Location</th><th>Remarks</th><th>Actions</th></tr></thead>
-          <tbody id="ncr-table-body"></tbody>
-        </table></div></div>
+      <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="ncr-filter-input" placeholder="Search NCRs…"></div></div>
+      <div class="card"><div class="table-container"><table>
+        <thead><tr><th>NCR ID</th><th>Title</th><th>Discipline</th><th>Priority</th><th>Status</th><th>Date Raised</th><th>Closure Date</th><th>Location</th><th>Remarks</th><th>Actions</th></tr></thead>
+        <tbody id="ncr-table-body"></tbody>
+      </table></div></div>
+    </section>
+
+    <!-- ═══ RFI ═══════════════════════════════════════════════════ -->
+    <section class="page-section" id="page-rfi">
+      <div class="page-header">
+        <div><div class="page-title">❓ RFI Register</div><div class="page-subtitle">Requests for Information — by Discipline</div></div>
+        <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('rfi')">📂 Import CSV</button>
+          <button class="btn btn-secondary" onclick="exportCurrentModule('rfi')">📥 Export CSV</button>
+          <button class="btn btn-pdf" onclick="printRFIPDF()">🖨 Print PDF</button>
+          <button class="btn btn-danger admin-only" onclick="openAddNCRModal()">🚨 Raise RFI</button>
+        </div>
       </div>
-      <!-- RFI SECTION -->
-      <div class="ncr-sub-section" id="ncr-section-rfi" style="display:none">
-        <div class="card"><div class="table-container"><table>
-          <thead><tr><th>RFI ID</th><th>Title</th><th>Discipline</th><th>Priority</th><th>Status</th><th>Date</th><th>Closure Date</th><th>Remarks</th><th>Actions</th></tr></thead>
-          <tbody id="rfi-table-body"></tbody>
-        </table></div></div>
+      <div class="kpi-grid" id="rfi-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="mep-tabs" id="rfi-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
       </div>
-      <!-- SI SECTION -->
-      <div class="ncr-sub-section" id="ncr-section-si" style="display:none">
-        <div class="card"><div class="table-container"><table>
-          <thead><tr><th>SI ID</th><th>Title</th><th>Ref / SKT</th><th>Priority</th><th>Status</th><th>Date</th><th>Cost Impact</th><th>Remarks</th><th>Actions</th></tr></thead>
-          <tbody id="si-table-body"></tbody>
-        </table></div></div>
+      <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="rfi-filter-input" placeholder="Search RFIs…"></div></div>
+      <div class="card"><div class="table-container"><table>
+        <thead><tr><th>RFI ID</th><th>Title</th><th>Discipline</th><th>Priority</th><th>Status</th><th>Date</th><th>Closure Date</th><th>Remarks</th><th>Actions</th></tr></thead>
+        <tbody id="rfi-table-body"></tbody>
+      </table></div></div>
+    </section>
+
+    <!-- ═══ SI ════════════════════════════════════════════════════ -->
+    <section class="page-section" id="page-si">
+      <div class="page-header">
+        <div><div class="page-title">📋 Site Instructions</div><div class="page-subtitle">Site Instructions — by Discipline</div></div>
+        <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('si')">📂 Import CSV</button>
+          <button class="btn btn-secondary" onclick="exportCurrentModule('si')">📥 Export CSV</button>
+          <button class="btn btn-pdf" onclick="printSIPDF()">🖨 Print PDF</button>
+          <button class="btn btn-danger admin-only" onclick="openAddNCRModal()">🚨 Raise SI</button>
+        </div>
       </div>
+      <div class="kpi-grid" id="si-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="mep-tabs" id="si-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
+      </div>
+      <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="si-filter-input" placeholder="Search SIs…"></div></div>
+      <div class="card"><div class="table-container"><table>
+        <thead><tr><th>SI ID</th><th>Title</th><th>Discipline</th><th>Ref / SKT</th><th>Priority</th><th>Status</th><th>Date</th><th>Cost Impact</th><th>Remarks</th><th>Actions</th></tr></thead>
+        <tbody id="si-table-body"></tbody>
+      </table></div></div>
+    </section>
+
+    <!-- ═══ WIR ═══════════════════════════════════════════════════ -->
+    <section class="page-section" id="page-wir">
+      <div class="page-header">
+        <div><div class="page-title">🔍 Work Inspection Requests</div><div class="page-subtitle">WIR Register — by Discipline</div></div>
+        <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('wir')">📂 Import CSV</button>
+          <button class="btn btn-secondary" onclick="exportCurrentModule('wir')">📥 Export CSV</button>
+          <button class="btn btn-pdf" onclick="printWIRPDF()">🖨 Print PDF</button>
+          <button class="btn btn-primary admin-only" onclick="openAddWIRModal()">🔍 New WIR</button>
+        </div>
+      </div>
+      <div class="kpi-grid" id="wir-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="mep-tabs" id="wir-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
+      </div>
+      <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="wir-filter-input" placeholder="Search WIRs…"></div></div>
+      <div class="card"><div class="table-container"><table>
+        <thead><tr><th style="border-top:3px solid #8e44ad">WIR ID</th><th>Title / Inspection Scope</th><th>Discipline</th><th>Priority</th><th>Date Raised</th><th>Inspection Date</th><th>Result</th><th>Location</th><th>Remarks</th><th>Actions</th></tr></thead>
+        <tbody id="wir-table-body"></tbody>
+      </table></div></div>
+    </section>
+
+    <!-- ═══ MDR ═══════════════════════════════════════════════════ -->
+    <section class="page-section" id="page-mdr">
+      <div class="page-header">
+        <div><div class="page-title">📦 Material Delivery Receipts</div><div class="page-subtitle">MDR Register — by Discipline</div></div>
+        <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('mdr')">📂 Import CSV</button>
+          <button class="btn btn-secondary" onclick="exportCurrentModule('mdr')">📥 Export CSV</button>
+          <button class="btn btn-pdf" onclick="printMDRPDF()">🖨 Print PDF</button>
+          <button class="btn btn-primary admin-only" onclick="openAddMDRModal()">📦 Log MDR</button>
+        </div>
+      </div>
+      <div class="kpi-grid" id="mdr-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="mep-tabs" id="mdr-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
+      </div>
+      <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="mdr-filter-input" placeholder="Search MDRs…"></div></div>
+      <div class="card"><div class="table-container"><table>
+        <thead><tr><th style="border-top:3px solid #16a085">MDR ID</th><th>Description</th><th>Discipline</th><th>Delivered By</th><th>PO Ref</th><th>Date</th><th>Qty</th><th>Condition</th><th>Location</th><th>Remarks</th><th>Actions</th></tr></thead>
+        <tbody id="mdr-table-body"></tbody>
+      </table></div></div>
     </section>
 
     <!-- ═══ PROCUREMENT ══════════════════════════════════════════ -->
@@ -330,18 +462,30 @@
       <div class="page-header">
         <div><div class="page-title">🛒 Procurement Tracker</div><div class="page-subtitle">Purchase orders, deliveries, vendor performance</div></div>
         <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('procurement')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('procurement')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printProcurementPDF()">🖨 Print PDF</button>
-          <button class="btn btn-primary" onclick="openAddPOModal()">➕ New PO</button>
+          <button class="btn btn-primary admin-only" onclick="openAddPOModal()">➕ New PO</button>
         </div>
       </div>
       <div class="kpi-grid" id="procurement-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="mep-tabs" id="procurement-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
+      </div>
       <div class="chart-grid" style="margin-bottom:20px">
         <div class="card"><div class="card-header"><span class="card-title">PO Value Distribution</span></div><div class="card-body"><div class="chart-wrapper" style="height:200px"><canvas id="procurement-chart"></canvas></div></div></div>
       </div>
       <div class="filter-bar"><div class="filter-search"><span class="si">🔍</span><input type="text" id="procurement-filter-input" placeholder="Search procurement…"></div></div>
       <div class="card"><div class="table-container"><table>
-        <thead><tr><th>PO No.</th><th>Description</th><th>Vendor</th><th>PO Value</th><th>Status</th><th>Delivery Date</th><th>Payment</th><th>Performance</th><th>Remarks</th><th>Actions</th></tr></thead>
+        <thead><tr><th>PO No.</th><th>Description</th><th>Discipline</th><th>Vendor</th><th>PO Value</th><th>Status</th><th>Delivery Date</th><th>Payment</th><th>Performance</th><th>Remarks</th><th>Actions</th></tr></thead>
         <tbody id="procurement-table-body"></tbody>
       </table></div></div>
     </section>
@@ -358,7 +502,7 @@
       <div class="kpi-grid" id="progress-stats" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">📈 S-Curve — Planned vs. Actual</span></div><div class="card-body"><div class="chart-wrapper" style="height:280px"><canvas id="progress-scurve-chart"></canvas></div></div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div class="card"><div class="card-header"><span class="card-title">Milestone Tracker</span></div><div class="card-body"><div class="milestone-list" id="progress-milestone-list"></div></div></div>
+        <div class="card"><div class="card-header"><span class="card-title">Milestone Tracker</span></div><div class="card-body"><div class="milestone-list" id="milestone-list"></div></div></div>
         <div class="card"><div class="card-header"><span class="card-title">Discipline Progress</span></div><div class="card-body"><div id="discipline-progress-list"></div></div></div>
       </div>
     </section>
@@ -368,6 +512,7 @@
       <div class="page-header">
         <div><div class="page-title">🦺 HSE Register</div><div class="page-subtitle">Incidents, near-misses, corrective actions, safety statistics</div></div>
         <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('hse')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('hse')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printHSEPDF()">🖨 Print PDF</button>
           <button class="btn btn-warning admin-only" onclick="openAddHSEModal()">🚨 Log Incident</button>
@@ -376,13 +521,11 @@
       <div class="kpi-grid" id="hse-stats" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="chart-grid" style="margin-bottom:20px">
         <div class="card"><div class="card-header"><span class="card-title">Incident Type Breakdown</span></div><div class="card-body"><div class="chart-wrapper" style="height:200px"><canvas id="hse-chart"></canvas></div></div></div>
-        <div class="card"><div class="card-header"><span class="card-title">HSE Performance</span>
-          ${isAdmin ? '' : ''}<button class="btn btn-sm btn-secondary admin-only" style="margin-left:auto" onclick="openUpdateHSEStatsModal()">✏️ Update Stats</button>
-          </div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div id="hse-perf-hours" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-emerald)">0</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Safe Man Hours</div></div>
-          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div id="hse-perf-ltir" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-amber)">0.00</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">LTIR Score</div></div>
-          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div id="hse-perf-toolbox" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-blue)">0</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Toolbox Talks</div></div>
-          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div id="hse-perf-lti" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-rose)">0</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">LTIs Recorded</div></div>
+        <div class="card"><div class="card-header"><span class="card-title">HSE Performance</span></div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-emerald)">284K</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Safe Man Hours</div></div>
+          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-amber)">0.35</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">LTIR Score</div></div>
+          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-blue)">48</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Toolbox Talks</div></div>
+          <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--accent-rose)">1</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">LTIs Recorded</div></div>
         </div></div></div>
       </div>
       <div class="card"><div class="table-container"><table>
@@ -396,14 +539,26 @@
       <div class="page-header">
         <div><div class="page-title">🤝 Subcontractor Management</div><div class="page-subtitle">Attendance, payments, performance — PO references included</div></div>
         <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('subcontractors')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('subcontractors')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printSubPDF()">🖨 Print PDF</button>
           <button class="btn btn-primary admin-only" onclick="openAddSubModal()">➕ Add Subcontractor</button>
         </div>
       </div>
+      <div class="mep-tabs" id="sub-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
+      </div>
       <div class="kpi-grid" id="sub-stats" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="card"><div class="table-container"><table>
-        <thead><tr><th>ID</th><th>Company</th><th>Scope</th><th>PO Ref</th><th>Status</th><th>Workers</th><th>Contract Value</th><th>Paid to Date</th><th>Performance</th><th>Actions</th></tr></thead>
+        <thead><tr><th>ID</th><th>Company</th><th>Discipline</th><th>Scope</th><th>PO Ref</th><th>Status</th><th>Workers</th><th>Contract Value</th><th>Paid to Date</th><th>Performance</th><th>Actions</th></tr></thead>
         <tbody id="sub-table-body"></tbody>
       </table></div></div>
     </section>
@@ -413,20 +568,31 @@
       <div class="page-header">
         <div><div class="page-title">💰 Cost Control</div><div class="page-subtitle">Budget vs. actual, committed cost, forecast-to-complete</div></div>
         <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('cost')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('cost')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printCostPDF()">🖨 Print PDF</button>
           <button class="btn btn-primary admin-only" onclick="openAddVariationOrderModal()">📝 Variation Order</button>
-          <button class="btn btn-success admin-only" onclick="openAddCostCategoryModal()">➕ Add Category</button>
         </div>
+      </div>
+      <div class="mep-tabs" id="cost-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
       </div>
       <div class="kpi-grid" id="cost-stats" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Budget vs. Forecast vs. Actual</span></div><div class="card-body"><div class="chart-wrapper" style="height:260px"><canvas id="cost-chart"></canvas></div></div></div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
-        <div class="card" style="background:rgba(59,130,246,0.06);border-color:rgba(59,130,246,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-blue);margin-bottom:4px;text-transform:uppercase">Revised Budget</div><div id="cost-hero-budget" style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-blue)">—</div></div></div>
-        <div class="card" style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-emerald);margin-bottom:4px;text-transform:uppercase">Actual Cost to Date</div><div id="cost-hero-actual" style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-emerald)">—</div></div></div>
-        <div class="card" style="background:rgba(244,63,94,0.06);border-color:rgba(244,63,94,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-rose);margin-bottom:4px;text-transform:uppercase">Forecast Final Cost</div><div id="cost-hero-forecast" style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-rose)">—</div></div></div>
+        <div class="card" style="background:rgba(59,130,246,0.06);border-color:rgba(59,130,246,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-blue);margin-bottom:4px;text-transform:uppercase">Revised Budget</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-blue)">SAR 188.2M</div></div></div>
+        <div class="card" style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-emerald);margin-bottom:4px;text-transform:uppercase">Actual Cost to Date</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-emerald)">SAR 67.2M</div></div></div>
+        <div class="card" style="background:rgba(244,63,94,0.06);border-color:rgba(244,63,94,0.15)"><div class="card-body" style="text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent-rose);margin-bottom:4px;text-transform:uppercase">Forecast Final Cost</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent-rose)">SAR 192.5M <span style="font-size:11px">▲ 4.3M</span></div></div></div>
       </div>
-      <div class="card"><div class="card-header"><span class="card-title">Cost Categories</span><button class="btn btn-sm btn-success admin-only" onclick="openAddCostCategoryModal()" style="margin-left:auto">➕ Add Category</button></div><div class="table-container"><table>
+      <div class="card"><div class="table-container"><table>
         <thead><tr><th>Category</th><th>Budget</th><th>Committed</th><th>Actual</th><th>Forecast</th><th>Variance</th><th>% Spent</th><th>Actions</th></tr></thead>
         <tbody id="cost-table-body"></tbody>
       </table></div></div>
@@ -437,6 +603,7 @@
       <div class="page-header">
         <div><div class="page-title">👷 Manpower &amp; Equipment</div><div class="page-subtitle">Daily worker logs, equipment utilization, weekly targets</div></div>
         <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('manpower')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('manpower')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printManpowerPDF()">🖨 Print PDF</button>
           <button class="btn admin-only" onclick="openAddDailyLogModal()">➕ Daily Log Entry</button>
@@ -459,14 +626,26 @@
       <div class="page-header">
         <div><div class="page-title">🏁 Project Closeout</div><div class="page-subtitle">Handover docs, as-built drawings, O&amp;M manuals, occupancy permits</div></div>
         <div class="page-actions">
+          <button class="btn btn-secondary admin-only" onclick="triggerImport('closeout')">📂 Import CSV</button>
           <button class="btn btn-secondary" onclick="exportCurrentModule('closeout')">📥 Export CSV</button>
           <button class="btn btn-pdf" onclick="printCloseoutPDF()">🖨 Print PDF</button>
           <button class="btn btn-primary admin-only" onclick="openAddCloseoutItemModal()">➕ Add Item</button>
         </div>
       </div>
+      <div class="mep-tabs" id="closeout-disc-tabs">
+        <button class="mep-tab active" data-disc="all">All Disciplines</button>
+        <button class="mep-tab" data-disc="Civil">Civil</button>
+        <button class="mep-tab" data-disc="Architect">Architect</button>
+        <button class="mep-tab" data-disc="Structural">Structure</button>
+        <button class="mep-tab" data-disc="Mechanical">Mechanical</button>
+        <button class="mep-tab" data-disc="Electrical">Electrical</button>
+        <button class="mep-tab" data-disc="Plumbing">Plumbing</button>
+        <button class="mep-tab" data-disc="HVAC">HVAC</button>
+        <button class="mep-tab" data-disc="Fire Protection">Firefighting</button>
+      </div>
       <div class="kpi-grid" id="closeout-stats" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="card"><div class="table-container"><table>
-        <thead><tr><th>ID</th><th>Closeout Item</th><th>Category</th><th>Status</th><th>Due Date</th><th>Assigned To</th><th>Remarks</th><th>Actions</th></tr></thead>
+        <thead><tr><th>ID</th><th>Closeout Item</th><th>Discipline</th><th>Category</th><th>Status</th><th>Due Date</th><th>Assigned To</th><th>Remarks</th><th>Actions</th></tr></thead>
         <tbody id="closeout-table-body"></tbody>
       </table></div></div>
     </section>
@@ -484,7 +663,7 @@
 </div>
 
 <!-- ── MODAL ──────────────────────────────────────────────────── -->
-<div class="sidebar-overlay" id="sidebar-overlay" onclick="const s=document.querySelector('.sidebar');const o=this;s.classList.remove('open');o.style.opacity='0';setTimeout(()=>o.style.display='none',200);" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199;opacity:0;transition:opacity 0.2s ease;"></div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('active');" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199;"></div>
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <div class="modal-header">
@@ -521,24 +700,9 @@ applySidebarLogo();
 // Also try on full load in case images.js loads late
 window.addEventListener('load', applySidebarLogo);
 
-// NCR action buttons update on tab switch - FIXED
-function updateNCRActions(tab) {
-  const actions = document.getElementById('ncr-page-actions');
-  const labels = { ncr:'NCR', rfi:'RFI', si:'SI' };
-  const printFns = { ncr:'printNCRPDF', rfi:'printRFIPDF', si:'printSIPDF' };
-  const exportKeys = { ncr:'ncr', rfi:'rfi', si:'si' };
-  const isAdminMode = window.STATE && window.STATE.userRole === 'admin';
-  
-  actions.innerHTML = `
-    <button class="btn btn-secondary" onclick="exportCurrentModule('${exportKeys[tab]}')">📥 Export ${labels[tab]} CSV</button>
-    <button class="btn btn-pdf" onclick="${printFns[tab]}()">🖨 Print ${labels[tab]} PDF</button>
-    ${isAdminMode ? `<button class="btn btn-danger" onclick="openAddNCRModal()">🚨 Raise ${labels[tab]}</button>` : ''}
-  `;
-}
-
-// Expose and initialize ONCE only
+// NCR action buttons - pages are now separate, this is a no-op stub kept for compatibility
+function updateNCRActions(tab) {}
 window.updateNCRActions = updateNCRActions;
-updateNCRActions('ncr');
 
 // Keyboard shortcut removed because top search bar is gone
 // document.addEventListener('keydown', e => { ... }); // removed
