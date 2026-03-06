@@ -6,2141 +6,832 @@
 <title>Saqib Hussain (PE) | Lead Electrical Engineer | GCC Mega Projects</title>
 <meta name="description" content="Lead Electrical Engineer with 18+ years GCC experience in Metro, High-Rise, Cinemas, and Infrastructure.">
 
-<!-- Google Fonts: Cormorant Garamond + DM Sans -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-<!-- GSAP -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-
-<!-- Three.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-<!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-/* ============================================================
-   CSS CUSTOM PROPERTIES & RESET
-   ============================================================ */
 :root {
-  --blue: #00c8ff;
-  --blue-dim: #007fa3;
-  --gold: #c9a84c;
-  --gold-light: #f0d080;
-  --ink: #07080a;
-  --ink-2: #111318;
-  --ink-3: #1c1f26;
-  --ink-4: #252930;
-  --mist: rgba(255,255,255,0.04);
-  --mist-2: rgba(255,255,255,0.08);
-  --text: #e8eaf0;
-  --text-dim: #868b99;
-  --font-display: 'Cormorant Garamond', serif;
-  --font-body: 'DM Sans', sans-serif;
-  --font-mono: 'Space Mono', monospace;
-  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --blue:#00c8ff; --blue-dim:#007fa3; --gold:#c9a84c;
+  --ink:#07080a; --ink-2:#111318; --ink-3:#1c1f26;
+  --mist:rgba(255,255,255,.04); --mistb:rgba(255,255,255,.08);
+  --text:#e8eaf0; --dim:#868b99;
+  --fd:'Cormorant Garamond',serif; --fb:'DM Sans',sans-serif; --fm:'Space Mono',monospace;
+  --ease:cubic-bezier(.16,1,.3,1); --easeback:cubic-bezier(.34,1.56,.64,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--text);font-family:var(--fb);font-weight:300;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+a{text-decoration:none}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--ink)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--blue),var(--gold));border-radius:2px}
+
+/* grain */
+body::before{content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.028;pointer-events:none;z-index:9999;animation:grain .4s steps(1) infinite}
+@keyframes grain{0%,100%{transform:translate(0,0)}25%{transform:translate(-1px,1px)}50%{transform:translate(1px,-1px)}75%{transform:translate(-1px,-1px)}}
+
+/* progress */
+#pb{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--blue),var(--gold));z-index:10000}
+
+/* loader */
+#loader{position:fixed;inset:0;background:var(--ink);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .6s}
+.lr{width:52px;height:52px;border:1.5px solid rgba(0,200,255,.1);border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lt{font-family:var(--fm);font-size:10px;letter-spacing:.3em;color:var(--blue);opacity:.6}
+
+/* cursor */
+#cur,#curr{position:fixed;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%)}
+#cur{width:10px;height:10px;background:var(--blue);z-index:9990;mix-blend-mode:difference;transition:width .3s var(--easeback),height .3s var(--easeback),background .3s}
+#curr{width:32px;height:32px;border:1px solid rgba(0,200,255,.35);z-index:9989;transition:opacity .3s}
+body.ch #cur{width:42px;height:42px;background:var(--gold)}
+body.ch #curr{opacity:0}
+@media(hover:none){#cur,#curr{display:none}}
+
+/* ===== NAV ===== */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;transition:background .4s}
+nav.scrolled{background:rgba(7,8,10,.9);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,.05)}
+.ni{max-width:1280px;margin:0 auto;padding:0 40px;height:76px;display:flex;align-items:center;justify-content:space-between}
+.nlogo{display:flex;align-items:center;gap:11px}
+.nbadge{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--gold));display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;font-size:15px;color:var(--ink);flex-shrink:0}
+.nname strong{display:block;font-family:var(--fd);font-size:15px;font-weight:600;color:#fff;line-height:1.2}
+.nname small{font-family:var(--fm);font-size:8px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+.nlinks{display:flex;align-items:center;gap:28px;list-style:none}
+.nlinks a{font-family:var(--fm);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);position:relative;transition:color .2s}
+.nlinks a::after{content:'';position:absolute;bottom:-3px;left:0;right:0;height:1px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .3s var(--ease)}
+.nlinks a:hover{color:var(--blue)}
+.nlinks a:hover::after{transform:scaleX(1)}
+.ncta{padding:8px 18px!important;border:1px solid rgba(0,200,255,.35)!important;border-radius:100px;color:var(--blue)!important;transition:background .3s!important}
+.ncta::after{display:none!important}
+.ncta:hover{background:rgba(0,200,255,.07)!important}
+
+/* dropdown */
+.ndrop{position:relative}
+.ndrop>a{cursor:pointer;display:flex;align-items:center;gap:3px}
+.ndrop-menu{position:absolute;top:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(6px);min-width:210px;background:rgba(10,12,16,.97);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:6px;opacity:0;visibility:hidden;transition:all .25s var(--ease)}
+.ndrop:hover .ndrop-menu{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+.ndrop-menu a{display:block!important;padding:9px 12px!important;border-radius:7px;font-size:9px!important;transition:background .2s,color .2s!important}
+.ndrop-menu a::after{display:none!important}
+.ndrop-menu a:hover{background:rgba(0,200,255,.08);color:var(--blue)!important}
+
+/* hamburger */
+.nham{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;background:none;border:none;outline:none}
+.nham span{display:block;width:22px;height:1.5px;background:var(--text);border-radius:2px;transition:all .3s}
+.nham.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.nham.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.nham.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+
+/* mobile menu */
+.mmenu{display:none;flex-direction:column;background:rgba(7,8,10,.98);backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.05)}
+.mmenu.open{display:flex}
+.mmenu a{padding:13px 24px;font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid rgba(255,255,255,.04);transition:color .2s,padding-left .2s}
+.mmenu a:hover{color:var(--blue);padding-left:30px}
+.mmenu a.acc{color:var(--blue)}
+.mmdiv{height:1px;background:rgba(0,200,255,.1);margin:6px 24px}
+
+@media(max-width:900px){
+  .ni{padding:0 18px}
+  .nlinks{display:none}
+  .nham{display:flex}
+  .nname{display:none}
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  background: var(--ink);
-  color: var(--text);
-  font-family: var(--font-body);
-  font-weight: 300;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
+/* ===== HERO ===== */
+#hero{position:relative;height:100vh;min-height:640px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#hcanvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.hovl{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 55%,rgba(0,200,255,.04) 0,transparent 70%),linear-gradient(to bottom,transparent 50%,var(--ink) 100%);z-index:1;pointer-events:none}
+.hbody{position:relative;z-index:2;text-align:center;padding:0 22px;max-width:920px}
+.heyebrow{display:inline-block;padding:5px 16px;border:1px solid rgba(0,200,255,.2);border-radius:100px;font-family:var(--fm);font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--blue);background:rgba(0,200,255,.04);margin-bottom:26px;opacity:0}
+.hh1{font-family:var(--fd);font-size:clamp(54px,11vw,132px);font-weight:300;line-height:.92;letter-spacing:-.02em;color:#fff;margin-bottom:8px}
+.hh1 .ln{display:block;overflow:hidden}
+.hh1 .wd{display:inline-block;opacity:0}
+.hsub{font-family:var(--fd);font-size:clamp(19px,4vw,38px);font-style:italic;font-weight:300;color:var(--gold);margin-bottom:22px;opacity:0}
+.hdesc{font-size:14px;color:var(--dim);line-height:1.85;margin-bottom:42px;letter-spacing:.02em;opacity:0}
+.hdesc b{color:var(--text);font-weight:500}
+.hcta{display:flex;gap:13px;justify-content:center;flex-wrap:wrap;opacity:0}
+.bp{padding:13px 28px;background:var(--blue);color:var(--ink);font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;border-radius:100px;display:inline-flex;align-items:center;gap:8px;transition:transform .3s var(--easeback),box-shadow .3s}
+.bp:hover{transform:scale(1.06);box-shadow:0 0 40px rgba(0,200,255,.32)}
+.bs{padding:13px 28px;border:1px solid rgba(255,255,255,.15);color:var(--text);font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;border-radius:100px;transition:background .3s,border-color .3s}
+.bs:hover{background:var(--mistb);border-color:rgba(255,255,255,.3)}
+.hscroll{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0}
+.hscroll span{font-family:var(--fm);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.sline{width:1px;height:46px;background:linear-gradient(var(--blue),transparent);animation:sp 1.8s ease-in-out infinite}
+@keyframes sp{0%,100%{opacity:.3}50%{opacity:1}}
 
-/* ── Custom scrollbar ── */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: var(--ink); }
-::-webkit-scrollbar-thumb { background: linear-gradient(var(--blue), var(--gold)); border-radius: 3px; }
+/* ===== SECTIONS ===== */
+section{padding:108px 0}
+.ct{max-width:1280px;margin:0 auto;padding:0 40px}
+.slbl{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.slbl::before{content:'';width:26px;height:1px;background:var(--blue)}
+.slbl span{font-family:var(--fm);font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--blue)}
+.sh{font-family:var(--fd);font-size:clamp(36px,6vw,68px);font-weight:300;line-height:1;color:#fff;margin-bottom:52px}
+.sh em{font-style:italic;color:var(--gold)}
+.rv{opacity:0;transform:translateY(26px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.rv.in{opacity:1;transform:translateY(0)}
 
-/* ============================================================
-   GRAIN OVERLAY
-   ============================================================ */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  opacity: 0.028;
-  pointer-events: none;
-  z-index: 9999;
-  animation: grainShift 0.4s steps(1) infinite;
-}
-@keyframes grainShift {
-  0%,100% { transform: translate(0,0); }
-  25% { transform: translate(-1px,1px); }
-  50% { transform: translate(1px,-1px); }
-  75% { transform: translate(-1px,-1px); }
-}
+/* ===== ABOUT ===== */
+#about{background:var(--ink)}
+.ag{display:grid;grid-template-columns:1fr 1.1fr;gap:68px;align-items:center}
+.aiw{position:relative;border-radius:16px;overflow:hidden;height:540px;background:var(--ink-3)}
+.aiw img{width:100%;height:100%;object-fit:cover;filter:grayscale(35%);transform:scale(1.05);transition:filter .6s,transform .6s}
+.aiw:hover img{filter:grayscale(0%);transform:scale(1)}
+.aio{position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,200,255,.06),rgba(201,168,76,.04));mix-blend-mode:overlay}
+.abadge{position:absolute;bottom:20px;left:20px;padding:13px 17px;background:rgba(7,8,10,.88);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:11px;display:flex;align-items:center;gap:11px}
+.abi{width:38px;height:38px;border-radius:9px;background:rgba(0,200,255,.1);display:flex;align-items:center;justify-content:center;color:var(--blue)}
+.abadge strong{display:block;font-family:var(--fd);font-size:19px;font-weight:700;color:#fff;line-height:1}
+.abadge small{font-family:var(--fm);font-size:8px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+.atxt{font-size:15px;line-height:1.9;color:var(--dim);margin-bottom:34px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:34px}
+.st{padding:20px;border-radius:10px;background:var(--mist);border:1px solid rgba(255,255,255,.06);transition:border-color .3s}
+.st:hover{border-color:rgba(0,200,255,.2)}
+.stn{font-family:var(--fd);font-size:38px;font-weight:600;line-height:1;margin-bottom:5px}
+.stn.bl{color:var(--blue)}.stn.go{color:var(--gold)}
+.stl{font-family:var(--fm);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+.mi{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:13px;color:var(--dim)}
+.mi svg{color:var(--gold);flex-shrink:0}
 
-/* ============================================================
-   PROGRESS BAR
-   ============================================================ */
-#progress-bar {
-  position: fixed;
-  top: 0; left: 0;
-  height: 2px;
-  width: 0%;
-  background: linear-gradient(90deg, var(--blue), var(--gold));
-  z-index: 10000;
-  transition: width 0.1s linear;
-}
+/* ===== PROJECTS ===== */
+#projects{background:var(--ink-2)}
+.frow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:44px}
+.fb{padding:7px 16px;border:1px solid rgba(255,255,255,.12);background:transparent;border-radius:100px;font-family:var(--fm);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);cursor:pointer;transition:all .3s}
+.fb:hover,.fb.act{border-color:var(--blue);color:var(--blue);background:rgba(0,200,255,.06)}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.pc{background:var(--mist);border:1px solid rgba(255,255,255,.07);border-radius:13px;overflow:hidden;transition:transform .4s var(--ease),border-color .3s,box-shadow .3s}
+.pc:hover{transform:translateY(-7px);border-color:rgba(0,200,255,.2);box-shadow:0 22px 52px rgba(0,0,0,.5)}
+.piw{position:relative;height:200px;overflow:hidden;background:var(--ink-3)}
+.piw img{width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease)}
+.pc:hover .piw img{transform:scale(1.08)}
+.pio{position:absolute;inset:0;background:linear-gradient(to top,rgba(7,8,10,.78) 0,transparent 55%)}
+.ptg{position:absolute;top:11px;right:11px;padding:3px 10px;border-radius:100px;font-family:var(--fm);font-size:8px;letter-spacing:.12em;text-transform:uppercase;backdrop-filter:blur(12px)}
+.ptg.bl{background:rgba(0,200,255,.12);color:var(--blue);border:1px solid rgba(0,200,255,.22)}
+.ptg.go{background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.22)}
+.pb2{padding:20px}
+.pt{font-family:var(--fd);font-size:18px;font-weight:600;color:#fff;margin-bottom:3px;transition:color .2s}
+.pc:hover .pt{color:var(--blue)}
+.pl{font-family:var(--fm);font-size:9px;letter-spacing:.1em;color:var(--dim);margin-bottom:9px}
+.pd{font-size:13px;line-height:1.75;color:var(--dim);margin-bottom:13px}
+.chs{display:flex;flex-wrap:wrap;gap:5px}
+.ch2{padding:3px 8px;border-radius:100px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-family:var(--fm);font-size:8px;letter-spacing:.08em;color:var(--dim)}
 
-/* ============================================================
-   LOADER
-   ============================================================ */
-#loader {
-  position: fixed;
-  inset: 0;
-  background: var(--ink);
-  z-index: 9998;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-}
-.loader-ring {
-  width: 64px; height: 64px;
-  border: 1.5px solid rgba(0,200,255,0.12);
-  border-top-color: var(--blue);
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.loader-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.35em;
-  color: var(--blue);
-  opacity: 0.6;
-}
+/* ===== EXPERTISE ===== */
+#expertise{background:var(--ink)}
+.eg{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:48px}
+.ec{padding:30px 24px;background:var(--mist);border:1px solid rgba(255,255,255,.07);border-radius:13px;transition:transform .4s var(--ease),border-color .3s,box-shadow .3s}
+.ec:nth-child(odd):hover{border-color:rgba(0,200,255,.2);transform:translateY(-5px);box-shadow:0 18px 48px rgba(0,0,0,.4)}
+.ec:nth-child(even):hover{border-color:rgba(201,168,76,.2);transform:translateY(-5px);box-shadow:0 18px 48px rgba(0,0,0,.4)}
+.ei{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.ei.bl{background:rgba(0,200,255,.08);color:var(--blue)}
+.ei.go{background:rgba(201,168,76,.08);color:var(--gold)}
+.ett{font-family:var(--fd);font-size:18px;font-weight:600;color:#fff;margin-bottom:7px}
+.ede{font-size:13px;line-height:1.75;color:var(--dim);margin-bottom:16px}
+.skb{height:2px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.skf{height:100%;border-radius:2px;width:0;transition:width 1.4s var(--ease)}
+.skf.bl{background:linear-gradient(90deg,var(--blue-dim),var(--blue))}
+.skf.go{background:linear-gradient(90deg,#7a6128,var(--gold))}
+.tb{padding:42px;background:var(--mist);border:1px solid rgba(255,255,255,.07);border-radius:16px}
+.tt{font-family:var(--fd);font-size:24px;font-weight:300;color:#fff;text-align:center;margin-bottom:34px}
+.tg{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.tol{text-align:center}
+.toc{width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.05em;transition:all .3s}
+.tol:hover .toc{background:rgba(0,200,255,.08);border-color:rgba(0,200,255,.3);transform:scale(1.1)}
+.toc.bl{color:var(--blue)}.toc.go{color:var(--gold)}
+.ton{font-size:11px;color:var(--dim);font-family:var(--fm)}
 
-/* ============================================================
-   CUSTOM CURSOR
-   ============================================================ */
-#cursor {
-  position: fixed;
-  width: 12px; height: 12px;
-  background: var(--blue);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9990;
-  transform: translate(-50%, -50%);
-  transition: transform 0.1s, width 0.3s var(--ease-back), height 0.3s var(--ease-back), background 0.3s;
-  mix-blend-mode: difference;
-}
-#cursor-ring {
-  position: fixed;
-  width: 36px; height: 36px;
-  border: 1px solid rgba(0,200,255,0.4);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9989;
-  transform: translate(-50%, -50%);
-  transition: transform 0.18s var(--ease-expo), width 0.4s var(--ease-back), height 0.4s var(--ease-back), opacity 0.3s;
-}
-body.cursor-hover #cursor { width: 48px; height: 48px; background: var(--gold); }
-body.cursor-hover #cursor-ring { opacity: 0; }
-@media (hover: none) { #cursor, #cursor-ring { display: none; } }
+/* ===== MARQUEE ===== */
+.mqs{padding:34px 0;background:var(--ink-2);border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);overflow:hidden}
+.mql{text-align:center;font-family:var(--fm);font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--dim);margin-bottom:18px}
+.mqt{display:flex;white-space:nowrap}
+.mqi{display:inline-flex;gap:52px;align-items:center;animation:mq 28s linear infinite;padding-right:52px}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.mqw{font-family:var(--fd);font-size:21px;font-weight:600;color:rgba(255,255,255,.16);cursor:default;transition:color .3s}
+.mqw:hover{color:var(--blue)}
+.mqd{width:4px;height:4px;border-radius:50%;background:var(--blue);opacity:.25;flex-shrink:0}
 
-/* ============================================================
-   NAVIGATION
-   ============================================================ */
-nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 200;
-  padding: 0 40px;
-  transition: background 0.4s, border-color 0.4s;
-}
-nav.scrolled {
-  background: rgba(7,8,10,0.85);
-  backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-.nav-inner {
-  max-width: 1280px;
-  margin: 0 auto;
-  height: 76px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  text-decoration: none;
-}
-.nav-badge {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--blue), var(--gold));
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 17px;
-  color: var(--ink);
-}
-.nav-name { line-height: 1.2; }
-.nav-name strong {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-}
-.nav-name span {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 36px;
-  list-style: none;
-}
-.nav-links a {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  text-decoration: none;
-  transition: color 0.2s;
-  position: relative;
-}
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  bottom: -3px; left: 0; right: 0;
-  height: 1px;
-  background: var(--blue);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.3s var(--ease-expo);
-}
-.nav-links a:hover { color: var(--blue); }
-.nav-links a:hover::after { transform: scaleX(1); }
-.nav-cta {
-  padding: 10px 22px;
-  background: transparent;
-  border: 1px solid rgba(0,200,255,0.35);
-  border-radius: 100px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--blue) !important;
-  text-decoration: none;
-  transition: background 0.3s, box-shadow 0.3s !important;
-}
-.nav-cta:hover {
-  background: rgba(0,200,255,0.08) !important;
-  box-shadow: 0 0 20px rgba(0,200,255,0.2);
-}
-.nav-cta::after { display: none !important; }
+/* ===== TIMELINE =====
+   Desktop: 3-col grid — card | dot | empty (odd) / empty | dot | card (even)
+   Mobile:  2-col grid — dot | card (always left-to-right)
+*/
+#experience{background:var(--ink)}
+.tl{position:relative;max-width:840px;margin:0 auto}
+.tl::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:1px;
+  background:linear-gradient(to bottom,var(--blue),rgba(201,168,76,.4),transparent);
+  transform:translateX(-50%)}
 
-/* Dropdown */
-.nav-dropdown { position: relative; }
-.nav-dropdown > a { cursor: pointer; display: flex; align-items: center; gap: 4px; }
-.nav-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 16px);
-  left: 50%;
-  transform: translateX(-50%) translateY(8px);
-  min-width: 220px;
-  background: rgba(12,14,18,0.95);
-  backdrop-filter: blur(24px);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 8px;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.25s var(--ease-expo);
-}
-.nav-dropdown:hover .nav-dropdown-menu {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-}
-.nav-dropdown-menu a {
-  display: block;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 10px !important;
-  transition: background 0.2s, color 0.2s !important;
-}
-.nav-dropdown-menu a::after { display: none !important; }
-.nav-dropdown-menu a:hover {
-  background: rgba(0,200,255,0.08);
-  color: var(--blue) !important;
-}
+/* Each item: 3-col on desktop */
+.ti{display:grid;grid-template-columns:1fr 28px 1fr;gap:0 30px;align-items:start;margin-bottom:52px}
+.tdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);outline:1px solid rgba(0,200,255,.4);position:relative;z-index:2;justify-self:center;margin-top:9px}
+.tdot.bl{background:var(--blue)}
+.tdot.go{background:var(--gold);outline-color:rgba(201,168,76,.4)}
+.tc{padding:21px 24px;background:var(--mist);border:1px solid rgba(255,255,255,.07);border-radius:12px;transition:transform .4s var(--ease),border-color .3s}
+.tc:hover{transform:translateY(-4px)}
+.ti:nth-child(odd) .tc:hover{border-color:rgba(0,200,255,.2)}
+.ti:nth-child(even) .tc:hover{border-color:rgba(201,168,76,.2)}
 
-/* Mobile nav */
-.nav-hamburger {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  cursor: pointer;
-  padding: 8px;
-}
-.nav-hamburger span {
-  display: block;
-  width: 22px; height: 1.5px;
-  background: var(--text);
-  transition: all 0.3s;
-}
-.mobile-menu {
-  display: none;
-  flex-direction: column;
-  gap: 0;
-  background: rgba(7,8,10,0.97);
-  backdrop-filter: blur(24px);
-  border-top: 1px solid rgba(255,255,255,0.05);
-  padding: 16px 24px 24px;
-}
-.mobile-menu.open { display: flex; }
-.mobile-menu a {
-  padding: 12px 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  text-decoration: none;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  transition: color 0.2s;
-}
-.mobile-menu a:hover { color: var(--blue); }
+/* Odd: card in col-1, dot in col-2, empty in col-3 */
+.ti:nth-child(odd) .tc{grid-column:1;grid-row:1;text-align:right}
+.ti:nth-child(odd) .tdot{grid-column:2;grid-row:1}
+.ti:nth-child(odd) .te{grid-column:3;grid-row:1}
 
-@media (max-width: 900px) {
-  nav { padding: 0 20px; }
-  .nav-links { display: none; }
-  .nav-hamburger { display: flex; }
-  .nav-name { display: none; }
-}
+/* Even: empty in col-1, dot in col-2, card in col-3 */
+.ti:nth-child(even) .te{grid-column:1;grid-row:1}
+.ti:nth-child(even) .tdot{grid-column:2;grid-row:1}
+.ti:nth-child(even) .tc{grid-column:3;grid-row:1;text-align:left}
 
-/* ============================================================
-   HERO SECTION
-   ============================================================ */
-#hero {
-  position: relative;
-  height: 100vh;
-  min-height: 700px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-#hero-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
-.hero-gradient {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 60%, rgba(0,200,255,0.04) 0%, transparent 70%),
-              linear-gradient(to bottom, transparent 50%, var(--ink) 100%);
-  z-index: 1;
-  pointer-events: none;
-}
-.hero-content {
-  position: relative;
-  z-index: 2;
-  text-align: center;
-  padding: 0 24px;
-  max-width: 900px;
-}
-.hero-eyebrow {
-  display: inline-block;
-  padding: 6px 18px;
-  border: 1px solid rgba(0,200,255,0.2);
-  border-radius: 100px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: var(--blue);
-  background: rgba(0,200,255,0.04);
-  margin-bottom: 32px;
-  opacity: 0;
-}
-.hero-h1 {
-  font-family: var(--font-display);
-  font-size: clamp(60px, 11vw, 140px);
-  font-weight: 300;
-  line-height: 0.92;
-  letter-spacing: -0.02em;
-  color: #fff;
-  margin-bottom: 8px;
-}
-.hero-h1 .line { display: block; overflow: hidden; }
-.hero-h1 .word { display: inline-block; transform: translateY(110%); opacity: 0; }
-.hero-subtitle {
-  font-family: var(--font-display);
-  font-size: clamp(22px, 4vw, 42px);
-  font-style: italic;
-  font-weight: 300;
-  color: var(--gold);
-  margin-bottom: 28px;
-  opacity: 0;
-}
-.hero-desc {
-  font-size: 14px;
-  color: var(--text-dim);
-  line-height: 1.8;
-  margin-bottom: 48px;
-  opacity: 0;
-  letter-spacing: 0.02em;
-}
-.hero-desc strong { color: var(--text); font-weight: 500; }
-.hero-cta {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  flex-wrap: wrap;
-  opacity: 0;
-}
-.btn-primary {
-  padding: 14px 32px;
-  background: var(--blue);
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  text-decoration: none;
-  border-radius: 100px;
-  transition: transform 0.3s var(--ease-back), box-shadow 0.3s;
-  display: flex; align-items: center; gap: 8px;
-}
-.btn-primary:hover {
-  transform: scale(1.06);
-  box-shadow: 0 0 40px rgba(0,200,255,0.35);
-}
-.btn-secondary {
-  padding: 14px 32px;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  text-decoration: none;
-  border-radius: 100px;
-  transition: background 0.3s, border-color 0.3s;
-}
-.btn-secondary:hover { background: var(--mist-2); border-color: rgba(255,255,255,0.3); }
+.tyr{font-family:var(--fm);font-size:9px;letter-spacing:.14em;margin-bottom:7px}
+.tyr.bl{color:var(--blue)}.tyr.go{color:var(--gold)}
+.tro{font-family:var(--fd);font-size:18px;font-weight:600;color:#fff;margin-bottom:3px}
+.tco{font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:9px}
+.tco.bl{color:var(--blue)}.tco.go{color:var(--gold)}
+.tde{font-size:13px;line-height:1.75;color:var(--dim)}
 
-.hero-scroll {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  opacity: 0;
-}
-.hero-scroll span {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.25em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
-.scroll-line {
-  width: 1px; height: 50px;
-  background: linear-gradient(var(--blue), transparent);
-  animation: scrollPulse 1.8s ease-in-out infinite;
-}
-@keyframes scrollPulse {
-  0%,100% { opacity: 0.3; transform: scaleY(1); }
-  50% { opacity: 1; transform: scaleY(1.2); }
-}
-
-/* ============================================================
-   SECTION COMMON
-   ============================================================ */
-section { padding: 120px 0; }
-.container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 40px;
-}
-@media (max-width: 768px) { .container { padding: 0 20px; } }
-
-.section-label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-.section-label::before {
-  content: '';
-  display: block;
-  width: 30px; height: 1px;
-  background: var(--blue);
-}
-.section-label span {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--blue);
-}
-.section-heading {
-  font-family: var(--font-display);
-  font-size: clamp(40px, 6vw, 72px);
-  font-weight: 300;
-  line-height: 1;
-  color: #fff;
-  margin-bottom: 60px;
-}
-.section-heading em { font-style: italic; color: var(--gold); }
-
-/* Reveal animation utility */
-.reveal {
-  opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 0.8s var(--ease-expo), transform 0.8s var(--ease-expo);
-}
-.reveal.visible { opacity: 1; transform: translateY(0); }
-
-/* ============================================================
-   GLASS CARD
-   ============================================================ */
-.glass-card {
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 16px;
-  transition: border-color 0.3s, box-shadow 0.3s, transform 0.4s var(--ease-expo);
-}
-.glass-card:hover {
-  border-color: rgba(0,200,255,0.2);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,200,255,0.08);
-  transform: translateY(-6px);
-}
-
-/* ============================================================
-   ABOUT SECTION
-   ============================================================ */
-#about { background: var(--ink); }
-.about-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  gap: 80px;
-  align-items: center;
-}
-@media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 60px; } }
-
-.about-image-wrap {
-  position: relative;
-  border-radius: 20px;
-  overflow: hidden;
-  height: 580px;
-  background: var(--ink-3);
-}
-.about-image-wrap img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  filter: grayscale(40%);
-  transition: filter 0.6s, transform 0.6s;
-  transform: scale(1.06);
-}
-.about-image-wrap:hover img { filter: grayscale(0%); transform: scale(1); }
-.about-image-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(0,200,255,0.08), rgba(201,168,76,0.04));
-  mix-blend-mode: overlay;
-}
-.about-badge {
-  position: absolute;
-  bottom: 24px; left: 24px;
-  padding: 16px 20px;
-  background: rgba(7,8,10,0.85);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.about-badge-icon {
-  width: 44px; height: 44px;
-  border-radius: 10px;
-  background: rgba(0,200,255,0.12);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--blue);
-}
-.about-badge strong {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1;
-}
-.about-badge small {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
-.about-body p {
-  font-size: 15px;
-  line-height: 1.9;
-  color: var(--text-dim);
-  margin-bottom: 40px;
-}
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 40px;
-}
-.stat-box {
-  padding: 24px;
-  border-radius: 12px;
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.06);
-  transition: border-color 0.3s;
-}
-.stat-box:hover { border-color: rgba(0,200,255,0.2); }
-.stat-number {
-  font-family: var(--font-display);
-  font-size: 42px;
-  font-weight: 600;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-.stat-number.blue { color: var(--blue); }
-.stat-number.gold { color: var(--gold); }
-.stat-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-.membership-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: var(--text-dim);
-}
-.membership-item svg { color: var(--gold); flex-shrink: 0; }
-
-/* ============================================================
-   PROJECTS SECTION
-   ============================================================ */
-#projects { background: var(--ink-2); }
-.filter-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 56px;
-}
-.filter-btn {
-  padding: 8px 20px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: transparent;
-  border-radius: 100px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: all 0.3s;
-}
-.filter-btn:hover, .filter-btn.active {
-  border-color: var(--blue);
-  color: var(--blue);
-  background: rgba(0,200,255,0.06);
-}
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-@media (max-width: 1100px) { .projects-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 600px) { .projects-grid { grid-template-columns: 1fr; } }
-
-.project-card {
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 16px;
-  overflow: hidden;
-  transition: all 0.4s var(--ease-expo);
-}
-.project-card:hover {
-  border-color: rgba(0,200,255,0.2);
-  transform: translateY(-8px);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-}
-.project-card.hidden { display: none; }
-.project-img {
-  position: relative;
-  height: 220px;
-  overflow: hidden;
-  background: var(--ink-3);
-}
-.project-img img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  transition: transform 0.6s var(--ease-expo);
-}
-.project-card:hover .project-img img { transform: scale(1.08); }
-.project-img-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(7,8,10,0.8) 0%, transparent 60%);
-}
-.project-tag {
-  position: absolute;
-  top: 14px; right: 14px;
-  padding: 4px 12px;
-  border-radius: 100px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  backdrop-filter: blur(12px);
-}
-.project-tag.blue { background: rgba(0,200,255,0.15); color: var(--blue); border: 1px solid rgba(0,200,255,0.25); }
-.project-tag.gold { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); }
-.project-body { padding: 24px; }
-.project-title {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 4px;
-  transition: color 0.2s;
-}
-.project-card:hover .project-title { color: var(--blue); }
-.project-location {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-  margin-bottom: 12px;
-}
-.project-desc {
-  font-size: 13px;
-  line-height: 1.75;
-  color: var(--text-dim);
-  margin-bottom: 16px;
-}
-.project-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip {
-  padding: 3px 10px;
-  border-radius: 100px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-}
-
-/* ============================================================
-   EXPERTISE SECTION
-   ============================================================ */
-#expertise { background: var(--ink); }
-.expertise-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-bottom: 60px;
-}
-@media (max-width: 900px) { .expertise-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 600px) { .expertise-grid { grid-template-columns: 1fr; } }
-
-.expertise-card {
-  padding: 36px 28px;
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 16px;
-  transition: all 0.4s var(--ease-expo);
-}
-.expertise-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-}
-.expertise-card:nth-child(even):hover { border-color: rgba(201,168,76,0.2); }
-.expertise-card:nth-child(odd):hover { border-color: rgba(0,200,255,0.2); }
-.expertise-icon {
-  width: 52px; height: 52px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 24px;
-}
-.expertise-icon.blue { background: rgba(0,200,255,0.08); color: var(--blue); }
-.expertise-icon.gold { background: rgba(201,168,76,0.08); color: var(--gold); }
-.expertise-title {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 10px;
-}
-.expertise-desc {
-  font-size: 13px;
-  line-height: 1.75;
-  color: var(--text-dim);
-  margin-bottom: 20px;
-}
-.skill-bar { height: 2px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
-.skill-fill {
-  height: 100%;
-  border-radius: 2px;
-  width: 0;
-  transition: width 1.4s var(--ease-expo);
-}
-.skill-fill.blue { background: linear-gradient(90deg, var(--blue-dim), var(--blue)); }
-.skill-fill.gold { background: linear-gradient(90deg, #7a6128, var(--gold)); }
-
-/* Software tools */
-.tools-wrap {
-  padding: 48px;
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 20px;
-}
-.tools-title {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 300;
-  color: #fff;
-  text-align: center;
-  margin-bottom: 40px;
-}
-.tools-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-}
-@media (max-width: 700px) { .tools-grid { grid-template-columns: repeat(2, 1fr); } }
-.tool-item { text-align: center; }
-.tool-circle {
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 10px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  transition: all 0.3s;
-}
-.tool-circle.blue { color: var(--blue); }
-.tool-circle.gold { color: var(--gold); }
-.tool-item:hover .tool-circle {
-  background: rgba(0,200,255,0.08);
-  border-color: rgba(0,200,255,0.3);
-  transform: scale(1.1);
-}
-.tool-name {
-  font-size: 12px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  letter-spacing: 0.05em;
-}
-
-/* ============================================================
-   MARQUEE
-   ============================================================ */
-.marquee-section {
-  padding: 40px 0;
-  background: var(--ink-2);
-  border-top: 1px solid rgba(255,255,255,0.05);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  overflow: hidden;
-}
-.marquee-label {
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 24px;
-}
-.marquee-track {
-  display: flex;
-  white-space: nowrap;
-  gap: 0;
-}
-.marquee-inner {
-  display: flex;
-  gap: 60px;
-  animation: marquee 28s linear infinite;
-  align-items: center;
-  padding-right: 60px;
-}
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-.marquee-word {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.18);
-  letter-spacing: 0.05em;
-  transition: color 0.3s;
-  cursor: default;
-}
-.marquee-word:hover { color: var(--blue); }
-.marquee-dot {
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: var(--blue);
-  opacity: 0.3;
-  flex-shrink: 0;
-}
-
-/* ============================================================
-   EXPERIENCE SECTION
-   ============================================================ */
-#experience { background: var(--ink); }
-.timeline {
-  position: relative;
-  max-width: 900px;
-  margin: 0 auto;
-}
-.timeline::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 0; bottom: 0;
-  width: 1px;
-  background: linear-gradient(to bottom, var(--blue), rgba(201,168,76,0.5), transparent);
-  transform: translateX(-50%);
-}
-@media (max-width: 700px) {
-  .timeline::before { left: 20px; }
-}
-.timeline-item {
-  position: relative;
-  margin-bottom: 64px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 0 40px;
-  align-items: start;
-}
-@media (max-width: 700px) {
-  .timeline-item { grid-template-columns: 40px 1fr; gap: 0 16px; }
-}
-.timeline-dot {
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-  outline: 1px solid rgba(0,200,255,0.4);
-  margin-top: 8px;
-  flex-shrink: 0;
-  z-index: 1;
-  position: relative;
-}
-.timeline-dot.blue { background: var(--blue); }
-.timeline-dot.gold { background: var(--gold); outline-color: rgba(201,168,76,0.4); }
-.timeline-card {
-  padding: 24px 28px;
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
-  transition: border-color 0.3s, transform 0.4s var(--ease-expo);
-}
-.timeline-card:hover { transform: translateY(-4px); border-color: rgba(0,200,255,0.2); }
-.timeline-item:nth-child(even) .timeline-card:hover { border-color: rgba(201,168,76,0.2); }
-.timeline-year {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  margin-bottom: 8px;
-}
-.timeline-year.blue { color: var(--blue); }
-.timeline-year.gold { color: var(--gold); }
-.timeline-role {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 4px;
-}
-.timeline-company {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
-.timeline-company.blue { color: var(--blue); }
-.timeline-company.gold { color: var(--gold); }
-.timeline-desc {
-  font-size: 13px;
-  line-height: 1.75;
-  color: var(--text-dim);
-}
-
-/* Left/right alignment on desktop */
-@media (min-width: 701px) {
-  .timeline-item .timeline-card { text-align: right; }
-  .timeline-item:nth-child(even) .timeline-card { text-align: left; }
-  .timeline-item .timeline-left { grid-column: 1; }
-  .timeline-item .timeline-center { grid-column: 2; display: flex; justify-content: center; }
-  .timeline-item .timeline-right { grid-column: 3; }
-  .timeline-item:nth-child(odd) .timeline-left { order: 0; }
-  .timeline-item:nth-child(odd) .timeline-center { order: 1; }
-  .timeline-item:nth-child(odd) .timeline-right { order: 2; visibility: hidden; }
-  .timeline-item:nth-child(even) .timeline-left { order: 2; visibility: hidden; }
-  .timeline-item:nth-child(even) .timeline-center { order: 1; }
-  .timeline-item:nth-child(even) .timeline-right { order: 0; }
-}
-@media (max-width: 700px) {
-  .timeline-item { grid-template-columns: auto 1fr; }
-  .timeline-left, .timeline-right { display: none; }
-  .timeline-center { grid-column: 1; display: flex; justify-content: flex-start; }
-  .timeline-card-wrapper { grid-column: 2; }
-}
-
-/* ============================================================
-   EDUCATION & CERTS
-   ============================================================ */
-#edu { background: var(--ink-2); }
-.edu-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-}
-@media (max-width: 800px) { .edu-grid { grid-template-columns: 1fr; } }
-
-.edu-sub-title {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 300;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 32px;
-}
-.edu-sub-title svg { color: var(--blue); }
-.edu-item {
-  padding: 24px;
-  border-left: 2px solid var(--blue);
-  background: var(--mist);
-  border-radius: 0 12px 12px 0;
-  margin-bottom: 16px;
-}
-.edu-item.gold { border-left-color: var(--gold); }
-.edu-item h4 {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 4px;
-}
-.edu-item p { font-size: 13px; color: var(--text-dim); }
-.edu-item .inst { color: var(--blue); font-weight: 500; margin-bottom: 2px; }
-.edu-item .inst.gold { color: var(--gold); }
-
-.cert-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px;
-  margin-bottom: 12px;
-  transition: border-color 0.3s, transform 0.3s var(--ease-expo);
-}
-.cert-item:hover { border-color: rgba(0,200,255,0.2); transform: translateX(6px); }
-.cert-icon {
-  width: 42px; height: 42px;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.cert-icon.blue { background: rgba(0,200,255,0.08); color: var(--blue); }
-.cert-icon.gold { background: rgba(201,168,76,0.08); color: var(--gold); }
-.cert-item h4 { font-size: 14px; font-weight: 500; color: #fff; margin-bottom: 3px; }
-.cert-item p { font-size: 12px; color: var(--text-dim); }
-
-/* ============================================================
-   CONTACT SECTION
-   ============================================================ */
-#contact { background: var(--ink); }
-.contact-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.6fr;
-  gap: 60px;
-}
-@media (max-width: 900px) { .contact-grid { grid-template-columns: 1fr; } }
-
-.contact-info-item {
-  padding: 24px;
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
-  margin-bottom: 16px;
-  transition: border-color 0.3s;
-}
-.contact-info-item:hover { border-color: rgba(0,200,255,0.2); }
-.contact-info-icon {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 14px;
-}
-.contact-info-icon.blue { background: rgba(0,200,255,0.08); color: var(--blue); }
-.contact-info-icon.gold { background: rgba(201,168,76,0.08); color: var(--gold); }
-.contact-info-item h4 { font-size: 13px; font-weight: 500; color: #fff; margin-bottom: 4px; }
-.contact-info-item p, .contact-info-item a {
-  font-size: 13px;
-  color: var(--text-dim);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.contact-info-item a:hover { color: var(--blue); }
-
-.btn-download {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  padding: 15px;
-  background: linear-gradient(135deg, var(--blue), var(--blue-dim));
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  text-decoration: none;
-  border-radius: 12px;
-  transition: transform 0.3s var(--ease-back), box-shadow 0.3s;
-  margin-bottom: 12px;
-}
-.btn-download:hover { transform: scale(1.03); box-shadow: 0 0 40px rgba(0,200,255,0.3); }
-.btn-linkedin {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  padding: 14px;
-  border: 1px solid rgba(255,255,255,0.12);
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  text-decoration: none;
-  border-radius: 12px;
-  transition: background 0.3s, border-color 0.3s;
-}
-.btn-linkedin:hover { background: var(--mist-2); border-color: rgba(255,255,255,0.25); }
-
-.contact-form {
-  padding: 48px;
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 20px;
-}
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
-.form-group { margin-bottom: 20px; }
-.form-group label {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 8px;
-}
-.form-group input, .form-group textarea {
-  width: 100%;
-  padding: 14px 16px;
-  background: rgba(0,0,0,0.25);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.3s;
-  resize: none;
-}
-.form-group input:focus, .form-group textarea:focus { border-color: var(--blue); }
-.form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-dim); }
-.btn-submit {
-  width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, var(--gold), #8a6422);
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: transform 0.3s var(--ease-back), box-shadow 0.3s;
-}
-.btn-submit:hover { transform: scale(1.02); box-shadow: 0 0 40px rgba(201,168,76,0.25); }
-
-/* ============================================================
-   FOOTER
-   ============================================================ */
-footer {
-  padding: 48px 40px;
-  background: var(--ink-2);
-  border-top: 1px solid rgba(255,255,255,0.05);
-}
-.footer-inner {
-  max-width: 1280px;
-  margin: 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-}
-.footer-links {
-  display: flex;
-  gap: 28px;
-}
-.footer-links a {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.footer-links a:hover { color: var(--blue); }
-.footer-icons {
-  display: flex;
-  gap: 12px;
-}
-.footer-icon {
-  width: 38px; height: 38px;
-  border-radius: 50%;
-  background: var(--mist);
-  border: 1px solid rgba(255,255,255,0.08);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-dim);
-  text-decoration: none;
-  transition: all 0.3s;
-}
-.footer-icon:hover { color: var(--blue); border-color: rgba(0,200,255,0.3); background: rgba(0,200,255,0.06); }
-.footer-copy {
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255,255,255,0.04);
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-}
-
-/* ============================================================
-   REDUCED MOTION
-   ============================================================ */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+/* Mobile timeline */
+@media(max-width:700px){
+  .tl::before{left:13px;transform:none}
+  .ti{
+    display:grid;
+    grid-template-columns:30px 1fr;
+    grid-template-rows:auto;
+    gap:0 10px;
+    margin-bottom:26px
   }
-  .reveal { opacity: 1; transform: none; }
+  /* dot always first column */
+  .ti:nth-child(odd) .tdot,
+  .ti:nth-child(even) .tdot{
+    grid-column:1!important;grid-row:1!important;
+    justify-self:start;margin-left:3px;margin-top:9px
+  }
+  /* card always second column */
+  .ti:nth-child(odd) .tc,
+  .ti:nth-child(even) .tc{
+    grid-column:2!important;grid-row:1!important;
+    text-align:left!important
+  }
+  /* hide empty spacers */
+  .te{display:none!important}
 }
 
-/* ============================================================
-   DECORATION
-   ============================================================ */
-.section-deco {
-  position: absolute;
-  pointer-events: none;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.04;
+/* ===== EDU ===== */
+#edu{background:var(--ink-2)}
+.edg{display:grid;grid-template-columns:1fr 1fr;gap:52px}
+.eds{font-family:var(--fd);font-size:24px;font-weight:300;color:#fff;display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.edi{padding:20px;border-left:2px solid var(--blue);background:var(--mist);border-radius:0 10px 10px 0;margin-bottom:13px}
+.edi.go{border-left-color:var(--gold)}
+.edi h4{font-family:var(--fd);font-size:17px;font-weight:600;color:#fff;margin-bottom:3px}
+.edi .ins{font-size:13px;color:var(--blue);font-weight:500;margin-bottom:2px}
+.edi .ins.go{color:var(--gold)}
+.edi p{font-size:12px;color:var(--dim)}
+.crt{display:flex;align-items:flex-start;gap:13px;padding:17px;background:var(--mist);border:1px solid rgba(255,255,255,.06);border-radius:10px;margin-bottom:9px;transition:border-color .3s,transform .3s var(--ease)}
+.crt:hover{border-color:rgba(0,200,255,.2);transform:translateX(5px)}
+.cri{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cri.bl{background:rgba(0,200,255,.08);color:var(--blue)}
+.cri.go{background:rgba(201,168,76,.08);color:var(--gold)}
+.crt h4{font-size:13px;font-weight:500;color:#fff;margin-bottom:2px}
+.crt p{font-size:12px;color:var(--dim)}
+
+/* ===== CONTACT ===== */
+#contact{background:var(--ink)}
+.cg{display:grid;grid-template-columns:1fr 1.6fr;gap:48px}
+.cic{padding:20px;background:var(--mist);border:1px solid rgba(255,255,255,.07);border-radius:12px;margin-bottom:13px;transition:border-color .3s}
+.cic:hover{border-color:rgba(0,200,255,.2)}
+.cicn{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:11px}
+.cicn.bl{background:rgba(0,200,255,.08);color:var(--blue)}
+.cicn.go{background:rgba(201,168,76,.08);color:var(--gold)}
+.cic h4{font-size:12px;font-weight:500;color:#fff;margin-bottom:3px}
+.cic p,.cic a{font-size:13px;color:var(--dim);transition:color .2s}
+.cic a:hover{color:var(--blue)}
+.bdl{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue-dim));color:var(--ink);font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;border-radius:10px;margin-bottom:9px;transition:transform .3s var(--easeback),box-shadow .3s}
+.bdl:hover{transform:scale(1.03);box-shadow:0 0 34px rgba(0,200,255,.26)}
+.bli{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border:1px solid rgba(255,255,255,.12);color:var(--text);font-family:var(--fm);font-size:9px;letter-spacing:.14em;text-transform:uppercase;border-radius:10px;transition:background .3s,border-color .3s}
+.bli:hover{background:var(--mistb);border-color:rgba(255,255,255,.25)}
+.cfw{padding:42px;background:var(--mist);border:1px solid rgba(255,255,255,.07);border-radius:16px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-family:var(--fm);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.fg input,.fg textarea{width:100%;padding:12px 14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none;transition:border-color .3s;resize:none}
+.fg input:focus,.fg textarea:focus{border-color:var(--blue)}
+.fg input::placeholder,.fg textarea::placeholder{color:var(--dim)}
+.bsend{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),#8a6422);color:var(--ink);font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;transition:transform .3s var(--easeback),box-shadow .3s}
+.bsend:hover{transform:scale(1.02);box-shadow:0 0 34px rgba(201,168,76,.2)}
+
+/* ===== FOOTER ===== */
+footer{padding:42px 40px;background:var(--ink-2);border-top:1px solid rgba(255,255,255,.05)}
+.fi{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:18px}
+.flinks{display:flex;gap:22px}
+.flinks a{font-family:var(--fm);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.flinks a:hover{color:var(--blue)}
+.fico{display:flex;gap:9px}
+.fic{width:34px;height:34px;border-radius:50%;background:var(--mist);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:var(--dim);transition:all .3s}
+.fic:hover{color:var(--blue);border-color:rgba(0,200,255,.3);background:rgba(0,200,255,.06)}
+.fc{max-width:1280px;margin:22px auto 0;padding-top:18px;border-top:1px solid rgba(255,255,255,.04);text-align:center;font-family:var(--fm);font-size:9px;letter-spacing:.09em;color:var(--dim)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:1100px){.pg{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){
+  .ag{grid-template-columns:1fr;gap:44px}
+  .eg{grid-template-columns:repeat(2,1fr)}
+  .cg{grid-template-columns:1fr}
+  .edg{grid-template-columns:1fr;gap:36px}
+}
+@media(max-width:640px){
+  section{padding:68px 0}
+  .ct{padding:0 16px}
+  footer{padding:34px 16px}
+  .sh{font-size:clamp(30px,9vw,44px);margin-bottom:32px}
+  .pg{grid-template-columns:1fr}
+  .eg{grid-template-columns:1fr}
+  .tg{grid-template-columns:repeat(2,1fr)}
+  .tb{padding:26px 16px}
+  .aiw{height:320px}
+  .sg{gap:9px}
+  .st{padding:15px}
+  .stn{font-size:32px}
+  .frow{gap:6px}
+  .fb{padding:6px 12px;font-size:8px}
+  .fr{grid-template-columns:1fr}
+  .cfw{padding:24px 16px}
+  .fi{flex-direction:column;align-items:flex-start}
+  .flinks{flex-wrap:wrap;gap:13px}
+  .hdesc br{display:none}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  .rv{opacity:1;transform:none}
 }
 </style>
 </head>
 <body>
 
-<!-- Progress bar -->
-<div id="progress-bar"></div>
+<div id="pb"></div>
 
-<!-- Loader -->
 <div id="loader">
-  <div class="loader-ring"></div>
-  <div class="loader-label">Initialising</div>
+  <div class="lr"></div>
+  <div class="lt">Initialising</div>
 </div>
 
-<!-- Custom cursor -->
-<div id="cursor"></div>
-<div id="cursor-ring"></div>
+<div id="cur"></div>
+<div id="curr"></div>
 
-<!-- ============================================================
-     NAVIGATION
-     ============================================================ -->
-<nav id="navbar">
-  <div class="nav-inner">
-    <a href="#" class="nav-logo">
-      <div class="nav-badge">SH</div>
-      <div class="nav-name">
+<!-- NAV -->
+<nav id="nav">
+  <div class="ni">
+    <a href="#" class="nlogo">
+      <div class="nbadge">SH</div>
+      <div class="nname">
         <strong>Saqib Hussain <span style="color:var(--blue)">(PE)</span></strong>
-        <span>Lead Electrical Engineer</span>
+        <small>Lead Electrical Engineer</small>
       </div>
     </a>
-    <ul class="nav-links">
+    <ul class="nlinks">
       <li><a href="#about">Profile</a></li>
       <li><a href="#projects">Projects</a></li>
       <li><a href="#expertise">Expertise</a></li>
       <li><a href="#experience">Journey</a></li>
-      <li class="nav-dropdown">
-        <a>Tools <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></a>
-        <div class="nav-dropdown-menu">
+      <li class="ndrop">
+        <a>Tools <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></a>
+        <div class="ndrop-menu">
           <a href="electrical-calculations.html">AMP Electrical Engineering Tools</a>
           <a href="EEToolkit.html">Calculation Tools</a>
           <a href="./Constructioninnovation/constructioninnovation.html">Construction Innovation</a>
         </div>
       </li>
-      <li><a href="#contact" class="nav-cta">Contact</a></li>
+      <li><a href="#contact" class="ncta">Contact</a></li>
     </ul>
-    <button class="nav-hamburger" onclick="toggleMobile()" aria-label="Menu">
+    <button class="nham" id="nham" onclick="toggleMob()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
   </div>
-  <div class="mobile-menu" id="mobile-menu">
-    <a href="#about" onclick="closeMobile()">Profile</a>
-    <a href="#projects" onclick="closeMobile()">Projects</a>
-    <a href="#expertise" onclick="closeMobile()">Expertise</a>
-    <a href="#experience" onclick="closeMobile()">Journey</a>
-    <a href="electrical-calculations.html">AMP Tools</a>
-    <a href="EEToolkit.html">Calculation Tools</a>
-    <a href="./Constructioninnovation/constructioninnovation.html">Construction Innovation</a>
-    <a href="#contact" onclick="closeMobile()" style="color:var(--blue)">Contact</a>
+  <div class="mmenu" id="mmenu">
+    <a href="#about" onclick="cMob()">Profile</a>
+    <a href="#projects" onclick="cMob()">Projects</a>
+    <a href="#expertise" onclick="cMob()">Expertise</a>
+    <a href="#experience" onclick="cMob()">Journey</a>
+    <div class="mmdiv"></div>
+    <a href="electrical-calculations.html" onclick="cMob()">AMP Electrical Tools</a>
+    <a href="EEToolkit.html" onclick="cMob()">Calculation Tools</a>
+    <a href="./Constructioninnovation/constructioninnovation.html" onclick="cMob()">Construction Innovation</a>
+    <div class="mmdiv"></div>
+    <a href="#contact" onclick="cMob()" class="acc">Contact</a>
   </div>
 </nav>
 
-<!-- ============================================================
-     HERO SECTION
-     ============================================================ -->
+<!-- HERO -->
 <section id="hero">
-  <canvas id="hero-canvas"></canvas>
-  <div class="hero-gradient"></div>
-  <div class="hero-content">
-    <div class="hero-eyebrow" id="hero-eyebrow">Professional Engineer · GCC Mega Projects</div>
-    <h1 class="hero-h1">
-      <span class="line"><span class="word" id="w1">Lead</span>&nbsp;<span class="word" id="w2">Electrical</span></span>
-      <span class="line"><span class="word" id="w3" style="color:var(--gold);font-style:italic">Engineer</span></span>
+  <canvas id="hcanvas"></canvas>
+  <div class="hovl"></div>
+  <div class="hbody">
+    <div class="heyebrow" id="he">Professional Engineer · GCC Mega Projects</div>
+    <h1 class="hh1">
+      <span class="ln"><span class="wd" id="hw1">Lead</span>&nbsp;<span class="wd" id="hw2">Electrical</span></span>
+      <span class="ln"><span class="wd" id="hw3" style="color:var(--gold);font-style:italic">Engineer</span></span>
     </h1>
-    <p class="hero-subtitle" id="hero-sub">18+ Years of GCC Mega Projects</p>
-    <p class="hero-desc" id="hero-desc">
-      Specialised in <strong>Metro Systems</strong>, <strong>High-Rise Towers</strong>,<br>
-      <strong>Smart Cinemas</strong> & Critical Infrastructure<br>
+    <p class="hsub" id="hs">18+ Years of GCC Mega Projects</p>
+    <p class="hdesc" id="hd">
+      Specialised in <b>Metro Systems</b>, <b>High-Rise Towers</b>, <b>Smart Cinemas</b> &amp; Critical Infrastructure<br>
       <span style="color:var(--blue)">Saudi Arabia</span> &amp; <span style="color:var(--gold)">Qatar</span>
     </p>
-    <div class="hero-cta" id="hero-cta">
-      <a href="#projects" class="btn-primary">
-        View Projects
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-      </a>
-      <a href="https://drive.google.com/file/d/1MpXkrk_YGYEPZwz_rmsfMU04ZzhllujH/view?usp=sharing" class="btn-secondary" target="_blank">Download CV</a>
+    <div class="hcta" id="hc">
+      <a href="#projects" class="bp">View Projects <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg></a>
+      <a href="https://drive.google.com/file/d/1MpXkrk_YGYEPZwz_rmsfMU04ZzhllujH/view?usp=sharing" class="bs" target="_blank">Download CV</a>
     </div>
   </div>
-  <div class="hero-scroll" id="hero-scroll">
+  <div class="hscroll" id="hscr">
     <span>Scroll</span>
-    <div class="scroll-line"></div>
+    <div class="sline"></div>
   </div>
 </section>
 
-<!-- ============================================================
-     ABOUT SECTION
-     ============================================================ -->
+<!-- ABOUT -->
 <section id="about">
-  <div style="position:relative;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,255,0.2),transparent);margin-bottom:120px;"></div>
-  <div class="container">
-    <div class="about-grid">
-      <div class="about-image-wrap reveal">
-        <div class="about-image-overlay"></div>
+  <div class="ct">
+    <div class="ag">
+      <div class="aiw rv">
+        <div class="aio"></div>
         <img src="images/profile.jpg" alt="Saqib Hussain" loading="lazy"
-             onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg, rgba(0,200,255,0.08), rgba(201,168,76,0.04))';">
-        <div class="about-badge">
-          <div class="about-badge-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-          </div>
-          <div>
-            <strong>PE</strong>
-            <small>Licensed Engineer</small>
-          </div>
+             onerror="this.parentElement.style.background='linear-gradient(135deg,rgba(0,200,255,.06),rgba(201,168,76,.04))';this.style.display='none'">
+        <div class="abadge">
+          <div class="abi"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg></div>
+          <div><strong>PE</strong><small>Licensed Engineer</small></div>
         </div>
       </div>
-      <div class="about-body">
-        <div class="section-label reveal"><span>Professional Profile</span></div>
-        <h2 class="section-heading reveal">Engineering <em>Excellence</em><br>Across GCC</h2>
-        <p class="reveal">Lead Electrical Engineer with 18+ years of experience in engineering, project management, design & build, and construction management for large-scale infrastructure, commercial, and high-rise projects. Specialised in technical design, procurement, testing & commissioning, and quality control.</p>
-        <div class="stats-grid reveal">
-          <div class="stat-box">
-            <div class="stat-number blue counter" data-target="18">0</div>
-            <div class="stat-label">Years Experience</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number gold counter" data-target="50">0</div>
-            <div class="stat-label">Mega Projects</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number blue counter" data-target="2">0</div>
-            <div class="stat-label">Countries</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number gold">100%</div>
-            <div class="stat-label">Code Compliance</div>
-          </div>
+      <div>
+        <div class="slbl rv"><span>Professional Profile</span></div>
+        <h2 class="sh rv">Engineering <em>Excellence</em><br>Across GCC</h2>
+        <p class="atxt rv">Lead Electrical Engineer with 18+ years of experience in engineering, project management, design &amp; build, and construction management for large-scale infrastructure, commercial, and high-rise projects.</p>
+        <div class="sg rv">
+          <div class="st"><div class="stn bl counter" data-target="18">0</div><div class="stl">Years Experience</div></div>
+          <div class="st"><div class="stn go counter" data-target="50">0</div><div class="stl">Mega Projects</div></div>
+          <div class="st"><div class="stn bl counter" data-target="2">0</div><div class="stl">Countries</div></div>
+          <div class="st"><div class="stn go">100%</div><div class="stl">Code Compliance</div></div>
         </div>
-        <div class="reveal">
-          <div class="membership-item">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            Pakistan Engineering Council (Elect/24950) since 2008
-          </div>
-          <div class="membership-item">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            Saudi Council of Engineers (99995) since 2012
-          </div>
+        <div class="rv">
+          <div class="mi"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Pakistan Engineering Council (Elect/24950) since 2008</div>
+          <div class="mi"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Saudi Council of Engineers (99995) since 2012</div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============================================================
-     PROJECTS SECTION
-     ============================================================ -->
+<!-- PROJECTS -->
 <section id="projects">
-  <div class="container">
-    <div class="section-label reveal"><span>Portfolio</span></div>
-    <h2 class="section-heading reveal">Mega Projects <em>Delivered</em></h2>
-    <div class="filter-row reveal">
-      <button class="filter-btn active" onclick="filterProjects(this,'all')">All</button>
-      <button class="filter-btn" onclick="filterProjects(this,'saudi')">Saudi Arabia</button>
-      <button class="filter-btn" onclick="filterProjects(this,'qatar')">Qatar</button>
-      <button class="filter-btn" onclick="filterProjects(this,'cinema')">Cinemas</button>
-      <button class="filter-btn" onclick="filterProjects(this,'infrastructure')">Infrastructure</button>
-      <button class="filter-btn" onclick="filterProjects(this,'high-rise')">High-Rise</button>
+  <div class="ct">
+    <div class="slbl rv"><span>Portfolio</span></div>
+    <h2 class="sh rv">Mega Projects <em>Delivered</em></h2>
+    <div class="frow rv">
+      <button class="fb act" onclick="fp(this,'all')">All</button>
+      <button class="fb" onclick="fp(this,'saudi')">Saudi Arabia</button>
+      <button class="fb" onclick="fp(this,'qatar')">Qatar</button>
+      <button class="fb" onclick="fp(this,'cinema')">Cinemas</button>
+      <button class="fb" onclick="fp(this,'infrastructure')">Infrastructure</button>
+      <button class="fb" onclick="fp(this,'high-rise')">High-Rise</button>
     </div>
-    <div class="projects-grid" id="projects-grid">
-
-      <div class="project-card reveal" data-cat="saudi high-rise">
-        <div class="project-img">
-          <img src="images/conrad-hotel.jpg" alt="Conrad Hotel" loading="lazy" onerror="this.style.display='none';">
-          <div class="project-img-overlay"></div>
-          <span class="project-tag blue">High-Rise</span>
-        </div>
-        <div class="project-body">
-          <div class="project-title">Conrad Hotel Hilton</div>
-          <div class="project-location">Laysen Valley, Riyadh · 17-Storey</div>
-          <div class="project-desc">Technical selection and procurement of Electrical and ICT systems for luxury high-rise construction.</div>
-          <div class="project-chips"><span class="chip">IFC Drawings</span><span class="chip">ICT Systems</span><span class="chip">Procurement</span></div>
-        </div>
-      </div>
-
-      <div class="project-card reveal" data-cat="saudi military">
-        <div class="project-img">
-          <img src="images/king-faisal-academy.jpg" alt="KFAA" loading="lazy" onerror="this.style.display='none';">
-          <div class="project-img-overlay"></div>
-          <span class="project-tag gold">Military</span>
-        </div>
-        <div class="project-body">
-          <div class="project-title">King Faisal Air Academy</div>
-          <div class="project-location">Al Majma'ah · BAE Systems Compound</div>
-          <div class="project-desc">Design & build of Electrical, ELV, PV solar, MV/LV networks for high-security military facility.</div>
-          <div class="project-chips"><span class="chip">CDD/RSAF</span><span class="chip">PV Solar</span><span class="chip">Security</span></div>
-        </div>
-      </div>
-
-      <div class="project-card reveal" data-cat="qatar infrastructure metro">
-        <div class="project-img">
-          <img src="images/doha-metro.jpg" alt="Doha Metro" loading="lazy" onerror="this.style.display='none';">
-          <div class="project-img-overlay"></div>
-          <span class="project-tag blue">Metro</span>
-        </div>
-        <div class="project-body">
-          <div class="project-title">Doha Metro Project</div>
-          <div class="project-location">Qatar Railways · 35km Tunnels · 27 Stations</div>
-          <div class="project-desc">MEP coordination for underground, elevated, and at-grade stations with international consultants.</div>
-          <div class="project-chips"><span class="chip">NFPA-70</span><span class="chip">QCS 2014</span><span class="chip">T&C</span></div>
-        </div>
-      </div>
-
-      <div class="project-card reveal" data-cat="saudi cinema">
-        <div class="project-img">
-          <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop" alt="MUVI Cinemas" loading="lazy">
-          <div class="project-img-overlay"></div>
-          <span class="project-tag gold">Cinema</span>
-        </div>
-        <div class="project-body">
-          <div class="project-title">MUVI Cinemas</div>
-          <div class="project-location">Multiple Locations · 4DX Systems</div>
-          <div class="project-desc">Boulevard, Salam Mall, Khaleej Mall, Atelier Mall. Specialised cinema electrical & AV systems.</div>
-          <div class="project-chips"><span class="chip">4DX</span><span class="chip">TMS</span><span class="chip">Crestron</span></div>
-        </div>
-      </div>
-
-      <div class="project-card reveal" data-cat="qatar infrastructure">
-        <div class="project-img">
-          <img src="images/al-bidda-park.jpg" alt="Al Bidda Park" loading="lazy" onerror="this.style.display='none';">
-          <div class="project-img-overlay"></div>
-          <span class="project-tag blue">Infrastructure</span>
-        </div>
-        <div class="project-body">
-          <div class="project-title">Al Bidda Park</div>
-          <div class="project-location">Doha, Qatar · Smart Systems</div>
-          <div class="project-desc">Substations, pump rooms, landscape lighting, CCTV, PAVA, Wi-Fi, and irrigation systems.</div>
-          <div class="project-chips"><span class="chip">Smart City</span><span class="chip">Landscape</span><span class="chip">Substation</span></div>
-        </div>
-      </div>
-
-      <div class="project-card reveal" data-cat="saudi commercial">
-        <div class="project-img">
-          <img src="images/bank-al-jazira.jpg" alt="Bank Al Jazira" loading="lazy" onerror="this.style.display='none';">
-          <div class="project-img-overlay"></div>
-          <span class="project-tag gold">Commercial</span>
-        </div>
-        <div class="project-body">
-          <div class="project-title">Bank Al Jazira HQ</div>
-          <div class="project-location">Jeddah · 10 Floors</div>
-          <div class="project-desc">Head office electrical systems, ELV, security integration, and banking infrastructure.</div>
-          <div class="project-chips"><span class="chip">Banking</span><span class="chip">Security</span><span class="chip">ELV</span></div>
-        </div>
-      </div>
-
-      <div class="project-card reveal" data-cat="qatar high-rise">
-        <div class="project-img">
-          <img src="images/burj-marina.jpg" alt="Burj Marina" loading="lazy" onerror="this.style.display='none';">
-          <div class="project-img-overlay"></div>
-          <span class="project-tag blue">High-Rise</span>
-        </div>
-        <div class="project-body">
-          <div class="project-title">Burj Marina Tower</div>
-          <div class="project-location">Doha · 36-Storey + 2 Basements</div>
-          <div class="project-desc">Complete MEP services for commercial/residential tower with KEO International consultant.</div>
-          <div class="project-chips"><span class="chip">MEP</span><span class="chip">High-Rise</span></div>
-        </div>
-      </div>
-
-      <div class="project-card reveal" data-cat="saudi cinema">
-        <div class="project-img">
-          <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=400&fit=crop" alt="VOX Cinemas" loading="lazy">
-          <div class="project-img-overlay"></div>
-          <span class="project-tag gold">Cinema</span>
-        </div>
-        <div class="project-body">
-          <div class="project-title">VOX Cinemas</div>
-          <div class="project-location">Galleria Mall, Jubail</div>
-          <div class="project-desc">Advanced cinema electrical infrastructure, AV systems, and specialised lighting design.</div>
-          <div class="project-chips"><span class="chip">AV Systems</span><span class="chip">Lighting</span></div>
-        </div>
-      </div>
-
-      <div class="project-card reveal" data-cat="saudi infrastructure">
-        <div class="project-img">
-          <img src="images/riyadh-parks.jpg" alt="Riyadh Parks" loading="lazy" onerror="this.style.display='none';">
-          <div class="project-img-overlay"></div>
-          <span class="project-tag blue">Infrastructure</span>
-        </div>
-        <div class="project-body">
-          <div class="project-title">Riyadh Park Projects</div>
-          <div class="project-location">Oyena/Jubila Cantonment, Al Hair Garden</div>
-          <div class="project-desc">Landscape lighting, MV/LV substations, pump rooms, and admin buildings for municipal parks.</div>
-          <div class="project-chips"><span class="chip">Landscape</span><span class="chip">Substations</span></div>
-        </div>
-      </div>
-
+    <div class="pg" id="pg">
+      <div class="pc rv" data-cat="saudi high-rise"><div class="piw"><img src="images/conrad-hotel.jpg" alt="Conrad Hotel" loading="lazy" onerror="this.style.display='none'"><div class="pio"></div><span class="ptg bl">High-Rise</span></div><div class="pb2"><div class="pt">Conrad Hotel Hilton</div><div class="pl">Laysen Valley, Riyadh · 17-Storey</div><div class="pd">Technical selection and procurement of Electrical and ICT systems for luxury high-rise construction.</div><div class="chs"><span class="ch2">IFC Drawings</span><span class="ch2">ICT Systems</span><span class="ch2">Procurement</span></div></div></div>
+      <div class="pc rv" data-cat="saudi military"><div class="piw"><img src="images/king-faisal-academy.jpg" alt="KFAA" loading="lazy" onerror="this.style.display='none'"><div class="pio"></div><span class="ptg go">Military</span></div><div class="pb2"><div class="pt">King Faisal Air Academy</div><div class="pl">Al Majma'ah · BAE Systems Compound</div><div class="pd">Design &amp; build of Electrical, ELV, PV solar, MV/LV networks for high-security military facility.</div><div class="chs"><span class="ch2">CDD/RSAF</span><span class="ch2">PV Solar</span><span class="ch2">Security</span></div></div></div>
+      <div class="pc rv" data-cat="qatar infrastructure metro"><div class="piw"><img src="images/doha-metro.jpg" alt="Doha Metro" loading="lazy" onerror="this.style.display='none'"><div class="pio"></div><span class="ptg bl">Metro</span></div><div class="pb2"><div class="pt">Doha Metro Project</div><div class="pl">Qatar Railways · 35km Tunnels · 27 Stations</div><div class="pd">MEP coordination for underground, elevated, and at-grade stations with international consultants.</div><div class="chs"><span class="ch2">NFPA-70</span><span class="ch2">QCS 2014</span><span class="ch2">T&amp;C</span></div></div></div>
+      <div class="pc rv" data-cat="saudi cinema"><div class="piw"><img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop" alt="MUVI Cinemas" loading="lazy"><div class="pio"></div><span class="ptg go">Cinema</span></div><div class="pb2"><div class="pt">MUVI Cinemas</div><div class="pl">Multiple Locations · 4DX Systems</div><div class="pd">Boulevard, Salam Mall, Khaleej Mall, Atelier Mall. Specialised cinema electrical &amp; AV systems.</div><div class="chs"><span class="ch2">4DX</span><span class="ch2">TMS</span><span class="ch2">Crestron</span></div></div></div>
+      <div class="pc rv" data-cat="qatar infrastructure"><div class="piw"><img src="images/al-bidda-park.jpg" alt="Al Bidda Park" loading="lazy" onerror="this.style.display='none'"><div class="pio"></div><span class="ptg bl">Infrastructure</span></div><div class="pb2"><div class="pt">Al Bidda Park</div><div class="pl">Doha, Qatar · Smart Systems</div><div class="pd">Substations, pump rooms, landscape lighting, CCTV, PAVA, Wi-Fi, and irrigation systems.</div><div class="chs"><span class="ch2">Smart City</span><span class="ch2">Landscape</span><span class="ch2">Substation</span></div></div></div>
+      <div class="pc rv" data-cat="saudi commercial"><div class="piw"><img src="images/bank-al-jazira.jpg" alt="Bank Al Jazira" loading="lazy" onerror="this.style.display='none'"><div class="pio"></div><span class="ptg go">Commercial</span></div><div class="pb2"><div class="pt">Bank Al Jazira HQ</div><div class="pl">Jeddah · 10 Floors</div><div class="pd">Head office electrical systems, ELV, security integration, and banking infrastructure.</div><div class="chs"><span class="ch2">Banking</span><span class="ch2">Security</span><span class="ch2">ELV</span></div></div></div>
+      <div class="pc rv" data-cat="qatar high-rise"><div class="piw"><img src="images/burj-marina.jpg" alt="Burj Marina" loading="lazy" onerror="this.style.display='none'"><div class="pio"></div><span class="ptg bl">High-Rise</span></div><div class="pb2"><div class="pt">Burj Marina Tower</div><div class="pl">Doha · 36-Storey + 2 Basements</div><div class="pd">Complete MEP services for commercial/residential tower with KEO International consultant.</div><div class="chs"><span class="ch2">MEP</span><span class="ch2">High-Rise</span></div></div></div>
+      <div class="pc rv" data-cat="saudi cinema"><div class="piw"><img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=400&fit=crop" alt="VOX Cinemas" loading="lazy"><div class="pio"></div><span class="ptg go">Cinema</span></div><div class="pb2"><div class="pt">VOX Cinemas</div><div class="pl">Galleria Mall, Jubail</div><div class="pd">Advanced cinema electrical infrastructure, AV systems, and specialised lighting design.</div><div class="chs"><span class="ch2">AV Systems</span><span class="ch2">Lighting</span></div></div></div>
+      <div class="pc rv" data-cat="saudi infrastructure"><div class="piw"><img src="images/riyadh-parks.jpg" alt="Riyadh Parks" loading="lazy" onerror="this.style.display='none'"><div class="pio"></div><span class="ptg bl">Infrastructure</span></div><div class="pb2"><div class="pt">Riyadh Park Projects</div><div class="pl">Oyena/Jubila Cantonment, Al Hair Garden</div><div class="pd">Landscape lighting, MV/LV substations, pump rooms, and admin buildings for municipal parks.</div><div class="chs"><span class="ch2">Landscape</span><span class="ch2">Substations</span></div></div></div>
     </div>
   </div>
 </section>
 
-<!-- ============================================================
-     EXPERTISE SECTION
-     ============================================================ -->
+<!-- EXPERTISE -->
 <section id="expertise">
-  <div class="container">
-    <div class="section-label reveal"><span>Core Skills</span></div>
-    <h2 class="section-heading reveal">Technical <em>Mastery</em></h2>
-    <div class="expertise-grid">
-      <div class="expertise-card reveal">
-        <div class="expertise-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
-        <div class="expertise-title">Electrical Design & Build</div>
-        <div class="expertise-desc">MV/LV networks, substations, earthing, and power distribution systems to IEC/NFPA standards.</div>
-        <div class="skill-bar"><div class="skill-fill blue" data-w="95"></div></div>
-      </div>
-      <div class="expertise-card reveal">
-        <div class="expertise-icon gold"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
-        <div class="expertise-title">ELV & Security Systems</div>
-        <div class="expertise-desc">Fire Alarm, PAVA, CCTV, BMS, Access Control, and Intrusion Detection integration.</div>
-        <div class="skill-bar"><div class="skill-fill gold" data-w="92"></div></div>
-      </div>
-      <div class="expertise-card reveal">
-        <div class="expertise-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-        <div class="expertise-title">Technical Calculations</div>
-        <div class="expertise-desc">Load flow, short circuit, cable sizing, and lighting calculations using industry-standard software.</div>
-        <div class="skill-bar"><div class="skill-fill blue" data-w="90"></div></div>
-      </div>
-      <div class="expertise-card reveal">
-        <div class="expertise-icon gold"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div>
-        <div class="expertise-title">Testing & Commissioning</div>
-        <div class="expertise-desc">Complete T&C of electrical systems, QA/QC compliance, and handover documentation.</div>
-        <div class="skill-bar"><div class="skill-fill gold" data-w="88"></div></div>
-      </div>
-      <div class="expertise-card reveal">
-        <div class="expertise-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-        <div class="expertise-title">Project Management</div>
-        <div class="expertise-desc">Construction management, stakeholder coordination, and resource planning for mega projects.</div>
-        <div class="skill-bar"><div class="skill-fill blue" data-w="85"></div></div>
-      </div>
-      <div class="expertise-card reveal">
-        <div class="expertise-icon gold"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
-        <div class="expertise-title">Compliance & Standards</div>
-        <div class="expertise-desc">NFPA, BS, IEC, SBC, QCS, CDD, RSAF, and local authority approvals across GCC jurisdictions.</div>
-        <div class="skill-bar"><div class="skill-fill gold" data-w="98"></div></div>
-      </div>
+  <div class="ct">
+    <div class="slbl rv"><span>Core Skills</span></div>
+    <h2 class="sh rv">Technical <em>Mastery</em></h2>
+    <div class="eg">
+      <div class="ec rv"><div class="ei bl"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div><div class="ett">Electrical Design &amp; Build</div><div class="ede">MV/LV networks, substations, earthing, and power distribution systems to IEC/NFPA standards.</div><div class="skb"><div class="skf bl" data-w="95"></div></div></div>
+      <div class="ec rv"><div class="ei go"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div><div class="ett">ELV &amp; Security Systems</div><div class="ede">Fire Alarm, PAVA, CCTV, BMS, Access Control, and Intrusion Detection integration.</div><div class="skb"><div class="skf go" data-w="92"></div></div></div>
+      <div class="ec rv"><div class="ei bl"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div><div class="ett">Technical Calculations</div><div class="ede">Load flow, short circuit, cable sizing, and lighting calculations using industry-standard software.</div><div class="skb"><div class="skf bl" data-w="90"></div></div></div>
+      <div class="ec rv"><div class="ei go"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div class="ett">Testing &amp; Commissioning</div><div class="ede">Complete T&amp;C of electrical systems, QA/QC compliance, and handover documentation.</div><div class="skb"><div class="skf go" data-w="88"></div></div></div>
+      <div class="ec rv"><div class="ei bl"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div><div class="ett">Project Management</div><div class="ede">Construction management, stakeholder coordination, and resource planning for mega projects.</div><div class="skb"><div class="skf bl" data-w="85"></div></div></div>
+      <div class="ec rv"><div class="ei go"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div><div class="ett">Compliance &amp; Standards</div><div class="ede">NFPA, BS, IEC, SBC, QCS, CDD, RSAF, and local authority approvals across GCC jurisdictions.</div><div class="skb"><div class="skf go" data-w="98"></div></div></div>
     </div>
-    <div class="tools-wrap reveal">
-      <div class="tools-title">Technical Software & Tools</div>
-      <div class="tools-grid">
-        <div class="tool-item"><div class="tool-circle blue">REV</div><div class="tool-name">REVIT MEP</div></div>
-        <div class="tool-item"><div class="tool-circle blue">CAD</div><div class="tool-name">AutoCAD</div></div>
-        <div class="tool-item"><div class="tool-circle gold">DIAL</div><div class="tool-name">DIALux</div></div>
-        <div class="tool-item"><div class="tool-circle gold">NAV</div><div class="tool-name">Navisworks</div></div>
+    <div class="tb rv">
+      <div class="tt">Technical Software &amp; Tools</div>
+      <div class="tg">
+        <div class="tol"><div class="toc bl">REV</div><div class="ton">REVIT MEP</div></div>
+        <div class="tol"><div class="toc bl">CAD</div><div class="ton">AutoCAD</div></div>
+        <div class="tol"><div class="toc go">DIAL</div><div class="ton">DIALux</div></div>
+        <div class="tol"><div class="toc go">NAV</div><div class="ton">Navisworks</div></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============================================================
-     MARQUEE
-     ============================================================ -->
-<div class="marquee-section">
-  <div class="marquee-label">Technology Partners & Brands</div>
-  <div class="marquee-track">
-    <div class="marquee-inner" id="marquee-inner">
-      <span class="marquee-word">Schneider</span><div class="marquee-dot"></div>
-      <span class="marquee-word">ABB</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Siemens</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Eaton</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Philips</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Dynalite</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Bosch</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Crestron</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Cummins</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Belden</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Schneider</span><div class="marquee-dot"></div>
-      <span class="marquee-word">ABB</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Siemens</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Eaton</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Philips</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Dynalite</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Bosch</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Crestron</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Cummins</span><div class="marquee-dot"></div>
-      <span class="marquee-word">Belden</span><div class="marquee-dot"></div>
+<!-- MARQUEE -->
+<div class="mqs">
+  <div class="mql">Technology Partners &amp; Brands</div>
+  <div class="mqt">
+    <div class="mqi">
+      <span class="mqw">Schneider</span><div class="mqd"></div><span class="mqw">ABB</span><div class="mqd"></div>
+      <span class="mqw">Siemens</span><div class="mqd"></div><span class="mqw">Eaton</span><div class="mqd"></div>
+      <span class="mqw">Philips</span><div class="mqd"></div><span class="mqw">Dynalite</span><div class="mqd"></div>
+      <span class="mqw">Bosch</span><div class="mqd"></div><span class="mqw">Crestron</span><div class="mqd"></div>
+      <span class="mqw">Cummins</span><div class="mqd"></div><span class="mqw">Belden</span><div class="mqd"></div>
+      <span class="mqw">Schneider</span><div class="mqd"></div><span class="mqw">ABB</span><div class="mqd"></div>
+      <span class="mqw">Siemens</span><div class="mqd"></div><span class="mqw">Eaton</span><div class="mqd"></div>
+      <span class="mqw">Philips</span><div class="mqd"></div><span class="mqw">Dynalite</span><div class="mqd"></div>
+      <span class="mqw">Bosch</span><div class="mqd"></div><span class="mqw">Crestron</span><div class="mqd"></div>
+      <span class="mqw">Cummins</span><div class="mqd"></div><span class="mqw">Belden</span><div class="mqd"></div>
     </div>
   </div>
 </div>
 
-<!-- ============================================================
-     EXPERIENCE TIMELINE
-     ============================================================ -->
+<!-- TIMELINE -->
 <section id="experience">
-  <div class="container">
-    <div class="section-label reveal"><span>Career</span></div>
-    <h2 class="section-heading reveal">Professional <em>Journey</em></h2>
-    <div class="timeline">
+  <div class="ct">
+    <div class="slbl rv"><span>Career</span></div>
+    <h2 class="sh rv">Professional <em>Journey</em></h2>
+    <div class="tl">
 
-      <div class="timeline-item reveal">
-        <div class="timeline-left">
-          <div class="timeline-card">
-            <div class="timeline-year blue">2024 — Present</div>
-            <div class="timeline-role">Sr. Electrical Engineer</div>
-            <div class="timeline-company blue">EDSCO</div>
-            <div class="timeline-desc">Conrad Hotel Hilton Laysen Valley. Technical selection and procurement of Electrical/ICT systems for 17-storey luxury high-rise.</div>
-          </div>
-        </div>
-        <div class="timeline-center"><div class="timeline-dot blue"></div></div>
-        <div class="timeline-right"></div>
+      <div class="ti rv">
+        <div class="tc"><div class="tyr bl">2024 — Present</div><div class="tro">Sr. Electrical Engineer</div><div class="tco bl">EDSCO</div><div class="tde">Conrad Hotel Hilton Laysen Valley. Technical selection and procurement of Electrical/ICT systems for 17-storey luxury high-rise.</div></div>
+        <div class="tdot bl"></div>
+        <div class="te"></div>
       </div>
 
-      <div class="timeline-item reveal">
-        <div class="timeline-left"></div>
-        <div class="timeline-center"><div class="timeline-dot gold"></div></div>
-        <div class="timeline-right">
-          <div class="timeline-card">
-            <div class="timeline-year gold">2022 — 2024</div>
-            <div class="timeline-role">Sr. Electrical Engineer</div>
-            <div class="timeline-company gold">ACGC</div>
-            <div class="timeline-desc">King Faisal Air Academy (BAE Compound). Design & build of PV solar, MV/LV, security systems for high-security military facility.</div>
-          </div>
-        </div>
+      <div class="ti rv">
+        <div class="te"></div>
+        <div class="tdot go"></div>
+        <div class="tc"><div class="tyr go">2022 — 2024</div><div class="tro">Sr. Electrical Engineer</div><div class="tco go">ACGC</div><div class="tde">King Faisal Air Academy (BAE Compound). Design &amp; build of PV solar, MV/LV, security systems for high-security military facility.</div></div>
       </div>
 
-      <div class="timeline-item reveal">
-        <div class="timeline-left">
-          <div class="timeline-card">
-            <div class="timeline-year blue">2019 — 2022</div>
-            <div class="timeline-role">Electrical Engineer</div>
-            <div class="timeline-company blue">EDSCO</div>
-            <div class="timeline-desc">Bank Al Jazira HQ, ENBD Banks, MUVI/VOX/Empire Cinemas. Technical Department — Design & Procurement.</div>
-          </div>
-        </div>
-        <div class="timeline-center"><div class="timeline-dot blue"></div></div>
-        <div class="timeline-right"></div>
+      <div class="ti rv">
+        <div class="tc"><div class="tyr bl">2019 — 2022</div><div class="tro">Electrical Engineer</div><div class="tco bl">EDSCO</div><div class="tde">Bank Al Jazira HQ, ENBD Banks, MUVI/VOX/Empire Cinemas. Technical Department — Design &amp; Procurement.</div></div>
+        <div class="tdot bl"></div>
+        <div class="te"></div>
       </div>
 
-      <div class="timeline-item reveal">
-        <div class="timeline-left"></div>
-        <div class="timeline-center"><div class="timeline-dot gold"></div></div>
-        <div class="timeline-right">
-          <div class="timeline-card">
-            <div class="timeline-year gold">2016 — 2019</div>
-            <div class="timeline-role">Sr. Electrical Engineer</div>
-            <div class="timeline-company gold">REDCO International</div>
-            <div class="timeline-desc">Qatar Railways Doha Metro (35km tunnels, 27 stations), Al Bidda Park, Burj Marina 36-storey tower.</div>
-          </div>
-        </div>
+      <div class="ti rv">
+        <div class="te"></div>
+        <div class="tdot go"></div>
+        <div class="tc"><div class="tyr go">2016 — 2019</div><div class="tro">Sr. Electrical Engineer</div><div class="tco go">REDCO International</div><div class="tde">Qatar Railways Doha Metro (35km tunnels, 27 stations), Al Bidda Park, Burj Marina 36-storey tower.</div></div>
       </div>
 
-      <div class="timeline-item reveal">
-        <div class="timeline-left">
-          <div class="timeline-card">
-            <div class="timeline-year blue">2011 — 2015</div>
-            <div class="timeline-role">Electrical Engineer</div>
-            <div class="timeline-company blue">Anjal Al Khaleej</div>
-            <div class="timeline-desc">Infrastructure projects with Riyadh Municipalities. Substations, pump rooms, parks, buildings, roads.</div>
-          </div>
-        </div>
-        <div class="timeline-center"><div class="timeline-dot blue"></div></div>
-        <div class="timeline-right"></div>
+      <div class="ti rv">
+        <div class="tc"><div class="tyr bl">2011 — 2015</div><div class="tro">Electrical Engineer</div><div class="tco bl">Anjal Al Khaleej</div><div class="tde">Infrastructure projects with Riyadh Municipalities. Substations, pump rooms, parks, buildings, roads.</div></div>
+        <div class="tdot bl"></div>
+        <div class="te"></div>
       </div>
 
-      <div class="timeline-item reveal">
-        <div class="timeline-left"></div>
-        <div class="timeline-center"><div class="timeline-dot gold"></div></div>
-        <div class="timeline-right">
-          <div class="timeline-card">
-            <div class="timeline-year gold">2007 — 2011</div>
-            <div class="timeline-role">Electrical Engineer</div>
-            <div class="timeline-company gold">PESCO</div>
-            <div class="timeline-desc">Power utility experience. Transformers, generators, MV/LV panels, WAPDA standards, power distribution.</div>
-          </div>
-        </div>
+      <div class="ti rv">
+        <div class="te"></div>
+        <div class="tdot go"></div>
+        <div class="tc"><div class="tyr go">2007 — 2011</div><div class="tro">Electrical Engineer</div><div class="tco go">PESCO</div><div class="tde">Power utility experience. Transformers, generators, MV/LV panels, WAPDA standards, power distribution.</div></div>
       </div>
 
     </div>
   </div>
 </section>
 
-<!-- ============================================================
-     EDUCATION & CERTIFICATIONS
-     ============================================================ -->
+<!-- EDU & CERTS -->
 <section id="edu">
-  <div class="container">
-    <div class="section-label reveal"><span>Qualifications</span></div>
-    <h2 class="section-heading reveal">Education &amp; <em>Certifications</em></h2>
-    <div class="edu-grid">
-      <div class="reveal">
-        <div class="edu-sub-title">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
-          Education
-        </div>
-        <div class="edu-item">
-          <h4>Bachelor of Electrical Engineering</h4>
-          <p class="inst">University of Engineering & Technology, Peshawar</p>
-          <p>Pakistan · 2007</p>
-        </div>
-        <div class="edu-item gold">
-          <h4>Higher Secondary School Certificate</h4>
-          <p class="inst gold">Modernage Public School & College</p>
-          <p>Pre-Engineering · Abbottabad · 2003</p>
-        </div>
+  <div class="ct">
+    <div class="slbl rv"><span>Qualifications</span></div>
+    <h2 class="sh rv">Education &amp; <em>Certifications</em></h2>
+    <div class="edg">
+      <div class="rv">
+        <div class="eds"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="color:var(--blue)"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>Education</div>
+        <div class="edi"><h4>Bachelor of Electrical Engineering</h4><p class="ins">University of Engineering &amp; Technology, Peshawar</p><p>Pakistan · 2007</p></div>
+        <div class="edi go"><h4>Higher Secondary School Certificate</h4><p class="ins go">Modernage Public School &amp; College</p><p>Pre-Engineering · Abbottabad · 2003</p></div>
       </div>
-      <div class="reveal">
-        <div class="edu-sub-title" style="color:var(--gold)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="color:var(--gold)"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-          Certifications
-        </div>
-        <div class="cert-item">
-          <div class="cert-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-          <div><h4>PMP® Preparatory Course</h4><p>Advanced Project Management</p></div>
-        </div>
-        <div class="cert-item">
-          <div class="cert-icon gold"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
-          <div><h4>Safety in Switchgears & Fire</h4><p>EATON Certified</p></div>
-        </div>
-        <div class="cert-item">
-          <div class="cert-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-          <div><h4>O&M of MCC & SKM Units</h4><p>Schneider Electric & Mannai Trading</p></div>
-        </div>
-        <div class="cert-item">
-          <div class="cert-icon gold"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
-          <div><h4>Technical & Safety Courses</h4><p>PESCO T-500 & S-100 Certified</p></div>
-        </div>
+      <div class="rv">
+        <div class="eds" style="color:var(--gold)"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="color:var(--gold)"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>Certifications</div>
+        <div class="crt"><div class="cri bl"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><div><h4>PMP® Preparatory Course</h4><p>Advanced Project Management</p></div></div>
+        <div class="crt"><div class="cri go"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div><div><h4>Safety in Switchgears &amp; Fire</h4><p>EATON Certified</p></div></div>
+        <div class="crt"><div class="cri bl"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div><div><h4>O&amp;M of MCC &amp; SKM Units</h4><p>Schneider Electric &amp; Mannai Trading</p></div></div>
+        <div class="crt"><div class="cri go"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div><div><h4>Technical &amp; Safety Courses</h4><p>PESCO T-500 &amp; S-100 Certified</p></div></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============================================================
-     CONTACT SECTION
-     ============================================================ -->
+<!-- CONTACT -->
 <section id="contact">
-  <div class="container">
-    <div class="section-label reveal"><span>Get In Touch</span></div>
-    <h2 class="section-heading reveal">Let's Build the <em>Future</em></h2>
-    <div class="contact-grid">
+  <div class="ct">
+    <div class="slbl rv"><span>Get In Touch</span></div>
+    <h2 class="sh rv">Let's Build the <em>Future</em></h2>
+    <div class="cg">
       <div>
-        <div class="contact-info-item reveal">
-          <div class="contact-info-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-          <h4>Location</h4>
-          <p>6552 Rawdhat Al Tenhat, Az Zahra<br>Riyadh 12812, Saudi Arabia</p>
-        </div>
-        <div class="contact-info-item reveal">
-          <div class="contact-info-icon gold"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-          <h4>Email</h4>
-          <a href="mailto:engr.saqib@hotmail.com">engr.saqib@hotmail.com</a>
-        </div>
-        <div class="contact-info-item reveal">
-          <div class="contact-info-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg></div>
-          <h4>Phone</h4>
-          <p>+966 570 39 6865</p>
-        </div>
-        <a href="https://drive.google.com/file/d/1MpXkrk_YGYEPZwz_rmsfMU04ZzhllujH/view?usp=sharing" class="btn-download reveal" target="_blank">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-          Download CV
-        </a>
-        <a href="https://sa.linkedin.com/in/saqib-hussain-318563b5" class="btn-linkedin reveal" target="_blank">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-          LinkedIn Profile
-        </a>
+        <div class="cic rv"><div class="cicn bl"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div><h4>Location</h4><p>6552 Rawdhat Al Tenhat, Az Zahra<br>Riyadh 12812, Saudi Arabia</p></div>
+        <div class="cic rv"><div class="cicn go"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div><h4>Email</h4><a href="mailto:engr.saqib@hotmail.com">engr.saqib@hotmail.com</a></div>
+        <div class="cic rv"><div class="cicn bl"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg></div><h4>Phone</h4><p>+966 570 39 6865</p></div>
+        <a href="https://drive.google.com/file/d/1MpXkrk_YGYEPZwz_rmsfMU04ZzhllujH/view?usp=sharing" class="bdl rv" target="_blank"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Download CV</a>
+        <a href="https://sa.linkedin.com/in/saqib-hussain-318563b5" class="bli rv" target="_blank"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>LinkedIn Profile</a>
       </div>
-      <div class="contact-form reveal">
-        <form onsubmit="handleFormSubmit(event)">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Name</label>
-              <input type="text" placeholder="Your Name" required>
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" placeholder="your@email.com" required>
-            </div>
+      <div class="cfw rv">
+        <form onsubmit="subForm(event)">
+          <div class="fr">
+            <div class="fg"><label>Name</label><input type="text" placeholder="Your Name" required></div>
+            <div class="fg"><label>Email</label><input type="email" placeholder="your@email.com" required></div>
           </div>
-          <div class="form-group">
-            <label>Subject</label>
-            <input type="text" placeholder="Project Opportunity / Consultation">
-          </div>
-          <div class="form-group">
-            <label>Message</label>
-            <textarea rows="5" placeholder="Describe your project requirements..." required></textarea>
-          </div>
-          <button type="submit" class="btn-submit">Send Message</button>
+          <div class="fg"><label>Subject</label><input type="text" placeholder="Project Opportunity / Consultation"></div>
+          <div class="fg"><label>Message</label><textarea rows="5" placeholder="Describe your project requirements..." required></textarea></div>
+          <button type="submit" class="bsend">Send Message</button>
         </form>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============================================================
-     FOOTER
-     ============================================================ -->
+<!-- FOOTER -->
 <footer>
-  <div class="footer-inner">
-    <a href="#" class="nav-logo" style="text-decoration:none">
-      <div class="nav-badge">SH</div>
-      <div class="nav-name">
-        <strong>Saqib Hussain <span style="color:var(--blue)">(PE)</span></strong>
-        <span>Lead Electrical Engineer</span>
-      </div>
+  <div class="fi">
+    <a href="#" class="nlogo">
+      <div class="nbadge">SH</div>
+      <div class="nname"><strong>Saqib Hussain <span style="color:var(--blue)">(PE)</span></strong><small>Lead Electrical Engineer</small></div>
     </a>
-    <div class="footer-links">
-      <a href="#about">Profile</a>
-      <a href="#projects">Projects</a>
-      <a href="#experience">Journey</a>
-      <a href="#contact">Contact</a>
+    <div class="flinks">
+      <a href="#about">Profile</a><a href="#projects">Projects</a>
+      <a href="#experience">Journey</a><a href="#contact">Contact</a>
     </div>
-    <div class="footer-icons">
-      <a href="https://sa.linkedin.com/in/saqib-hussain-318563b5" target="_blank" class="footer-icon" title="LinkedIn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-      </a>
-      <a href="mailto:engr.saqib@hotmail.com" class="footer-icon" title="Email">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-      </a>
+    <div class="fico">
+      <a href="https://sa.linkedin.com/in/saqib-hussain-318563b5" target="_blank" class="fic"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+      <a href="mailto:engr.saqib@hotmail.com" class="fic"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></a>
     </div>
   </div>
-  <div class="footer-copy">
+  <div class="fc">
     <p>&copy; 2024 Saqib Hussain (PE). All rights reserved. | Engineering Excellence in GCC</p>
-    <p style="margin-top:6px;opacity:0.6">Pakistan Engineering Council (Elect/24950) · Saudi Council of Engineers (99995)</p>
+    <p style="margin-top:4px;opacity:.6">Pakistan Engineering Council (Elect/24950) · Saudi Council of Engineers (99995)</p>
   </div>
 </footer>
 
-<!-- ============================================================
-     JAVASCRIPT
-     ============================================================ -->
 <script>
-// ── Lucide icons ──
 lucide.createIcons();
 
-// ── Cursor ──
-const cursor = document.getElementById('cursor');
-const cursorRing = document.getElementById('cursor-ring');
-let mx = -100, my = -100, rx = -100, ry = -100;
-document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-(function animCursor() {
-  rx += (mx - rx) * 0.18;
-  ry += (my - ry) * 0.18;
-  if (cursor) { cursor.style.left = mx + 'px'; cursor.style.top = my + 'px'; }
-  if (cursorRing) { cursorRing.style.left = rx + 'px'; cursorRing.style.top = ry + 'px'; }
-  requestAnimationFrame(animCursor);
+/* cursor */
+const cur=document.getElementById('cur'),curr=document.getElementById('curr');
+let mx=-100,my=-100,rx=-100,ry=-100;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
+(function tick(){rx+=(mx-rx)*.16;ry+=(my-ry)*.16;
+  if(cur){cur.style.left=mx+'px';cur.style.top=my+'px'}
+  if(curr){curr.style.left=rx+'px';curr.style.top=ry+'px'}
+  requestAnimationFrame(tick);
 })();
-document.querySelectorAll('a, button, .project-card, .expertise-card, .glass-card').forEach(el => {
-  el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-  el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+document.querySelectorAll('a,button,.pc,.ec').forEach(el=>{
+  el.addEventListener('mouseenter',()=>document.body.classList.add('ch'));
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('ch'));
 });
 
-// ── Progress bar ──
-const progressBar = document.getElementById('progress-bar');
-window.addEventListener('scroll', () => {
-  const scrolled = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-  if (progressBar) progressBar.style.width = scrolled + '%';
-});
+/* progress bar */
+const pb=document.getElementById('pb');
+window.addEventListener('scroll',()=>{pb.style.width=(window.scrollY/(document.body.scrollHeight-window.innerHeight)*100)+'%'},{passive:true});
 
-// ── Navbar scroll effect ──
-const navbar = document.getElementById('navbar');
-window.addEventListener('scroll', () => {
-  if (window.scrollY > 60) navbar.classList.add('scrolled');
-  else navbar.classList.remove('scrolled');
-});
+/* navbar */
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>60),{passive:true});
 
-// ── Mobile menu ──
-function toggleMobile() { document.getElementById('mobile-menu').classList.toggle('open'); }
-function closeMobile() { document.getElementById('mobile-menu').classList.remove('open'); }
-
-// ── Loader ──
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const loader = document.getElementById('loader');
-    if (!loader) return;
-    loader.style.transition = 'opacity 0.6s';
-    loader.style.opacity = '0';
-    setTimeout(() => { loader.style.display = 'none'; initHeroAnim(); }, 600);
-  }, 800);
-});
-
-// ── Three.js particle field ──
-(function initParticles() {
-  const canvas = document.getElementById('hero-canvas');
-  if (!canvas || typeof THREE === 'undefined') return;
-
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(60, canvas.offsetWidth / canvas.offsetHeight, 0.1, 1000);
-  camera.position.z = 5;
-
-  // Particles
-  const count = window.innerWidth < 768 ? 800 : 2000;
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    positions[i*3]   = (Math.random() - 0.5) * 20;
-    positions[i*3+1] = (Math.random() - 0.5) * 20;
-    positions[i*3+2] = (Math.random() - 0.5) * 10;
-    const t = Math.random();
-    // Blend blue → gold
-    colors[i*3]   = t < 0.7 ? 0 : 0.78;
-    colors[i*3+1] = t < 0.7 ? 0.6 + t*0.4 : 0.66;
-    colors[i*3+2] = t < 0.7 ? 1.0 : 0.3;
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const mat = new THREE.PointsMaterial({ size: 0.035, vertexColors: true, transparent: true, opacity: 0.7 });
-  const points = new THREE.Points(geo, mat);
-  scene.add(points);
-
-  // Mouse parallax
-  let mouseX = 0, mouseY = 0;
-  document.addEventListener('mousemove', e => {
-    mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
-    mouseY = -(e.clientY / window.innerHeight - 0.5) * 2;
-  });
-
-  function resize() {
-    const w = canvas.offsetWidth, h = canvas.offsetHeight;
-    renderer.setSize(w, h);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  }
-  window.addEventListener('resize', resize);
-
-  let frame = 0;
-  (function animate() {
-    requestAnimationFrame(animate);
-    frame++;
-    points.rotation.y = frame * 0.0002 + mouseX * 0.04;
-    points.rotation.x = frame * 0.0001 + mouseY * 0.03;
-    renderer.render(scene, camera);
-  })();
-})();
-
-// ── GSAP Hero animation ──
-function initHeroAnim() {
-  if (typeof gsap === 'undefined') return;
-  const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
-  tl.to('#hero-eyebrow', { opacity: 1, y: 0, duration: 0.8 })
-    .to(['#w1','#w2','#w3'], { y: 0, opacity: 1, duration: 1, stagger: 0.12 }, '-=0.4')
-    .to('#hero-sub',   { opacity: 1, y: 0, duration: 0.8 }, '-=0.5')
-    .to('#hero-desc',  { opacity: 1, y: 0, duration: 0.8 }, '-=0.6')
-    .to('#hero-cta',   { opacity: 1, y: 0, duration: 0.8 }, '-=0.5')
-    .to('#hero-scroll',{ opacity: 1, duration: 0.6 }, '-=0.3');
+/* mobile nav */
+function toggleMob(){
+  const m=document.getElementById('mmenu'),b=document.getElementById('nham');
+  m.classList.toggle('open');b.classList.toggle('open');
+}
+function cMob(){
+  document.getElementById('mmenu').classList.remove('open');
+  document.getElementById('nham').classList.remove('open');
 }
 
-// ── ScrollTrigger reveal ──
-if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+/* smooth scroll */
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const h=a.getAttribute('href');
+    if(h==='#')return;
+    const t=document.querySelector(h);
+    if(t){e.preventDefault();cMob();t.scrollIntoView({behavior:'smooth',block:'start'})}
+  });
+});
+
+/* loader -> hero */
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    const l=document.getElementById('loader');
+    l.style.opacity='0';
+    setTimeout(()=>{l.style.display='none';startHero();},620);
+  },700);
+});
+
+/* hero entrance — GSAP sets own fromState, no CSS transform needed on .wd */
+function startHero(){
+  if(typeof gsap==='undefined'){
+    /* fallback: just show everything */
+    ['he','hw1','hw2','hw3','hs','hd','hc','hscr'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){el.style.opacity='1';el.style.transform='none'}
+    });
+    return;
+  }
+  gsap.set('#he',{opacity:0,y:16});
+  gsap.set(['#hw1','#hw2','#hw3'],{opacity:0,y:70});
+  gsap.set(['#hs','#hd','#hc','#hscr'],{opacity:0,y:18});
+
+  gsap.timeline({defaults:{ease:'power4.out'}})
+    .to('#he',      {opacity:1,y:0,duration:.65})
+    .to('#hw1',     {opacity:1,y:0,duration:.9},'-=.25')
+    .to('#hw2',     {opacity:1,y:0,duration:.9},'-=.78')
+    .to('#hw3',     {opacity:1,y:0,duration:.9},'-=.7')
+    .to('#hs',      {opacity:1,y:0,duration:.65},'-=.55')
+    .to('#hd',      {opacity:1,y:0,duration:.65},'-=.55')
+    .to('#hc',      {opacity:1,y:0,duration:.65},'-=.5')
+    .to('#hscr',    {opacity:1,y:0,duration:.5},'-=.3');
+}
+
+/* scroll reveal */
+if(typeof gsap!=='undefined'&&typeof ScrollTrigger!=='undefined'){
   gsap.registerPlugin(ScrollTrigger);
-  document.querySelectorAll('.reveal').forEach((el, i) => {
-    ScrollTrigger.create({
-      trigger: el,
-      start: 'top 88%',
-      onEnter: () => el.classList.add('visible')
-    });
+  document.querySelectorAll('.rv').forEach(el=>{
+    ScrollTrigger.create({trigger:el,start:'top 90%',onEnter:()=>el.classList.add('in')});
   });
-
-  // Skill bar fill on scroll
-  document.querySelectorAll('.skill-fill').forEach(bar => {
-    const w = bar.getAttribute('data-w');
-    ScrollTrigger.create({
-      trigger: bar,
-      start: 'top 85%',
-      onEnter: () => { bar.style.width = w + '%'; }
-    });
+  document.querySelectorAll('.skf').forEach(bar=>{
+    const w=bar.getAttribute('data-w');
+    ScrollTrigger.create({trigger:bar,start:'top 88%',onEnter:()=>{bar.style.width=w+'%'}});
   });
 }
 
-// ── Counter animation ──
-const counters = document.querySelectorAll('.counter');
-const counterObs = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (!e.isIntersecting) return;
-    const el = e.target;
-    const target = parseInt(el.dataset.target);
-    const suffix = target >= 50 ? '+' : (target >= 18 ? '+' : '+');
-    let current = 0;
-    const step = target / 60;
-    const timer = setInterval(() => {
-      current = Math.min(current + step, target);
-      el.textContent = Math.floor(current) + suffix;
-      if (current >= target) clearInterval(timer);
-    }, 25);
-    counterObs.unobserve(el);
+/* counters */
+const cio=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const el=e.target,target=+el.dataset.target;
+    let n=0,step=target/55;
+    const t=setInterval(()=>{n=Math.min(n+step,target);el.textContent=Math.floor(n)+'+';if(n>=target)clearInterval(t);},22);
+    cio.unobserve(el);
   });
-}, { threshold: 0.5 });
-counters.forEach(c => counterObs.observe(c));
+},{threshold:.5});
+document.querySelectorAll('.counter').forEach(c=>cio.observe(c));
 
-// ── Project filter ──
-function filterProjects(btn, cat) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.project-card').forEach(card => {
-    const cats = card.getAttribute('data-cat') || '';
-    if (cat === 'all' || cats.includes(cat)) {
-      card.style.display = '';
-      gsap && gsap.fromTo(card, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });
-    } else {
-      card.style.display = 'none';
-    }
+/* project filter */
+function fp(btn,cat){
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  document.querySelectorAll('.pc').forEach(card=>{
+    const cats=card.getAttribute('data-cat')||'';
+    const show=cat==='all'||cats.includes(cat);
+    card.style.display=show?'':'none';
+    if(show&&typeof gsap!=='undefined')gsap.fromTo(card,{opacity:0,y:14},{opacity:1,y:0,duration:.32,ease:'power2.out'});
   });
 }
 
-// ── Smooth scroll ──
-document.querySelectorAll('a[href^="#"]').forEach(a => {
-  a.addEventListener('click', e => {
-    const href = a.getAttribute('href');
-    if (href === '#') return;
-    const target = document.querySelector(href);
-    if (target) {
-      e.preventDefault();
-      closeMobile();
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+/* Three.js particles */
+(function(){
+  const canvas=document.getElementById('hcanvas');
+  if(!canvas||typeof THREE==='undefined')return;
+  const W=canvas.offsetWidth,H=canvas.offsetHeight;
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:false});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(W,H);
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(60,W/H,.1,1000);
+  camera.position.z=5;
+  const N=innerWidth<768?500:1600;
+  const pos=new Float32Array(N*3),col=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    pos[i*3]=(Math.random()-.5)*20;pos[i*3+1]=(Math.random()-.5)*20;pos[i*3+2]=(Math.random()-.5)*10;
+    const t=Math.random();
+    col[i*3]=t<.7?0:.78;col[i*3+1]=t<.7?.6+t*.4:.66;col[i*3+2]=t<.7?1:.3;
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const mat=new THREE.PointsMaterial({size:.03,vertexColors:true,transparent:true,opacity:.6});
+  const pts=new THREE.Points(geo,mat);
+  scene.add(pts);
+  let mx2=0,my2=0;
+  document.addEventListener('mousemove',e=>{mx2=(e.clientX/innerWidth-.5)*2;my2=-(e.clientY/innerHeight-.5)*2});
+  window.addEventListener('resize',()=>{const w=canvas.offsetWidth,h=canvas.offsetHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();});
+  let f=0;(function a(){requestAnimationFrame(a);f++;pts.rotation.y=f*.0002+mx2*.04;pts.rotation.x=f*.0001+my2*.03;renderer.render(scene,camera);})();
+})();
+
+/* magnetic buttons */
+document.querySelectorAll('.bp,.bsend,.bdl').forEach(btn=>{
+  btn.addEventListener('mousemove',e=>{
+    const r=btn.getBoundingClientRect();
+    btn.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.24}px,${(e.clientY-r.top-r.height/2)*.24}px) scale(1.04)`;
   });
+  btn.addEventListener('mouseleave',()=>btn.style.transform='');
 });
 
-// ── Form submit ──
-function handleFormSubmit(e) {
+/* form */
+function subForm(e){
   e.preventDefault();
-  const btn = e.target.querySelector('.btn-submit');
-  btn.textContent = 'Message Sent ✓';
-  btn.style.background = 'linear-gradient(135deg, #00c8ff, #007fa3)';
-  btn.style.color = '#fff';
-  setTimeout(() => {
-    btn.textContent = 'Send Message';
-    btn.style.background = '';
-    btn.style.color = '';
-    e.target.reset();
-  }, 3000);
+  const b=e.target.querySelector('.bsend');
+  b.textContent='Message Sent ✓';b.style.background='linear-gradient(135deg,#00c8ff,#007fa3)';b.style.color='#fff';
+  setTimeout(()=>{b.textContent='Send Message';b.style.background='';b.style.color='';e.target.reset();},3000);
 }
-
-// ── Magnetic buttons ──
-document.querySelectorAll('.btn-primary, .btn-submit, .btn-download').forEach(btn => {
-  btn.addEventListener('mousemove', e => {
-    const rect = btn.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = (e.clientX - cx) * 0.25;
-    const dy = (e.clientY - cy) * 0.25;
-    btn.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`;
-  });
-  btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
-});
 </script>
 </body>
 </html>
