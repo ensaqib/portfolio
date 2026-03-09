@@ -28,7 +28,7 @@ const LOCAL_DRIVE={
 
 function openLocalFile(folder,filename){const path=(LOCAL_DRIVE[folder]||'')+encodeURIComponent(filename);window.open(path,'_blank');}
 
-let PROJECTS=[{id:'PRJ-001',name:'NEXUS TOWER — Mixed Use Development',code:'NXT-2026',client:'Apex Development Holdings',contractor:'BuildCore International LLC',consultant:'Meridian Engineering Group',location:'Downtown Financial District, Tower Block 7',startDate:'2025-01-15',plannedEnd:'2027-06-30',contractValue:185000000,currency:'SAR',currentProgress:34,status:'active',description:'55-storey mixed-use tower including commercial, residential and hospitality floors.'},{id:'PRJ-002',name:'HARBOR BRIDGE EXPANSION',code:'HBE-2025',client:'City Infrastructure Authority',contractor:'BuildCore International LLC',consultant:'CivilPro Group',location:'Harbor District, Zone 4',startDate:'2024-06-01',plannedEnd:'2026-12-31',contractValue:42000000,currency:'SAR',currentProgress:68,status:'active',description:'4-lane bridge expansion with pedestrian walkways and cycling infrastructure.'}];
+let PROJECTS=[{id:'PRJ-001',name:'CONRAD HOTEL',code:'NXT-2026',client:'MASHAREQ',contractor:'EDSCO',consultant:'ERGA',location:'Laysen Valley Riyadh',startDate:'2025-01-15',plannedEnd:'2027-06-30',contractValue:185000000,currency:'SAR',currentProgress:34,status:'active',description:'55-storey mixed-use tower including commercial, residential and hospitality floors.'},{id:'PRJ-002',name:RIYADH BRIDGE EXPANSION',code:'HBE-2025',client:'City Infrastructure Authority',contractor:'BuildCore International LLC',consultant:'CivilPro Group',location:'Harbor District, Zone 4',startDate:'2024-06-01',plannedEnd:'2026-12-31',contractValue:42000000,currency:'SAR',currentProgress:68,status:'active',description:'4-lane bridge expansion with pedestrian walkways and cycling infrastructure.'}];
 
 let ACTIVE_PROJECT=PROJECTS[0];
 
@@ -332,3 +332,4 @@ function importEntries(file) {
 }
 
 window.APP_DATA={PLATFORM,PROJECTS,get ACTIVE_PROJECT(){return ACTIVE_PROJECT;},set ACTIVE_PROJECT(v){ACTIVE_PROJECT=v;},USERS,NOTIFICATIONS,DISCIPLINES,LOCAL_DRIVE,openLocalFile,mockDrawingsData,mockMaterialsData,mockMethodsData,mockNCRData,mockRFIData,mockSIData,mockWIRData,mockMDRData,mockProcurementData,mockProgressData,mockHSEData,mockSubcontractorData,mockCostData,mockManpowerData,mockTestingData,mockCloseoutData,computeKPIs,STATUS_CONFIG,STATUS_ORDER,computeStatusCounts,exportToCSV,exportConstructionLogCSV,saveProjectData,exportProjectData,importProjectData,loadEntries,saveEntries,exportEntries,importEntries};
+
