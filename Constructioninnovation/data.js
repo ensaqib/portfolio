@@ -1,2989 +1,334 @@
 // ================================================================
-// CONSTRUCTION INNOVATION PLATFORM — APP ENGINE v2026.2 (FINAL)
-// All modules, PDF generation, project management, MEP subcategories
+// CONSTRUCTION INNOVATION PLATFORM — DATA LAYER v2026.2 (FINAL)
+// Admin: Engr. Saqib Hussain (PE)
 // ================================================================
 'use strict';
+const PLATFORM={name:'Construction Innovation',version:'2026.2',admin:'Engr. Saqib Hussain (PE)',adminTitle:'Lead Electrical Engineer',company:'Construction Innovation'};
 
-const STATE = {
-  currentPage: 'dashboard',
-  currentUser: { id:'U001', name:'Engr. Saqib Hussain (PE)', role:'admin', avatar:'SH' },
-  userRole: 'operator', // 'admin' or 'operator' — default operator for security
-  darkMode: true,
-  drawingMEPFilter: 'all',
-  ncrTab: 'ncr',  // kept for legacy compat
-  materialDiscFilter: 'all',
-  methodDiscFilter: 'all',
-  testingDiscFilter: 'all',
-  ncrDiscFilter: 'all',
-  rfiDiscFilter: 'all',
-  siDiscFilter: 'all',
-  wirDiscFilter: 'all',
-  mdrDiscFilter: 'all',
-  procurementDiscFilter: 'all',
-  subDiscFilter: 'all',
-  costDiscFilter: 'all',
-  closeoutDiscFilter: 'all',
-  charts: {},
-  filePaths: {}, // Amendment 4: saved local drive paths per module
+// LOCAL DRIVE PATHS – Construction Innovation project folders on D:\
+const LOCAL_DRIVE={
+  root:      'file:///D:/Construction%20Innovation/Projects/',
+  drawings:  'file:///D:/Construction%20Innovation/Projects/Drawings/',
+  materials: 'file:///D:/Construction%20Innovation/Projects/Materials/',
+  methods:   'file:///D:/Construction%20Innovation/Projects/Methods/',
+  testing:   'file:///D:/Construction%20Innovation/Projects/Testing/',
+  ncr:       'file:///D:/Construction%20Innovation/Projects/NCR/',
+  rfi:       'file:///D:/Construction%20Innovation/Projects/RFI/',
+  si:        'file:///D:/Construction%20Innovation/Projects/SI/',
+  wir:       'file:///D:/Construction%20Innovation/Projects/WIR/',
+  mdr:       'file:///D:/Construction%20Innovation/Projects/MDR/',
+  hse:       'file:///D:/Construction%20Innovation/Projects/HSE/',
+  procurement:'file:///D:/Construction%20Innovation/Projects/Procurement/',
+  subcontractors:'file:///D:/Construction%20Innovation/Projects/Subcontractors/',
+  closeout:  'file:///D:/Construction%20Innovation/Projects/Closeout/',
+  progress:  'file:///D:/Construction%20Innovation/Projects/Progress/',
+  cost:      'file:///D:/Construction%20Innovation/Projects/Cost/',
+  manpower:  'file:///D:/Construction%20Innovation/Projects/Manpower/'
 };
 
-document.addEventListener('DOMContentLoaded', () => { initApp(); });
+function openLocalFile(folder,filename){const path=(LOCAL_DRIVE[folder]||'')+encodeURIComponent(filename);window.open(path,'_blank');}
 
-// ── INIT ──────────────────────────────────────────────────────
-function initApp() {
-  const D = window.APP_DATA;
-  const proj = D.ACTIVE_PROJECT;
+let PROJECTS=[{id:'PRJ-001',name:'NEXUS TOWER — Mixed Use Development',code:'NXT-2026',client:'Apex Development Holdings',contractor:'BuildCore International LLC',consultant:'Meridian Engineering Group',location:'Downtown Financial District, Tower Block 7',startDate:'2025-01-15',plannedEnd:'2027-06-30',contractValue:185000000,currency:'SAR',currentProgress:34,status:'active',description:'55-storey mixed-use tower including commercial, residential and hospitality floors.'},{id:'PRJ-002',name:'HARBOR BRIDGE EXPANSION',code:'HBE-2025',client:'City Infrastructure Authority',contractor:'BuildCore International LLC',consultant:'CivilPro Group',location:'Harbor District, Zone 4',startDate:'2024-06-01',plannedEnd:'2026-12-31',contractValue:42000000,currency:'SAR',currentProgress:68,status:'active',description:'4-lane bridge expansion with pedestrian walkways and cycling infrastructure.'}];
 
-  // Set project info
-  updateProjectDisplay(proj);
+let ACTIVE_PROJECT=PROJECTS[0];
 
-  // Set user
-  document.getElementById('sidebar-user-name').textContent = STATE.currentUser.name;
-  document.getElementById('sidebar-user-role').textContent = 'ADMIN';
-  document.getElementById('sidebar-user-avatar').textContent = 'SH';
+const USERS=[{id:'U001',name:'Engr. Saqib Hussain (PE)',role:'admin',avatar:'SH',dept:'Lead Electrical Engineer'},{id:'U002',name:'Sarah Chen',role:'engineer',avatar:'SC',dept:'Structural'},{id:'U003',name:'James Okafor',role:'engineer',avatar:'JO',dept:'MEP'},{id:'U004',name:'Priya Sharma',role:'consultant',avatar:'PS',dept:'Design'},{id:'U005',name:'David Williams',role:'engineer',avatar:'DW',dept:'Civil'}];
 
-  // Populate project switcher
-  const switcher = document.getElementById('project-switcher');
-  if (switcher) {
-    switcher.innerHTML = D.PROJECTS.map(p => `<option value="${p.id}" ${p.id===proj.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
-    switcher.addEventListener('change', () => {
-      const p = D.PROJECTS.find(x => x.id === switcher.value);
-      if (p) { D.ACTIVE_PROJECT = p; updateProjectDisplay(p); renderPage(STATE.currentPage); showToast('Project Switched', p.name, 'info'); }
-    });
-  }
+const DISCIPLINES=['Civil','Structural','Architect','Landscape','Mechanical','Electrical','Plumbing','HVAC','Fire Protection','ELV / IT','Geotechnical'];
 
-  setupNavigation();
-  setupHeaderActions();
-  setupNotifications(D.NOTIFICATIONS);
-  navigateTo('dashboard');
-}
+let mockDrawingsData=[
+  {id:'DWG-001',title:'Foundation Layout Plan',discipline:'Civil',rev:1,status:'approved',submittedBy:'U005',date:'2025-11-01',consultant:'Meridian',file:'FDN-LP-001-Rev1.pdf',comments:'Approved with minor notes'},
+  {id:'DWG-002',title:'Structural Frame – Level 3',discipline:'Structural',rev:2,status:'under-review',submittedBy:'U002',date:'2025-12-10',consultant:'Meridian',file:'STR-L3-002-Rev2.pdf',comments:'Pending consultant review'},
+  {id:'DWG-003',title:'HVAC Ductwork – Floors 5-8',discipline:'HVAC',rev:1,status:'submitted',submittedBy:'U003',date:'2026-01-05',consultant:'TechSpec',file:'MEP-HVAC-003-Rev1.pdf',comments:''},
+  {id:'DWG-004',title:'Facade Cladding Details',discipline:'Architect',rev:4,status:'approved',submittedBy:'U004',date:'2025-10-20',consultant:'Meridian',file:'ARC-FAC-004-Rev4.pdf',comments:'Final approval granted'},
+  {id:'DWG-005',title:'Underground Drainage Plan',discipline:'Civil',rev:1,status:'rejected',submittedBy:'U005',date:'2026-01-15',consultant:'Meridian',file:'CIV-DRN-005-Rev1.pdf',comments:'Revise pipe sizes'},
+  {id:'DWG-006',title:'Electrical Single Line Diagram',discipline:'Electrical',rev:2,status:'approved',submittedBy:'U003',date:'2025-12-01',consultant:'TechSpec',file:'MEP-ELE-006-Rev2.pdf',comments:'Approved'},
+  {id:'DWG-007',title:'Core Wall Reinforcement',discipline:'Structural',rev:3,status:'under-review',submittedBy:'U002',date:'2026-01-20',consultant:'Meridian',file:'STR-COR-007-Rev3.pdf',comments:'In progress'},
+  {id:'DWG-008',title:'Plumbing Risers – Typical Floor',discipline:'Plumbing',rev:1,status:'submitted',submittedBy:'U003',date:'2026-02-01',consultant:'TechSpec',file:'MEP-PLB-008-Rev1.pdf',comments:''},
+  {id:'DWG-009',title:'Mechanical Plant Room Layout',discipline:'Mechanical',rev:1,status:'submitted',submittedBy:'U003',date:'2026-02-05',consultant:'TechSpec',file:'MEP-MCH-009-Rev1.pdf',comments:''},
+  {id:'DWG-010',title:'Fire Suppression – Typical Floor',discipline:'Fire Protection',rev:2,status:'approved',submittedBy:'U003',date:'2026-01-28',consultant:'FireSafe',file:'FPS-TYP-010-Rev2.pdf',comments:'Approved'}
+];
 
-function updateProjectDisplay(proj) {
-  const el = document.getElementById('project-name-display');
-  if (el) el.textContent = proj.name;
-  const ref = document.getElementById('project-ref');
-  if (ref) ref.textContent = proj.code;
-  const fill = document.getElementById('sidebar-progress-fill');
-  if (fill) fill.style.width = proj.currentProgress + '%';
-  const pct = document.getElementById('sidebar-progress-pct');
-  if (pct) pct.textContent = proj.currentProgress + '%';
-}
+let mockMaterialsData=[{id:'MAT-001',item:'High-Strength Concrete C50',boqRef:'BOQ-3.1.1',poNo:'PO-002',supplier:'MixPro Ready',rev:1,status:'approved',submitDate:'2025-10-15',approveDate:'2025-11-01',deliveryDate:'2026-02-20',qty:5200,unit:'m³',remarks:'Approved per ASTM C39'},{id:'MAT-002',item:'Rebar Grade 60 – 32mm Dia',boqRef:'BOQ-3.2.4',poNo:'PO-001',supplier:'SteelTech Corp',rev:2,status:'approved',submitDate:'2025-11-10',approveDate:'2025-12-01',deliveryDate:'2026-01-30',qty:850,unit:'MT',remarks:'Mill certs reviewed'},{id:'MAT-003',item:'Curtain Wall System CW-7',boqRef:'BOQ-5.1.2',poNo:'PO-003',supplier:'GlazTec Systems',rev:1,status:'under-review',submitDate:'2026-01-05',approveDate:'',deliveryDate:'2026-05-15',qty:2800,unit:'m²',remarks:'Pending thermal test'},{id:'MAT-004',item:'HVAC Chiller Units 500RT',boqRef:'BOQ-8.3.1',poNo:'PO-004',supplier:'CoolAir Ltd',rev:1,status:'submitted',submitDate:'2026-01-18',approveDate:'',deliveryDate:'2026-06-01',qty:3,unit:'No.',remarks:'FAT to be witnessed'},{id:'MAT-005',item:'Waterproofing Membrane 3mm',boqRef:'BOQ-4.2.1',poNo:'PO-006',supplier:'SealPro',rev:1,status:'approved',submitDate:'2025-12-01',approveDate:'2025-12-20',deliveryDate:'2026-02-01',qty:3200,unit:'m²',remarks:'Third-party tested'},{id:'MAT-006',item:'Precast Concrete Panels',boqRef:'BOQ-5.3.3',poNo:'PO-007',supplier:'PrecastMasters',rev:1,status:'rejected',submitDate:'2026-01-10',approveDate:'',deliveryDate:'2026-04-20',qty:420,unit:'panels',remarks:'Resubmit with fire rating cert'},{id:'MAT-007',item:'Structural Steel I-Beams W14',boqRef:'BOQ-3.3.1',poNo:'PO-001',supplier:'SteelTech Corp',rev:3,status:'approved',submitDate:'2025-10-20',approveDate:'2025-11-15',deliveryDate:'2026-01-15',qty:320,unit:'MT',remarks:'Approved Rev 3 after weld test'}];
 
-// ── NAVIGATION ────────────────────────────────────────────────
-function setupNavigation() {
-  document.querySelectorAll('[data-page]').forEach(el => {
-    el.addEventListener('click', e => { e.preventDefault(); navigateTo(el.dataset.page); });
-  });
-}
+let mockMethodsData=[{id:'MS-001',title:'Deep Foundation Piling Works',category:'Structural',risk:'High',rev:2,status:'approved',submittedBy:'U002',date:'2025-09-15',hseReview:'Approved',file:'MS-001-Rev2.pdf'},{id:'MS-002',title:'Concrete Pour – Transfer Slab',category:'Structural',risk:'High',rev:1,status:'approved',submittedBy:'U002',date:'2025-11-20',hseReview:'Approved',file:'MS-002-Rev1.pdf'},{id:'MS-003',title:'Crane Erection & Operation',category:'Lifting',risk:'Critical',rev:1,status:'under-review',submittedBy:'U005',date:'2026-01-10',hseReview:'Pending',file:'MS-003-Rev1.pdf'},{id:'MS-004',title:'Facade Installation Procedure',category:'Finishing',risk:'Medium',rev:1,status:'submitted',submittedBy:'U004',date:'2026-01-25',hseReview:'Pending',file:'MS-004-Rev1.pdf'},{id:'MS-005',title:'Hot Works – Welding Procedure',category:'MEP',risk:'High',rev:3,status:'approved',submittedBy:'U003',date:'2025-12-10',hseReview:'Approved',file:'MS-005-Rev3.pdf'},{id:'MS-006',title:'Temporary Works – Shoring',category:'Civil',risk:'Critical',rev:4,status:'approved',submittedBy:'U005',date:'2025-10-05',hseReview:'Approved',file:'MS-006-Rev4.pdf'}];
 
-function navigateTo(page) {
-  STATE.currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
-  document.querySelectorAll('.page-section').forEach(sec => sec.classList.toggle('active', sec.id === 'page-' + page));
-  const titles = { dashboard:'Dashboard Overview', projects:'Project Management', drawings:'Drawing Register', materials:'Material Submittal Register', methods:'Method Statement Register', testing:'Test & Commissioning Register', ncr:'NCR Register', rfi:'RFI Register', si:'Site Instructions', wir:'Work Inspection Requests', mdr:'Material Delivery Receipts', procurement:'Procurement Tracker', progress:'Progress Tracker', hse:'HSE Register', subcontractors:'Subcontractor Management', cost:'Cost Control', manpower:'Manpower & Equipment', closeout:'Project Closeout' };
-  const el = document.getElementById('header-page-title');
-  if (el) el.textContent = titles[page] || 'Dashboard';
-  renderPage(page);
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  sidebar?.classList.remove('open');
-  if(overlay){ overlay.style.opacity='0'; setTimeout(()=>overlay.style.display='none',200); }
-}
+let mockNCRData=[{id:'NCR-001',title:'Concrete Honeycombing – Column C12',raised:'U005',date:'2026-01-08',status:'open',priority:'high',assignedTo:'U002',closureDate:'',file:'NCR-001.pdf',remarks:'Remediation plan required',location:'Level 3 – Col C12'},{id:'NCR-002',title:'Wrong Rebar Diameter – Beam B4',raised:'U002',date:'2026-01-18',status:'open',priority:'critical',assignedTo:'U002',closureDate:'',file:'NCR-002.pdf',remarks:'Remove and replace',location:'Level 4 – Beam B4'},{id:'NCR-003',title:'Improper Curing – Podium Slab',raised:'U001',date:'2026-01-20',status:'open',priority:'critical',assignedTo:'U002',closureDate:'',file:'NCR-003.pdf',remarks:'Core sample to be taken',location:'Podium Level'},{id:'NCR-004',title:'Missing Fire Stopping at Penetrations',raised:'U003',date:'2026-01-25',status:'closed',priority:'medium',assignedTo:'U003',closureDate:'2026-02-05',file:'NCR-004.pdf',remarks:'Rectified and approved',location:'Level 2 MEP'}];
 
-function renderPage(page) {
-  const map = { dashboard:renderDashboard, projects:renderProjects, drawings:renderDrawings, materials:renderMaterials, methods:renderMethods, testing:renderTesting, ncr:renderNCRPage, rfi:renderRFIPage, si:renderSIPage, wir:renderWIRPage, mdr:renderMDRPage, procurement:renderProcurement, progress:renderProgress, hse:renderHSE, subcontractors:renderSubcontractors, cost:renderCost, manpower:renderManpower, closeout:renderCloseout };
-  if (map[page]) setTimeout(() => map[page](), 50);
-}
+let mockRFIData=[{id:'RFI-001',title:'Clarification on Rebar Splice Length',raised:'U002',date:'2026-01-12',status:'closed',priority:'medium',assignedTo:'U004',closureDate:'2026-01-20',file:'RFI-001.pdf',remarks:'Splice 60D per ACI 318',discipline:'Structural'},{id:'RFI-002',title:'Sprinkler Layout Conflict with Beam',raised:'U003',date:'2026-01-18',status:'open',priority:'medium',assignedTo:'U004',closureDate:'',file:'RFI-002.pdf',remarks:'Awaiting coord drawing',discipline:'Fire Protection'},{id:'RFI-003',title:'Electrical Load Schedule Discrepancy',raised:'U003',date:'2026-01-22',status:'open',priority:'high',assignedTo:'U004',closureDate:'',file:'RFI-003.pdf',remarks:'Check transformer sizing',discipline:'Electrical'},{id:'RFI-004',title:'Drainage Gradient at Podium Level',raised:'U005',date:'2026-02-01',status:'closed',priority:'low',assignedTo:'U004',closureDate:'2026-02-10',file:'RFI-004.pdf',remarks:'Min 1:100 confirmed',discipline:'Civil'}];
 
-// ── HEADER ────────────────────────────────────────────────────
-function setupHeaderActions() {
-  document.getElementById('theme-toggle').addEventListener('click', () => {
-    STATE.darkMode = !STATE.darkMode;
-    document.body.classList.toggle('light-mode', !STATE.darkMode);
-    document.getElementById('theme-toggle').innerHTML = STATE.darkMode ? '☀️' : '🌙';
-    showToast('Theme', STATE.darkMode ? 'Dark mode' : 'Light mode', 'info');
-  });
-  document.getElementById('notif-btn').addEventListener('click', e => { e.stopPropagation(); document.getElementById('notif-panel').classList.toggle('open'); });
-  document.addEventListener('click', e => { if (!e.target.closest('#notif-panel') && !e.target.closest('#notif-btn')) document.getElementById('notif-panel').classList.remove('open'); });
-  document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
-    const sidebar = document.querySelector('.sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    sidebar.classList.toggle('open');
-    if(sidebar.classList.contains('open')) { overlay.style.display='block'; setTimeout(()=>overlay.style.opacity='1',10); }
-    else { overlay.style.opacity='0'; setTimeout(()=>overlay.style.display='none',200); }
-  });
-  // Top search bar removed; no listener needed
-}
-
-function setupNotifications(notifs) {
-  const panel = document.getElementById('notif-list');
-  const unread = notifs.filter(n=>!n.read).length;
-  const badgeEl = document.getElementById('notif-badge-count');
-  if(badgeEl) badgeEl.textContent = unread;
-  document.getElementById('notif-dot').style.display = unread > 0 ? 'block' : 'none';
-  panel.innerHTML = notifs.map(n => `
-    <div class="notif-item ${n.read?'':'unread'}" onclick="markNotifRead(${n.id})">
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <div style="width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;background:${{warning:'#f59e0b',danger:'#f43f5e',info:'#3b82f6',success:'#10b981'}[n.type]}"></div>
-        <div><div style="font-size:12.5px;color:var(--text-primary);margin-bottom:2px">${n.text}</div><div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace">${n.time}</div></div>
-        ${!n.read?'<div style="width:6px;height:6px;border-radius:50%;background:var(--accent-blue);margin-left:auto;margin-top:5px;flex-shrink:0"></div>':''}
-      </div>
-    </div>`).join('');
-}
-
-function markNotifRead(id) { const n=window.APP_DATA.NOTIFICATIONS.find(x=>x.id===id); if(n){n.read=true;setupNotifications(window.APP_DATA.NOTIFICATIONS);} }
-
-// ── ADMIN PASSWORD ─────────────────────────────────────────────
-let ADMIN_PASSWORD_HASH = '6051fc84a7a0d74c225fb18a496b09952da5642e60723ecae543298edd7d82d6';
-
-async function hashPassword(input) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
-  return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2,'0')).join('');
-}
-
-function isAdmin() { return STATE.userRole === 'admin'; }
-
-function applyRoleUI() {
-  const role = STATE.userRole;
-  // Update sidebar badge
-  document.getElementById('sidebar-user-role').textContent = role === 'admin' ? 'ADMIN' : 'OPERATOR';
-  document.getElementById('sidebar-user-role').style.color = role === 'admin' ? 'var(--accent-amber)' : 'var(--accent-cyan)';
-  // Toggle body class to show/hide admin-only elements via CSS
-  document.body.classList.toggle('operator-mode', role === 'operator');
-  // Update NCR actions if on that page
-  if(window.updateNCRActions) window.updateNCRActions(STATE.ncrTab);
-  // Re-render current page so action buttons in tables update
-  renderPage(STATE.currentPage);
-}
-
-function openSettings() {
-  const role = STATE.userRole;
-  openModal('⚙️ Settings & Access Control','',`
-    <div style="margin-bottom:20px">
-      <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Current Mode</div>
-      <div style="display:flex;gap:10px;margin-bottom:20px">
-        <div style="flex:1;padding:14px;border-radius:10px;border:2px solid ${role==='admin'?'var(--accent-amber)':'rgba(255,255,255,0.08)'};background:${role==='admin'?'rgba(245,158,11,0.08)':'var(--bg-surface)'};cursor:pointer;text-align:center" onclick="selectRoleCard('admin')" id="card-admin">
-          <div style="font-size:24px;margin-bottom:6px">🛡️</div>
-          <div style="font-weight:700;font-size:13px;color:var(--accent-amber)">Admin Mode</div>
-          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Full access — Edit, Delete, Add</div>
-        </div>
-        <div style="flex:1;padding:14px;border-radius:10px;border:2px solid ${role==='operator'?'var(--accent-cyan)':'rgba(255,255,255,0.08)'};background:${role==='operator'?'rgba(6,182,212,0.08)':'var(--bg-surface)'};cursor:pointer;text-align:center" onclick="selectRoleCard('operator')" id="card-operator">
-          <div style="font-size:24px;margin-bottom:6px">👁️</div>
-          <div style="font-weight:700;font-size:13px;color:var(--accent-cyan)">Operator Mode</div>
-          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">View & Open only</div>
-        </div>
-      </div>
-      <div id="admin-pwd-section" style="display:none">
-        <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Admin Password Required</div>
-        <input class="form-control" id="settings-pwd" type="password" placeholder="Enter admin password…" style="margin-bottom:8px">
-        <div id="pwd-error" style="color:var(--accent-rose);font-size:11px;display:none">❌ Incorrect password</div>
-      </div>
-    </div>
-    <div style="padding:12px;background:var(--bg-surface);border-radius:8px;font-size:11px;color:var(--text-muted)">
-      <strong style="color:var(--text-secondary)">Operator restrictions:</strong> Drawing Register, Material Submittals, Method Statements, Test & Commissioning, NCR/RFI/SI, HSE Register, Manpower & Equipment, Procurement, Cost Control, Subcontractors, Project Closeout — <em>View & Open only</em>
-    </div>
-    <div style="margin-top:12px;text-align:right">
-      <button class="btn btn-sm btn-secondary" onclick="changeAdminPassword()" style="font-size:11px">🔑 Change Admin Password</button>
-    </div>`,
-  async ()=>{
-    const selected = window._pendingRole || role;
-    if(selected === 'operator') {
-      STATE.userRole = 'operator';
-      applyRoleUI();
-      showToast('Operator Mode','Switched to Operator — View & Open only','info');
-    } else if(selected === 'admin') {
-      if(STATE.userRole === 'admin') {
-        applyRoleUI();
-        showToast('Admin Mode','Already in Admin mode','success');
-      } else {
-        const pwd = document.getElementById('settings-pwd')?.value;
-        if(await hashPassword(pwd) === ADMIN_PASSWORD_HASH) {
-          STATE.userRole = 'admin';
-          applyRoleUI();
-          showToast('Admin Mode','Admin access granted ✓','success');
-        } else {
-          document.getElementById('pwd-error').style.display='block';
-          return false; // prevent modal close
-        }
-      }
-    }
-    window._pendingRole = null;
-  }, 'Apply');
-}
-
-window.selectRoleCard = function(role) {
-  window._pendingRole = role;
-  const cardAdmin = document.getElementById('card-admin');
-  const cardOp = document.getElementById('card-operator');
-  const pwdSection = document.getElementById('admin-pwd-section');
-  if(cardAdmin && cardOp) {
-    cardAdmin.style.border = role==='admin' ? '2px solid var(--accent-amber)' : '2px solid rgba(255,255,255,0.08)';
-    cardAdmin.style.background = role==='admin' ? 'rgba(245,158,11,0.08)' : 'var(--bg-surface)';
-    cardOp.style.border = role==='operator' ? '2px solid var(--accent-cyan)' : '2px solid rgba(255,255,255,0.08)';
-    cardOp.style.background = role==='operator' ? 'rgba(6,182,212,0.08)' : 'var(--bg-surface)';
-  }
-  // Show password field only when switching TO admin FROM operator
-  if(pwdSection) pwdSection.style.display = (role==='admin' && STATE.userRole!=='admin') ? 'block' : 'none';
-  if(document.getElementById('pwd-error')) document.getElementById('pwd-error').style.display='none';
-};
-
-function changeAdminPassword() {
-  openModal('🔒 Change Admin Password','',`
-    <div class="form-group"><label class="form-label">Current Password</label>
-      <input class="form-control" id="cp-current" type="password" placeholder="Enter current password">
-    </div>
-    <div class="form-group"><label class="form-label">New Password</label>
-      <input class="form-control" id="cp-new" type="password" placeholder="Enter new password (min 6 chars)">
-    </div>
-    <div class="form-group"><label class="form-label">Confirm New Password</label>
-      <input class="form-control" id="cp-confirm" type="password" placeholder="Confirm new password">
-    </div>
-    <div id="cp-error" style="color:var(--accent-rose);font-size:11px;display:none;margin-top:4px"></div>`,
-  async ()=>{
-    const current = document.getElementById('cp-current').value;
-    const newPwd  = document.getElementById('cp-new').value;
-    const confirm = document.getElementById('cp-confirm').value;
-    const errEl   = document.getElementById('cp-error');
-    const currentHash = await hashPassword(current);
-    if(currentHash !== ADMIN_PASSWORD_HASH){ errEl.textContent='❌ Current password is incorrect'; errEl.style.display='block'; return false; }
-    if(newPwd.length < 6){                  errEl.textContent='❌ New password must be at least 6 characters'; errEl.style.display='block'; return false; }
-    if(newPwd !== confirm){                 errEl.textContent='❌ Passwords do not match'; errEl.style.display='block'; return false; }
-    ADMIN_PASSWORD_HASH = await hashPassword(newPwd);
-    showToast('Password Changed','Admin password updated successfully ✓','success');
-  }, 'Change Password');
-}
-
-// ── PDF ENGINE (with chart embedding) ──────────────────────────
-function generatePDF(options) {
-  const { title, subtitle='', kpis=[], tableHeaders=[], tableRows=[], extraHTML='', module='', charts=[] } = options;
-  const today = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  const proj = window.APP_DATA.ACTIVE_PROJECT;
-  const logo = window.LOGO_B64 || '';
-  const sig  = window.SIG_B64  || '';
-
-  const kpiHTML = kpis.length ? `<div style="display:grid;grid-template-columns:repeat(${Math.min(kpis.length,4)},1fr);gap:8px;margin-bottom:14px">${kpis.map(k=>`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px;text-align:center;border-top:3px solid ${k.color||'#1e3a5f'}"><div style="font-size:7.5pt;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:4px">${k.label}</div><div style="font-family:'Barlow Condensed',Arial;font-size:22pt;font-weight:800;color:${k.color||'#1e3a5f'}">${k.value}</div></div>`).join('')}</div>` : '';
-
-  const chartsHTML = charts.length ? `<div style="display:grid;grid-template-columns:repeat(${charts.length},1fr);gap:8px;margin-bottom:14px">${charts.map(c=>`<img src="${c.data}" style="width:100%;display:block;border:1px solid #ddd;border-radius:3px;">`).join('')}</div>` : '';
-
-  const tableHTML = tableHeaders.length ? `<table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:16px"><thead><tr>${tableHeaders.map(h=>`<th style="background:#1e3a5f;color:#fff;padding:7px 9px;text-align:left;font-weight:700;font-size:8pt;text-transform:uppercase;letter-spacing:0.5px">${h}</th>`).join('')}</tr></thead><tbody>${tableRows.map((row,i)=>`<tr style="background:${i%2===0?'#f8f9fa':'#fff'}">${row.map(cell=>`<td style="padding:6px 9px;border-bottom:1px solid #e9ecef;vertical-align:middle">${cell??'—'}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '';
-
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Plus Jakarta Sans',Arial,sans-serif;background:#fff;color:#1a1a2e;font-size:11pt}
-.page{width:210mm;min-height:270mm;margin:0 auto;padding:14mm 14mm 28mm;position:relative}
-.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1e3a5f;padding-bottom:12px;margin-bottom:14px}
-.logo{height:100px;width:auto;object-fit:contain}
-.hdr-mid{text-align:center;flex:1;padding:0 16px}
-.ptitle{font-family:'Barlow Condensed',Arial;font-size:20pt;font-weight:800;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px}
-.psub{font-size:9.5pt;color:#f59e0b;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
-.hdr-r{text-align:right;font-size:8.5pt;color:#666;min-width:130px}
-.hdr-r strong{color:#1e3a5f}
-.pbox{background:#f0f4ff;border:1px solid #c7d2fe;border-radius:6px;padding:10px 14px;margin-bottom:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.pi{display:flex;flex-direction:column;gap:1px}
-.pl{font-size:7.5pt;color:#6b7280;text-transform:uppercase;letter-spacing:0.8px;font-weight:600}
-.pv{font-size:9.5pt;color:#1e3a5f;font-weight:700}
-.sec-title{font-family:'Barlow Condensed',Arial;font-size:13pt;font-weight:800;color:#1e3a5f;border-left:4px solid #f59e0b;padding-left:10px;margin:12px 0 8px;text-transform:uppercase}
-.footer{position:fixed;bottom:0;left:0;right:0;padding:6mm 14mm;border-top:2px solid #1e3a5f;display:flex;align-items:center;justify-content:space-between;background:#fff}
-.fl{font-size:8pt;color:#6b7280}
-.fl strong{color:#1e3a5f}
-.sig-blk{display:flex;align-items:center;gap:10px}
-.sig-img{height:90px;width:auto;object-fit:contain}
-.sig-inf{font-size:8pt;text-align:right}
-.sig-name{font-weight:700;color:#1e3a5f}
-.sig-role{color:#f59e0b;font-weight:600}
-.pno{font-size:8pt;color:#9ca3af;font-family:monospace}
-.badge-a{background:#d1fae5;color:#065f46;padding:2px 6px;border-radius:10px;font-size:7.5pt;font-weight:700}
-.badge-r{background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:10px;font-size:7.5pt;font-weight:700}
-.badge-p{background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:10px;font-size:7.5pt;font-weight:700}
-.badge-o{background:#ffedd5;color:#c2410c;padding:2px 6px;border-radius:10px;font-size:7.5pt;font-weight:700}
-.badge-c{background:#f3f4f6;color:#374151;padding:2px 6px;border-radius:10px;font-size:7.5pt;font-weight:700}
-.badge-cr{background:#fee2e2;color:#7f1d1d;padding:2px 6px;border-radius:10px;font-size:7.5pt;font-weight:700;border:1px solid #fca5a5}
-.chart-pair{display:table;width:100%;border-collapse:separate;border-spacing:8px 0;margin-bottom:10px}
-.chart-cell{display:table-cell;width:50%;vertical-align:top}
-.chart-cell img{width:100%;height:200px;display:block;border:1px solid #ddd;border-radius:3px}
-.chart-label{font-family:'Barlow Condensed',Arial;font-size:9.5pt;font-weight:800;color:#1e3a5f;border-left:3px solid #f59e0b;padding-left:6px;margin-bottom:4px;text-transform:uppercase}
-@media print{body{background:#fff}.page{margin:0;padding:12mm 13mm 26mm}}
-</style></head><body>
-<div class="page">
-<div class="hdr">
-  ${logo?`<img class="logo" src="${logo}" alt="CI Logo">`:'<div style="width:70px"></div>'}
-  <div class="hdr-mid"><div class="ptitle">${title}</div>${subtitle?`<div class="psub">${subtitle}</div>`:''}</div>
-  <div class="hdr-r"><strong>Construction Innovation</strong><br>Date: ${today}<br>Project: ${proj.code||''}<br>Ref: CI-${module.toUpperCase()}-2026</div>
-</div>
-<div class="pbox">
-  <div class="pi"><span class="pl">Project</span><span class="pv">${proj.name||'—'}</span></div>
-  <div class="pi"><span class="pl">Client</span><span class="pv">${proj.client||'—'}</span></div>
-  <div class="pi"><span class="pl">Contractor</span><span class="pv">${proj.contractor||'—'}</span></div>
-  <div class="pi"><span class="pl">Consultant</span><span class="pv">${proj.consultant||'—'}</span></div>
-  <div class="pi"><span class="pl">Location</span><span class="pv">${proj.location||'—'}</span></div>
-  <div class="pi"><span class="pl">Contract Value</span><span class="pv">${formatCurrency(proj.contractValue)}</span></div>
-</div>
-${kpiHTML}
-${chartsHTML}
-${extraHTML}
-${tableHTML}
-<div class="footer">
-  <div class="fl"><strong>Construction Innovation Platform</strong> | Generated: ${today}<br>Computer-generated record — valid for reference purposes only</div>
-  <div class="sig-blk">${sig?`<img class="sig-img" src="${sig}" alt="Sig">`:''}
-    <div class="sig-inf"><div class="sig-name">Engr. Saqib Hussain (PE)</div><div class="sig-role">Lead Electrical Engineer</div><div style="font-size:7pt;color:#6b7280">Construction Innovation</div></div>
-  </div>
-  <div class="pno">Page 1 of 1</div>
-</div>
-</div></body></html>`;
-
-  const w = window.open('','_blank','width=1100,height=860');
-  w.document.write(html);
-  w.document.close();
-  setTimeout(()=>{ w.focus(); w.print(); }, 900);
-}
-
-// ── STATUS BADGE HELPER ───────────────────────────────────────
-function pdfBadge(status) {
-  const map={approved:'badge-a',rejected:'badge-r',submitted:'badge-p','under-review':'badge-p',open:'badge-o',closed:'badge-c',pending:'badge-p',passed:'badge-a',failed:'badge-r',critical:'badge-cr'};
-  const cls=map[status]||'badge-c';
-  return `<span class="${cls}">${status.replace(/-/g,' ').toUpperCase()}</span>`;
-}
-
-// ── CURRENCY FORMATTERS ───────────────────────────────────────
-function formatCurrency(value) {
-  if (value === undefined || value === null) return '—';
-  return 'SAR ' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
-function formatMillions(value) {
-  if (value === undefined || value === null) return '—';
-  const millions = value / 1e6;
-  return 'SAR ' + millions.toFixed(1) + 'M';
-}
-
-// ── PROJECTS PAGE ─────────────────────────────────────────────
-function renderProjects() {
-  const D = window.APP_DATA;
-  const data = D.PROJECTS;
-  const tableBody = document.getElementById('projects-table-body');
-  if (!tableBody) return;
-  tableBody.innerHTML = data.map(p => `
-    <tr>
-      <td class="td-mono">${p.id}</td>
-      <td>${p.code}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${p.name}</td>
-      <td>${p.client || '—'}</td>
-      <td class="td-mono">${formatMillions(p.contractValue)}</td>
-      <td><div class="progress-bar" style="width:60px"><div class="progress-fill" style="width:${p.currentProgress}%"></div></div> ${p.currentProgress}%</td>
-      <td>${statusBadge(p.status)}</td>
-      <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.root}${encodeURIComponent(p.code)}/" target="_blank" title="Open project folder">📂 Open</a>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="openEditProjectModal('${p.id}')">✎ Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="confirmDeleteProject('${p.id}')">🗑 Delete</button>`:''}
-      </td>
-    </tr>`).join('');
-  setupTableFilter('projects-filter-input', 'projects-table-body');
-}
-
-function openEditProjectModal(id) {
-  const p = window.APP_DATA.PROJECTS.find(x => x.id === id);
-  if (!p) return;
-  openModal('Edit Project', '', `
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Project ID</label><input class="form-control" id="ep-id" value="${p.id}"></div>
-      <div class="form-group"><label class="form-label">Project Code</label><input class="form-control" id="ep-code" value="${p.code}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Project Name</label><input class="form-control" id="ep-name" value="${p.name}"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Client</label><input class="form-control" id="ep-client" value="${p.client || ''}"></div>
-      <div class="form-group"><label class="form-label">Contractor</label><input class="form-control" id="ep-contractor" value="${p.contractor || ''}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Contract Value (SAR)</label><input class="form-control" id="ep-value" type="number" value="${p.contractValue}"></div>
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="ep-status">
-          <option value="active" ${p.status==='active'?'selected':''}>Active</option>
-          <option value="planned" ${p.status==='planned'?'selected':''}>Planned</option>
-          <option value="completed" ${p.status==='completed'?'selected':''}>Completed</option>
-          <option value="on-hold" ${p.status==='on-hold'?'selected':''}>On Hold</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Start Date</label><input class="form-control" id="ep-start" type="date" value="${p.startDate || ''}"></div>
-      <div class="form-group"><label class="form-label">Planned End</label><input class="form-control" id="ep-end" type="date" value="${p.plannedEnd || ''}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="ep-desc" rows="2">${p.description || ''}</textarea></div>`,
-    () => {
-      p.id = document.getElementById('ep-id').value;
-      p.code = document.getElementById('ep-code').value;
-      p.name = document.getElementById('ep-name').value;
-      p.client = document.getElementById('ep-client').value;
-      p.contractor = document.getElementById('ep-contractor').value;
-      p.contractValue = parseFloat(document.getElementById('ep-value').value) || 0;
-      p.status = document.getElementById('ep-status').value;
-      p.startDate = document.getElementById('ep-start').value;
-      p.plannedEnd = document.getElementById('ep-end').value;
-      p.description = document.getElementById('ep-desc').value;
-      renderProjects();
-      // Update switcher
-      const switcher = document.getElementById('project-switcher');
-      if (switcher) {
-        switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
-      }
-      showToast('Project Updated', p.name, 'success');
-    }
-  );
-}
-
-function confirmDeleteProject(id) {
-  if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
-  if (!confirm('Final confirmation: Delete project permanently?')) return;
-  const index = window.APP_DATA.PROJECTS.findIndex(x => x.id === id);
-  if (index !== -1) {
-    const deleted = window.APP_DATA.PROJECTS.splice(index, 1)[0];
-    if (window.APP_DATA.ACTIVE_PROJECT.id === id && window.APP_DATA.PROJECTS.length > 0) {
-      window.APP_DATA.ACTIVE_PROJECT = window.APP_DATA.PROJECTS[0];
-      updateProjectDisplay(window.APP_DATA.ACTIVE_PROJECT);
-    }
-    renderProjects();
-    const switcher = document.getElementById('project-switcher');
-    if (switcher) {
-      switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===window.APP_DATA.ACTIVE_PROJECT.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
-    }
-    showToast('Project Deleted', deleted.name, 'warning');
-  }
-}
-
-function exportProjectsCSV() {
-  window.APP_DATA.exportToCSV(window.APP_DATA.PROJECTS, 'Projects');
-}
-
-function printProjectsPDF() {
-  const data = window.APP_DATA.PROJECTS;
-  generatePDF({
-    title: 'PROJECT REGISTER',
-    module: 'PRJ',
-    kpis: [
-      { label: 'Total Projects', value: data.length, color: '#1d4ed8' },
-      { label: 'Active', value: data.filter(p => p.status === 'active').length, color: '#059669' },
-      { label: 'Completed', value: data.filter(p => p.status === 'completed').length, color: '#6b7280' },
-    ],
-    tableHeaders: ['ID', 'Code', 'Name', 'Client', 'Contract Value', 'Progress', 'Status'],
-    tableRows: data.map(p => [p.id, p.code, p.name, p.client || '—', formatCurrency(p.contractValue), p.currentProgress + '%', p.status])
-  });
-}
-
-// ── DASHBOARD ─────────────────────────────────────────────────
-// ── LIVE KPI REFRESH (called after every data mutation) ────────
-function refreshDashboardKPIs() {
-  // Only update DOM elements that exist — safe to call from any page
-  const D = window.APP_DATA;
-  const KPIs = D.computeKPIs();
-  const proj = D.ACTIVE_PROJECT;
-
-  // Dashboard KPI tiles
-  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
-  set('wb-progress',       KPIs.overallProgress + '%');
-  set('wb-workers',        KPIs.activeWorkers);
-  set('wb-contract',       formatMillions(proj.contractValue));
-  set('kpi-drawings-pending', KPIs.drawingsPending);
-  set('kpi-open-ncrs',     KPIs.openNCRs + KPIs.openRFIs + KPIs.openSIs);
-  set('kpi-schedule-var',  KPIs.scheduleVariance + '%');
-  set('kpi-cost-var',      (KPIs.costVariance>0?'+':'') + KPIs.costVariance + '%');
-  set('kpi-progress',      KPIs.overallProgress + '%');
-  set('kpi-workers',       KPIs.activeWorkers);
-  set('kpi-safe-hours',    (KPIs.safeManHours/1000).toFixed(0) + 'K');
-  set('kpi-ltir',          KPIs.ltir);
-
-  // Sidebar progress bar
-  const fill = document.getElementById('sidebar-progress-fill');
-  const pct  = document.getElementById('sidebar-progress-pct');
-  if(fill) fill.style.width = KPIs.overallProgress + '%';
-  if(pct)  pct.textContent  = KPIs.overallProgress + '%';
-
-  // Nav badges — drawings pending, NCR open count
-  const drawBadge = document.querySelector('[data-page="drawings"] .nav-badge');
-  if(drawBadge) drawBadge.textContent = KPIs.drawingsPending || '';
-
-  const ncrBadge = document.getElementById('nav-badge-ncr') || document.querySelector('[data-page="ncr"] .nav-badge');
-  if(ncrBadge) ncrBadge.textContent = KPIs.openNCRs || '';
-
-  const hseBadge = document.querySelector('[data-page="hse"] .nav-badge');
-  if(hseBadge) hseBadge.textContent = KPIs.openIncidents || '';
-
-  // If we're currently on the dashboard, also refresh activity feed
-  if(STATE.currentPage === 'dashboard') {
-    renderDashboardActivity();
-  }
-}
-
-function renderDashboard() {
-  const D = window.APP_DATA, KPIs = D.computeKPIs(), proj = D.ACTIVE_PROJECT;
-  document.getElementById('wb-project').textContent = proj.name;
-  document.getElementById('wb-progress').textContent = KPIs.overallProgress + '%';
-  document.getElementById('wb-workers').textContent = KPIs.activeWorkers;
-  document.getElementById('wb-contract').textContent = formatMillions(proj.contractValue);
-  document.getElementById('kpi-drawings-pending').textContent = KPIs.drawingsPending;
-  document.getElementById('kpi-open-ncrs').textContent = KPIs.openNCRs + KPIs.openRFIs + KPIs.openSIs;
-  document.getElementById('kpi-schedule-var').textContent = KPIs.scheduleVariance + '%';
-  document.getElementById('kpi-cost-var').textContent = (KPIs.costVariance>0?'+':'') + KPIs.costVariance + '%';
-  document.getElementById('kpi-progress').textContent = KPIs.overallProgress + '%';
-  document.getElementById('kpi-workers').textContent = KPIs.activeWorkers;
-  document.getElementById('kpi-safe-hours').textContent = (KPIs.safeManHours/1000).toFixed(0) + 'K';
-  document.getElementById('kpi-ltir').textContent = KPIs.ltir;
-  renderSCurveChart(); renderDisciplineChart(); renderMilestoneList(); renderDashboardActivity();
-}
-
-function renderSCurveChart() {
-  const ctx = document.getElementById('scurve-chart'); if (!ctx) return;
-  if (STATE.charts.scurve) STATE.charts.scurve.destroy();
-  const d = window.APP_DATA.mockProgressData.sCurveData;
-  STATE.charts.scurve = new Chart(ctx, { type:'line', data:{ labels:d.map(x=>x.month), datasets:[{ label:'Planned', data:d.map(x=>x.planned), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin' },{ label:'Actual', data:d.map(x=>x.actual), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.12)', borderWidth:2.5, pointRadius:3, tension:0.4, fill:'origin', spanGaps:false }] }, options:chartDefaults({ scales:{ y:{ min:0, suggestedMax:55, ticks:{ callback:v=>v+'%' } } } }) });
-}
-
-function renderDisciplineChart() {
-  const ctx = document.getElementById('discipline-chart'); if (!ctx) return;
-  if (STATE.charts.discipline) STATE.charts.discipline.destroy();
-  const d = window.APP_DATA.mockProgressData.disciplineProgress;
-  STATE.charts.discipline = new Chart(ctx, { type:'bar', data:{ labels:d.map(x=>x.name), datasets:[{ label:'Planned %', data:d.map(x=>x.planned), backgroundColor:'rgba(59,130,246,0.3)', borderColor:'#3b82f6', borderWidth:1, borderRadius:4 },{ label:'Actual %', data:d.map(x=>x.progress), backgroundColor:'rgba(16,185,129,0.7)', borderColor:'#10b981', borderWidth:1, borderRadius:4 }] }, options:chartDefaults({ scales:{ y:{ max:100, ticks:{ callback:v=>v+'%' } } } }) });
-}
-
-function renderMilestoneList() {
-  const container = document.getElementById('milestone-list'); if (!container) return;
-  const icons={completed:'✓','on-track':'►','at-risk':'⚠',delayed:'✗'};
-  container.innerHTML = window.APP_DATA.mockProgressData.milestones.slice(0,6).map(ms=>`
-    <div class="milestone-item">
-      <div class="ms-icon ${ms.status}">${icons[ms.status]||'●'}</div>
-      <div class="ms-info"><div class="ms-name">${ms.name}</div><div class="ms-date">Planned: ${ms.planned}${ms.actual?' | Actual: '+ms.actual:''}</div></div>
-      <span class="badge badge-${ms.status==='completed'?'completed':ms.status==='on-track'?'approved':ms.status==='at-risk'?'pending':'rejected'}">${ms.status.replace('-',' ')}</span>
-      ${ms.delay>0?`<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent-rose)">+${ms.delay}d</span>`:''}
-    </div>`).join('');
-}
-
-function renderDashboardActivity() {
-  const activities=[{color:'var(--accent-emerald)',text:'DWG-010 Fire Suppression approved by consultant',time:'1h ago'},{color:'var(--accent-rose)',text:'NCR-003 raised: Improper Curing Procedure – Critical',time:'3h ago'},{color:'var(--accent-blue)',text:'MAT-003 Curtain Wall submitted for review',time:'6h ago'},{color:'var(--accent-amber)',text:'HSE-003 Near Miss: Crane swing logged',time:'1d ago'},{color:'var(--accent-violet)',text:'PO-004 HVAC Equipment partial delivery (60%)',time:'2d ago'}];
-  const c = document.getElementById('activity-feed'); if(!c)return;
-  c.innerHTML = activities.map(a=>`<div class="activity-item"><div class="activity-dot" style="background:${a.color}"></div><div style="flex:1"><div style="font-size:12.5px;color:var(--text-primary)">${a.text}</div><div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:2px">${a.time}</div></div></div>`).join('');
-}
-
-async function printDashboardPDF() {
-  const D=window.APP_DATA, KPIs=D.computeKPIs();
-  const scurveCanvas = document.getElementById('scurve-chart');
-  const disciplineCanvas = document.getElementById('discipline-chart');
-
-  // Redraw both canvases into identical 900x380 white-background images
-  function captureFixed(canvas) {
-    if (!canvas) return '';
-    const tmp = document.createElement('canvas');
-    tmp.width  = 900;
-    tmp.height = 380;
-    const ctx = tmp.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, 900, 380);
-    ctx.drawImage(canvas, 0, 0, 900, 380);
-    return tmp.toDataURL('image/png');
-  }
-
-  const scurveImg     = captureFixed(scurveCanvas);
-  const disciplineImg = captureFixed(disciplineCanvas);
-
-  const milestones = D.mockProgressData.milestones;
-
-  const chartsBlock = `
-    <div class="chart-pair">
-      <div class="chart-cell" style="padding-right:4px">
-        <div class="chart-label">S-Curve — Planned vs Actual</div>
-        <img src="${scurveImg}">
-      </div>
-      <div class="chart-cell" style="padding-left:4px">
-        <div class="chart-label">Discipline Progress</div>
-        <img src="${disciplineImg}">
-      </div>
-    </div>`;
-
-  const msTable = `
-    <div class="chart-label" style="margin-bottom:5px">Key Milestones</div>
-    <table style="width:100%;border-collapse:collapse;font-size:7.5pt;margin-bottom:10px">
-      <thead><tr>
-        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Milestone</th>
-        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Planned</th>
-        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Actual</th>
-        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Status</th>
-        <th style="background:#1e3a5f;color:#fff;padding:5px 7px;text-align:left;font-size:7pt;text-transform:uppercase">Delay</th>
-      </tr></thead>
-      <tbody>${milestones.map((m,i)=>`
-        <tr style="background:${i%2===0?'#f8f9fa':'#fff'}">
-          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef;font-size:7.5pt">${m.name}</td>
-          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef;font-family:monospace;font-size:7pt">${m.planned}</td>
-          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef;font-family:monospace;font-size:7pt">${m.actual||'—'}</td>
-          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef">${pdfBadge(m.status)}</td>
-          <td style="padding:4px 7px;border-bottom:1px solid #e9ecef;font-family:monospace;font-size:7pt;color:${m.delay>0?'#dc2626':'#059669'}">${m.delay>0?'+'+m.delay+'d':'On time'}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>`;
-
-  generatePDF({
-    title:'DASHBOARD OVERVIEW',
-    subtitle:'Live Project KPIs & Progress Summary',
-    module:'DASH',
-    kpis:[
-      {label:'Overall Progress',  value:KPIs.overallProgress+'%',                        color:'#1d4ed8'},
-      {label:'Active Workers',    value:KPIs.activeWorkers,                               color:'#059669'},
-      {label:'Open NCRs',         value:KPIs.openNCRs+KPIs.openRFIs+KPIs.openSIs,        color:'#f59e0b'},
-      {label:'Cost Variance',     value:(KPIs.costVariance>0?'+':'')+KPIs.costVariance+'%',color:'#dc2626'},
-      {label:'Safe Man Hours',    value:(KPIs.safeManHours/1000).toFixed(0)+'K',          color:'#059669'},
-      {label:'LTIR Score',        value:KPIs.ltir,                                        color:'#f59e0b'},
-      {label:'Drawings Pending',  value:KPIs.drawingsPending,                             color:'#6366f1'},
-      {label:'Schedule Variance', value:KPIs.scheduleVariance+'%',                        color:'#dc2626'},
-    ],
-    extraHTML: chartsBlock + msTable,
-    tableHeaders: [],
-    tableRows:    [],
-    charts:       []
-  });
-}
-// ── DRAWINGS ──────────────────────────────────────────────────
-function renderDrawings() {
-  const D=window.APP_DATA;
-  let data = D.mockDrawingsData;
-  const mepFilter = STATE.drawingMEPFilter;
-  if (mepFilter === 'mep') data = data.filter(d=>d.discipline.includes('Electrical') || d.discipline.includes('Mechanical') || d.discipline.includes('Plumbing') || d.discipline.includes('HVAC') || d.discipline.includes('Firefighting'));
-  else if (mepFilter === 'mechanical') data = data.filter(d=>d.discipline === 'Mechanical');
-  else if (mepFilter === 'electrical') data = data.filter(d=>d.discipline === 'Electrical');
-  else if (mepFilter === 'plumbing') data = data.filter(d=>d.discipline === 'Plumbing');
-  else if (mepFilter === 'hvac') data = data.filter(d=>d.discipline === 'HVAC');
-  else if (mepFilter === 'firefighting') data = data.filter(d=>d.discipline === 'Fire Protection');
-  else if (mepFilter === 'architect') data = data.filter(d=>d.discipline === 'Architect');
-  else if (mepFilter === 'civil') data = data.filter(d=>d.discipline === 'Civil');
-  else if (mepFilter === 'structure') data = data.filter(d=>d.discipline === 'Structural');
-
-  renderRegisterStats('drawings-stats',[
-    {label:'Total',value:data.length,color:'blue'},
-    {label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'emerald'},
-    {label:'Under Review',value:data.filter(d=>d.status==='under-review').length,color:'amber'},
-    {label:'Rejected',value:data.filter(d=>d.status==='rejected').length,color:'rose'},
-  ]);
-
-  renderTable('drawings-table-body', data, d => `
-    <tr>
-      <td class="td-mono">${d.id}</td>
-      <td><div style="font-weight:600;color:var(--text-primary)">${d.title}</div></td>
-      <td><span class="tag">${d.discipline}</span></td>
-      <td class="td-mono" style="color:var(--accent-cyan)">Rev ${d.rev}</td>
-      <td>${statusBadge(d.status)}</td>
-      <td class="td-mono">${d.date}</td>
-      <td style="font-size:11px;color:var(--text-secondary);max-width:150px">${d.comments||'—'}</td>
-      <td>
-        <div style="display:flex;gap:4px">
-          <a class="drive-link" href="${D.LOCAL_DRIVE.drawings}${encodeURIComponent(d.file)}" target="_blank" title="Open file from local drive">Open</a>
-          <button class="btn btn-sm btn-secondary" onclick="viewDrawing('${d.id}')">View</button>
-          ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editDrawingStatus('${d.id}')">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteDrawing('${d.id}')">Delete</button>
-          <button class="btn btn-sm btn-secondary" onclick="triggerImport('drawings')">Import</button>`:''}
-        </div>
-      </td>
-    </tr>`);
-
-  setupTableFilter('drawing-filter-input','drawings-table-body');
-  setupSelectFilter('drawing-status-filter','drawings-table-body',4);
-
-  document.querySelectorAll('.mep-tab').forEach(t => {
-    t.onclick = () => {
-      document.querySelectorAll('.mep-tab').forEach(x=>x.classList.remove('active'));
-      t.classList.add('active');
-      STATE.drawingMEPFilter = t.dataset.mep;
-      renderDrawings();
-    };
-  });
-}
-
-function viewDrawing(id) {
-  const d=window.APP_DATA.mockDrawingsData.find(x=>x.id===id); if(!d)return;
-  openModal('View Drawing','', `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('Drawing ID',d.id)}${inf('Title',d.title)}
-      ${inf('Discipline','<span class="tag">'+d.discipline+'</span>')}${inf('Revision','<span style="font-family:DM Mono,monospace;color:var(--accent-cyan)">Rev '+d.rev+'</span>')}
-      ${inf('Status',statusBadge(d.status))}${inf('Date Submitted',d.date)}
-      ${inf('Consultant',d.consultant)}${inf('Submitted By',d.submittedBy)}
-    </div>
-    <div style="margin-top:14px">${inf('Comments',d.comments||'No comments')}</div>
-    <div style="margin-top:14px">
-      <a class="drive-link" style="font-size:12px" href="${window.APP_DATA.LOCAL_DRIVE.drawings}${encodeURIComponent(d.file)}" target="_blank">📂 ${d.file}</a>
-    </div>`);
-}
-
-function editDrawingStatus(id) {
-  const d=window.APP_DATA.mockDrawingsData.find(x=>x.id===id); if(!d)return;
-  openModal('Edit Drawing','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Drawing ID</label><input class="form-control" id="edit-dwg-id" value="${d.id}"></div>
-      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="edit-dwg-title" value="${d.title}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Status</label>
-      <select class="form-control" id="edit-status-select">${['submitted','under-review','approved','rejected'].map(s=>`<option value="${s}"${s===d.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
-    </div>
-    <div class="form-group"><label class="form-label">Revision No.</label>
-      <input class="form-control" id="edit-rev" type="number" min="1" value="${d.rev}">
-    </div>
-    <div class="form-group"><label class="form-label">Consultant Comments</label>
-      <textarea class="form-control" id="edit-comments" rows="3">${d.comments}</textarea>
-    </div>`,
-  ()=>{
-    d.id=document.getElementById('edit-dwg-id').value||d.id;
-    d.title=document.getElementById('edit-dwg-title').value||d.title;
-    d.status=document.getElementById('edit-status-select').value;
-    d.rev=parseInt(document.getElementById('edit-rev').value)||d.rev;
-    d.comments=document.getElementById('edit-comments').value;
-    renderDrawings(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${d.id} updated to Rev ${d.rev} — ${d.status}`,'success');
-  });
-}
-
-function deleteDrawing(id) {
-  const data=window.APP_DATA.mockDrawingsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
-  openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Drawing <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderDrawings(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); });
-}
-
-function openAddDrawingModal() {
-  openModal('Add New Drawing','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Drawing ID</label><input class="form-control" id="nd-id" placeholder="DWG-011"></div>
-      <div class="form-group"><label class="form-label">Revision</label><input class="form-control" id="nd-rev" type="number" value="1" min="1"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="nd-title" placeholder="Drawing title"></div>
-    <div class="form-group"><label class="form-label">Discipline</label>
-      <select class="form-control" id="nd-disc">${window.APP_DATA.DISCIPLINES.map(d=>`<option>${d}</option>`).join('')}</select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Consultant</label><input class="form-control" id="nd-cons" placeholder="Meridian"></div>
-      <div class="form-group"><label class="form-label">Date Submitted</label><input class="form-control" id="nd-date" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">File Name (on local drive)</label><input class="form-control" id="nd-file" placeholder="DWG-011-Rev1.pdf"></div>
-    <div class="form-group"><label class="form-label">Comments</label><textarea class="form-control" id="nd-comments" rows="2"></textarea></div>`,
-  ()=>{
-    const id=document.getElementById('nd-id').value||('DWG-0'+String(window.APP_DATA.mockDrawingsData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockDrawingsData.push({id,title:document.getElementById('nd-title').value||'New Drawing',discipline:document.getElementById('nd-disc').value,rev:parseInt(document.getElementById('nd-rev').value)||1,status:'submitted',submittedBy:'U001',date:document.getElementById('nd-date').value,consultant:document.getElementById('nd-cons').value,file:document.getElementById('nd-file').value||(id+'-Rev1.pdf'),comments:document.getElementById('nd-comments').value});
-    renderDrawings(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Drawing Register`,'success');
-  });
-}
-
-function printDrawingsPDF() {
-  let data = window.APP_DATA.mockDrawingsData;
-  const mf=STATE.drawingMEPFilter;
-  if(mf==='mep') data=data.filter(d=>['Electrical','Mechanical','Plumbing','HVAC','Fire Protection'].includes(d.discipline));
-  else if(mf&&mf!=='all') data=data.filter(d=>d.discipline.toLowerCase()===mf.toLowerCase()||d.discipline.toLowerCase().includes(mf.toLowerCase()));
-  const discLabel = mf==='all'?'All Disciplines':(mf==='mep'?'All MEP':mf.charAt(0).toUpperCase()+mf.slice(1));
-  generatePDF({
-    title:'DRAWING REGISTER — '+discLabel.toUpperCase(),
-    subtitle:'Document Control Register | Discipline: '+discLabel,
-    module:'DWG',
-    kpis:[
-      {label:'Total Drawings',value:data.length,color:'#1d4ed8'},
-      {label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'#059669'},
-      {label:'Under Review',value:data.filter(d=>d.status==='under-review').length,color:'#f59e0b'},
-      {label:'Rejected',value:data.filter(d=>d.status==='rejected').length,color:'#dc2626'},
-    ],
-    tableHeaders:['DWG ID','Title','Discipline','Rev','Status','Date','Consultant','Comments'],
-    tableRows: data.map(d=>[d.id,d.title,d.discipline,'Rev '+d.rev,pdfBadge(d.status),d.date,d.consultant,d.comments||'—']),
-  });
-}
-
-function importDrawingsCSV(file) {
-  parseCSVFile(file, rows => {
-    rows.forEach(r => {
-      if (r.id && r.title) window.APP_DATA.mockDrawingsData.push({ id:r.id, title:r.title, discipline:r.discipline||'Civil', rev:parseInt(r.rev)||1, status:r.status||'submitted', submittedBy:'U001', date:r.date||new Date().toISOString().split('T')[0], consultant:r.consultant||'', file:r.file||'', comments:r.comments||'' });
-    });
-    renderDrawings(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Imported',`${rows.length} drawings imported`,'success');
-  });
-}
-
-// ── MATERIALS ─────────────────────────────────────────────────
-function renderMaterials() {
-  let data=window.APP_DATA.mockMaterialsData;
-  const df=STATE.materialDiscFilter;
-  if(df&&df!=='all') data=data.filter(m=>(m.discipline||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('materials-stats',[{label:'Total',value:data.length,color:'blue'},{label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'emerald'},{label:'Pending',value:data.filter(d=>d.status==='under-review'||d.status==='submitted').length,color:'amber'},{label:'Rejected',value:data.filter(d=>d.status==='rejected').length,color:'rose'}]);
-  renderTable('materials-table-body',data,m=>`
-    <tr>
-      <td class="td-mono">${m.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${m.item}</td>
-      <td><span class="tag">${m.discipline||'General'}</span></td>
-      <td class="td-mono">${m.boqRef}</td>
-      <td class="td-mono" style="color:var(--accent-amber)">${m.poNo||'—'}</td>
-      <td style="color:var(--text-secondary)">${m.supplier}</td>
-      <td class="td-mono" style="color:var(--accent-cyan)">Rev ${m.rev}</td>
-      <td>${statusBadge(m.status)}</td>
-      <td class="td-mono">${m.submitDate}</td>
-      <td class="td-mono">${m.approveDate||'—'}</td>
-      <td class="td-mono">${m.deliveryDate}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${m.remarks||'—'}</td>
-      <td>
-        <a class="drive-link" href="${openLocalFile('materials',m.id+'-Rev'+m.rev+'.pdf')}" target="_blank" onclick="saveFilePath('materials',this.href)">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewMaterial('${m.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editMaterial('${m.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteMaterial('${m.id}')">Delete</button>`:''}
-      </td>
-    </tr>`);
-  setupTableFilter('material-filter-input','materials-table-body');
-  setupDiscTabs('materials-disc-tabs','materialDiscFilter',renderMaterials);
-}
-
-function viewMaterial(id) {
-  const m=window.APP_DATA.mockMaterialsData.find(x=>x.id===id); if(!m)return;
-  openModal('View Material Submittal','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('ID',m.id)}${inf('Description',m.item)}
-      ${inf('BOQ Ref',m.boqRef)}${inf('PO No.',m.poNo||'—')}
-      ${inf('Supplier',m.supplier)}${inf('Revision',m.rev)}
-      ${inf('Status',statusBadge(m.status))}${inf('Submit Date',m.submitDate)}
-      ${inf('Delivery Date',m.deliveryDate||'—')}${inf('Qty',m.qty+' '+m.unit)}
-    </div>
-    <div style="margin-top:14px">${inf('Remarks',m.remarks||'—')}</div>`);
-}
-
-function editMaterial(id) {
-  const m=window.APP_DATA.mockMaterialsData.find(x=>x.id===id); if(!m)return;
-  openModal('Edit Material Submittal','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="em-id" value="${m.id}"></div>
-      <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="em-item" value="${m.item}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="em-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(m.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="em-status">${['submitted','under-review','approved','rejected'].map(s=>`<option value="${s}"${s===m.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
-      </div>
-      <div class="form-group"><label class="form-label">Revision No.</label>
-        <input class="form-control" id="em-rev" type="number" min="1" value="${m.rev}">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">PO Number</label><input class="form-control" id="em-po" value="${m.poNo||''}"></div>
-      <div class="form-group"><label class="form-label">Approved Date</label><input class="form-control" id="em-adate" type="date" value="${m.approveDate}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="em-remarks" rows="2">${m.remarks||''}</textarea></div>`,
-  ()=>{
-    m.id=document.getElementById('em-id').value||m.id;
-    m.item=document.getElementById('em-item').value||m.item;
-    m.discipline=document.getElementById('em-disc').value;
-    m.status=document.getElementById('em-status').value;
-    m.rev=parseInt(document.getElementById('em-rev').value)||m.rev;
-    m.poNo=document.getElementById('em-po').value;
-    m.approveDate=document.getElementById('em-adate').value;
-    m.remarks=document.getElementById('em-remarks').value;
-    renderMaterials(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${m.id} updated`,'success');
-  });
-}
-
-function deleteMaterial(id) {
-  const data=window.APP_DATA.mockMaterialsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
-  openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Material <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderMaterials(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); });
-}
-
-function openAddMaterialModal() {
-  openModal('Add Material Submittal','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="nm-id" placeholder="MAT-008"></div>
-      <div class="form-group"><label class="form-label">PO Reference</label><input class="form-control" id="nm-po" placeholder="PO-001"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Material Description</label><input class="form-control" id="nm-item" placeholder="Material name"></div>
-    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="nm-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}">${d}</option>`).join('')}</select></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">BOQ Reference</label><input class="form-control" id="nm-boq" placeholder="BOQ-3.1.1"></div>
-      <div class="form-group"><label class="form-label">Supplier</label><input class="form-control" id="nm-supplier" placeholder="Supplier name"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Qty</label><input class="form-control" id="nm-qty" type="number" placeholder="0"></div>
-      <div class="form-group"><label class="form-label">Unit</label><input class="form-control" id="nm-unit" placeholder="m³, MT, No."></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Delivery Date</label><input class="form-control" id="nm-del" type="date"></div>
-      <div class="form-group"><label class="form-label">Revision</label><input class="form-control" id="nm-rev" type="number" value="1" min="1"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nm-remarks" rows="2"></textarea></div>`,
-  ()=>{
-    const id=document.getElementById('nm-id').value||('MAT-0'+String(window.APP_DATA.mockMaterialsData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockMaterialsData.push({id,item:document.getElementById('nm-item').value||'New Material',discipline:document.getElementById('nm-disc')?.value||'General',boqRef:document.getElementById('nm-boq').value,poNo:document.getElementById('nm-po').value,supplier:document.getElementById('nm-supplier').value,rev:parseInt(document.getElementById('nm-rev').value)||1,status:'submitted',submitDate:new Date().toISOString().split('T')[0],approveDate:'',deliveryDate:document.getElementById('nm-del').value,qty:parseFloat(document.getElementById('nm-qty').value)||0,unit:document.getElementById('nm-unit').value,remarks:document.getElementById('nm-remarks').value});
-    renderMaterials(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Material Register`,'success');
-  });
-}
-
-function printMaterialsPDF() {
-  let data=window.APP_DATA.mockMaterialsData;
-  const df=STATE.materialDiscFilter;
-  if(df&&df!=='all') data=data.filter(m=>(m.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df==='all'?'All Disciplines':df;
-  generatePDF({ title:'MATERIAL SUBMITTAL REGISTER — '+discLabel.toUpperCase(), subtitle:'BOQ-Linked Material Approvals | Discipline: '+discLabel, module:'MAT',
-    kpis:[{label:'Total Items',value:data.length,color:'#1d4ed8'},{label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'#059669'},{label:'Pending',value:data.filter(d=>d.status!=='approved'&&d.status!=='rejected').length,color:'#f59e0b'},{label:'Rejected',value:data.filter(d=>d.status==='rejected').length,color:'#dc2626'}],
-    tableHeaders:['ID','Material','Discipline','BOQ Ref','PO No.','Supplier','Rev','Status','Submit Date','Delivery Date','Remarks'],
-    tableRows:data.map(m=>[m.id,m.item,m.discipline||'General',m.boqRef,m.poNo||'—',m.supplier,'Rev '+m.rev,pdfBadge(m.status),m.submitDate,m.deliveryDate,m.remarks||'—']),
-  });
-}
-
-// ── METHODS ───────────────────────────────────────────────────
-function renderMethods() {
-  let data=window.APP_DATA.mockMethodsData;
-  const df=STATE.methodDiscFilter;
-  if(df&&df!=='all') data=data.filter(m=>(m.discipline||m.category||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('methods-stats',[{label:'Total',value:data.length,color:'blue'},{label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'emerald'},{label:'Pending HSE',value:data.filter(d=>d.hseReview==='Pending').length,color:'amber'},{label:'Critical Risk',value:data.filter(d=>d.risk==='Critical').length,color:'rose'}]);
-  renderTable('methods-table-body',data,m=>`
-    <tr>
-      <td class="td-mono">${m.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${m.title}</td>
-      <td><span class="tag">${m.discipline||m.category}</span></td>
-      <td><span class="tag">${m.category}</span></td>
-      <td>${riskBadge(m.risk)}</td>
-      <td class="td-mono" style="color:var(--accent-cyan)">Rev ${m.rev}</td>
-      <td>${statusBadge(m.status)}</td>
-      <td><span class="badge badge-${m.hseReview==='Approved'?'approved':'pending'}">${m.hseReview}</span></td>
-      <td class="td-mono">${m.date}</td>
-      <td>
-        <a class="drive-link" href="${openLocalFile('methods',m.file)}" target="_blank" onclick="saveFilePath('methods',this.href)">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewMethod('${m.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editMethod('${m.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteMethod('${m.id}')">Delete</button>`:''}
-      </td>
-    </tr>`);
-  setupTableFilter('method-filter-input','methods-table-body');
-  setupDiscTabs('methods-disc-tabs','methodDiscFilter',renderMethods);
-}
-
-function viewMethod(id) {
-  const m=window.APP_DATA.mockMethodsData.find(x=>x.id===id); if(!m)return;
-  openModal('View Method Statement','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('MS ID',m.id)}${inf('Title',m.title)}
-      ${inf('Category',m.category)}${inf('Risk',riskBadge(m.risk))}
-      ${inf('Status',statusBadge(m.status))}${inf('Revision',m.rev)}
-      ${inf('HSE Review',m.hseReview)}${inf('Date',m.date)}
-      ${inf('Submitted By',m.submittedBy)}
-    </div>`);
-}
-
-function editMethod(id) {
-  const m=window.APP_DATA.mockMethodsData.find(x=>x.id===id); if(!m)return;
-  openModal('Edit Method Statement','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">MS ID</label><input class="form-control" id="ems-id" value="${m.id}"></div>
-      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="ems-title" value="${m.title}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="ems-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(m.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="ems-status">${['submitted','under-review','approved','rejected'].map(s=>`<option value="${s}"${s===m.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
-      </div>
-      <div class="form-group"><label class="form-label">Revision</label><input class="form-control" id="ems-rev" type="number" min="1" value="${m.rev}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">HSE Review</label>
-      <select class="form-control" id="ems-hse"><option${m.hseReview==='Pending'?' selected':''}>Pending</option><option${m.hseReview==='Approved'?' selected':''}>Approved</option><option${m.hseReview==='Rejected'?' selected':''}>Rejected</option></select>
-    </div>`,
-  ()=>{
-    m.id=document.getElementById('ems-id').value||m.id;
-    m.title=document.getElementById('ems-title').value||m.title;
-    m.discipline=document.getElementById('ems-disc').value;
-    m.status=document.getElementById('ems-status').value;
-    m.rev=parseInt(document.getElementById('ems-rev').value)||m.rev;
-    m.hseReview=document.getElementById('ems-hse').value;
-    m.file=`${m.id}-Rev${m.rev}.pdf`;
-    renderMethods(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${m.id} updated to Rev ${m.rev}`,'success');
-  });
-}
-
-function deleteMethod(id) {
-  const data=window.APP_DATA.mockMethodsData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
-  openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Method Statement <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderMethods(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); });
-}
-
-function openAddMethodModal() {
-  openModal('Add Method Statement','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">MS ID</label><input class="form-control" id="nm-id" placeholder="MS-007"></div>
-      <div class="form-group"><label class="form-label">Revision</label><input class="form-control" id="nm-rev" type="number" value="1" min="1"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="nm-title" placeholder="Method statement title"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Category</label><input class="form-control" id="nm-cat" placeholder="Structural"></div>
-      <div class="form-group"><label class="form-label">Risk Level</label>
-        <select class="form-control" id="nm-risk"><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option><option value="Critical">Critical</option></select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">HSE Review</label>
-      <select class="form-control" id="nm-hse"><option>Pending</option><option>Approved</option><option>Rejected</option></select>
-    </div>
-    <div class="form-group"><label class="form-label">File Name</label><input class="form-control" id="nm-file" placeholder="MS-007-Rev1.pdf"></div>`,
-  ()=>{
-    const id=document.getElementById('nm-id').value||('MS-0'+String(window.APP_DATA.mockMethodsData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockMethodsData.push({
-      id, title: document.getElementById('nm-title').value || 'New MS',
-      category: document.getElementById('nm-cat').value,
-      risk: document.getElementById('nm-risk').value,
-      rev: parseInt(document.getElementById('nm-rev').value)||1,
-      status: 'submitted',
-      submittedBy: 'U001',
-      date: new Date().toISOString().split('T')[0],
-      hseReview: document.getElementById('nm-hse').value,
-      file: document.getElementById('nm-file').value || (id+'-Rev1.pdf')
-    });
-    renderMethods(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Method Statements`,'success');
-  });
-}
-
-function printMethodsPDF() {
-  let data=window.APP_DATA.mockMethodsData;
-  const df=STATE.methodDiscFilter;
-  if(df&&df!=='all') data=data.filter(m=>(m.discipline||m.category||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df==='all'?'All Disciplines':df;
-  generatePDF({ title:'METHOD STATEMENT REGISTER — '+discLabel.toUpperCase(), subtitle:'Construction Methods & HSE Reviews | Discipline: '+discLabel, module:'MS',
-    kpis:[{label:'Total MSs',value:data.length,color:'#1d4ed8'},{label:'Approved',value:data.filter(d=>d.status==='approved').length,color:'#059669'},{label:'HSE Pending',value:data.filter(d=>d.hseReview==='Pending').length,color:'#f59e0b'},{label:'Critical Risk',value:data.filter(d=>d.risk==='Critical').length,color:'#dc2626'}],
-    tableHeaders:['MS ID','Title','Discipline','Category','Risk','Rev','Status','HSE Review','Date'],
-    tableRows:data.map(m=>[m.id,m.title,m.discipline||m.category,m.category,m.risk,'Rev '+m.rev,pdfBadge(m.status),m.hseReview,m.date]),
-  });
-}
-
-// ── TESTING ───────────────────────────────────────────────────
-function renderTesting() {
-  let data=window.APP_DATA.mockTestingData;
-  const df=STATE.testingDiscFilter;
-  if(df&&df!=='all') data=data.filter(t=>(t.discipline||t.type||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('testing-stats',[{label:'Total Tests',value:data.length,color:'blue'},{label:'Passed',value:data.filter(d=>d.status==='passed').length,color:'emerald'},{label:'Failed',value:data.filter(d=>d.status==='failed').length,color:'rose'},{label:'Pending',value:data.filter(d=>d.status==='pending').length,color:'amber'}]);
-  renderTable('testing-table-body',data,t=>`
-    <tr>
-      <td class="td-mono">${t.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${t.system}</td>
-      <td><span class="tag">${t.discipline||t.type}</span></td>
-      <td><span class="tag">${t.type}</span></td>
-      <td class="td-mono">${t.date}</td>
-      <td class="td-mono" style="color:var(--accent-cyan)">Rev ${t.rev}</td>
-      <td>${statusBadge(t.status)}</td>
-      <td>${t.cert?`<span class="td-mono" style="color:var(--accent-emerald)">${t.cert}</span>`:'—'}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${t.remarks}</td>
-      <td>
-        ${t.file?`<a class="drive-link" href="${openLocalFile('testing',t.file)}" target="_blank" onclick="saveFilePath('testing',this.href)">Open</a>`:'<span style="color:var(--text-muted);font-size:11px">No file</span>'}
-        <button class="btn btn-sm btn-secondary" onclick="viewTest('${t.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editTesting('${t.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteTesting('${t.id}')">Delete</button>`:''}
-      </td>
-    </tr>`);
-  setupTableFilter('testing-filter-input','testing-table-body');
-  setupDiscTabs('testing-disc-tabs','testingDiscFilter',renderTesting);
-}
-
-function viewTest(id) {
-  const t=window.APP_DATA.mockTestingData.find(x=>x.id===id); if(!t)return;
-  openModal('View Test Record','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('Test ID',t.id)}${inf('System',t.system)}
-      ${inf('Type',t.type)}${inf('Date',t.date)}
-      ${inf('Status',statusBadge(t.status))}${inf('Certificate',t.cert||'—')}
-      ${inf('Revision',t.rev)}
-    </div>
-    <div style="margin-top:14px">${inf('Remarks',t.remarks)}</div>`);
-}
-
-function editTesting(id) {
-  const t=window.APP_DATA.mockTestingData.find(x=>x.id===id); if(!t)return;
-  openModal('Edit Test Record','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Test ID</label><input class="form-control" id="et-id" value="${t.id}"></div>
-      <div class="form-group"><label class="form-label">System / Test</label><input class="form-control" id="et-sys" value="${t.system}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="et-status"><option value="pending"${t.status==='pending'?' selected':''}>Pending</option><option value="passed"${t.status==='passed'?' selected':''}>Passed</option><option value="failed"${t.status==='failed'?' selected':''}>Failed</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Revision</label><input class="form-control" id="et-rev" type="number" min="1" value="${t.rev}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Certificate No.</label><input class="form-control" id="et-cert" value="${t.cert||''}"></div>
-      <div class="form-group"><label class="form-label">Test Date</label><input class="form-control" id="et-date" type="date" value="${t.date}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="et-remarks" rows="2">${t.remarks}</textarea></div>`,
-  ()=>{
-    t.id=document.getElementById('et-id').value||t.id;
-    t.system=document.getElementById('et-sys').value||t.system;
-    t.status=document.getElementById('et-status').value;
-    t.rev=parseInt(document.getElementById('et-rev').value)||t.rev;
-    t.cert=document.getElementById('et-cert').value;
-    t.date=document.getElementById('et-date').value;
-    t.remarks=document.getElementById('et-remarks').value;
-    t.file=t.cert?`${t.id}-Rev${t.rev}.pdf`:'';
-    renderTesting(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${t.id} updated`,'success');
-  });
-}
-
-function deleteTesting(id) {
-  const data=window.APP_DATA.mockTestingData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return;
-  openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete Test <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  ()=>{ data.splice(idx,1); renderTesting(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); });
-}
-
-function openAddTestModal() {
-  openModal('Add Test Record','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Test ID</label><input class="form-control" id="nt-id" placeholder="TC-007"></div>
-      <div class="form-group"><label class="form-label">Revision</label><input class="form-control" id="nt-rev" type="number" value="1" min="1"></div>
-    </div>
-    <div class="form-group"><label class="form-label">System / Test</label><input class="form-control" id="nt-sys" placeholder="System name"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Type</label><input class="form-control" id="nt-type" placeholder="Structural"></div>
-      <div class="form-group"><label class="form-label">Test Date</label><input class="form-control" id="nt-date" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Status</label>
-      <select class="form-control" id="nt-status"><option value="pending">Pending</option><option value="passed">Passed</option><option value="failed">Failed</option></select>
-    </div>
-    <div class="form-group"><label class="form-label">Certificate No.</label><input class="form-control" id="nt-cert" placeholder="CERT-001"></div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nt-remarks" rows="2"></textarea></div>`,
-  ()=>{
-    const id=document.getElementById('nt-id').value||('TC-0'+String(window.APP_DATA.mockTestingData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockTestingData.push({
-      id, system: document.getElementById('nt-sys').value || 'New Test',
-      type: document.getElementById('nt-type').value,
-      date: document.getElementById('nt-date').value,
-      rev: parseInt(document.getElementById('nt-rev').value)||1,
-      status: document.getElementById('nt-status').value,
-      cert: document.getElementById('nt-cert').value,
-      file: document.getElementById('nt-cert').value ? (id+'-Rev1.pdf') : '',
-      remarks: document.getElementById('nt-remarks').value
-    });
-    renderTesting(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Test Register`,'success');
-  });
-}
-
-function printTestingPDF() {
-  let data=window.APP_DATA.mockTestingData;
-  const df=STATE.testingDiscFilter;
-  if(df&&df!=='all') data=data.filter(t=>(t.discipline||t.type||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df==='all'?'All Disciplines':df;
-  generatePDF({ title:'TEST & COMMISSIONING REGISTER', subtitle:'Test Certificates, Commissioning Logs & Punch Lists', module:'TC',
-    kpis:[{label:'Total Tests',value:data.length,color:'#1d4ed8'},{label:'Passed',value:data.filter(d=>d.status==='passed').length,color:'#059669'},{label:'Failed',value:data.filter(d=>d.status==='failed').length,color:'#dc2626'},{label:'Pending',value:data.filter(d=>d.status==='pending').length,color:'#f59e0b'}],
-    tableHeaders:['ID','System / Test','Type','Date','Rev','Status','Certificate','Remarks'],
-    tableRows:data.map(t=>[t.id,t.system,t.type,t.date,'Rev '+t.rev,pdfBadge(t.status),t.cert||'—',t.remarks]),
-  });
-}
-
-// ── NCR / RFI / SI / WIR / MDR — each as separate page ───────
-function renderNCRPage() { renderNCR(); }
-function renderRFIPage() { renderRFI(); }
-function renderSIPage()  { renderSI(); }
-function renderWIRPage() { renderWIR(); }
-function renderMDRPage() { renderMDR(); }
-
-function renderNCR() {
-  let data=window.APP_DATA.mockNCRData;
-  const df=STATE.ncrDiscFilter;
-  if(df&&df!=='all') data=data.filter(n=>(n.discipline||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('ncr-stats',[{label:'Total NCRs',value:data.length,color:'blue'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'amber'},{label:'Critical',value:data.filter(d=>d.priority==='critical'&&d.status==='open').length,color:'rose'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'emerald'}]);
-  renderTable('ncr-table-body',data,n=>`
-    <tr>
-      <td class="td-mono">${n.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${n.title}</td>
-      <td><span class="tag">${n.discipline||'General'}</span></td>
-      <td>${priorityBadge(n.priority)}</td>
-      <td><span class="badge badge-${n.status}">${n.status.toUpperCase()}</span></td>
-      <td class="td-mono">${n.date}</td>
-      <td class="td-mono">${n.closureDate||'—'}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${n.location||'—'}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${n.remarks||'—'}</td>
-      <td>
-        <a class="drive-link" href="${openLocalFile('ncr',n.file)}" target="_blank" onclick="saveFilePath('ncr',this.href)">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewNCR('${n.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editNCR('${n.id}')">Edit</button>
-        ${n.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeNCR('${n.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-danger" onclick="deleteNCR('${n.id}')">Delete</button>`:''}
-      </td>
-    </tr>`);
-  setupTableFilter('ncr-filter-input','ncr-table-body');
-  setupDiscTabs('ncr-disc-tabs','ncrDiscFilter',renderNCR);
-}
-
-function viewNCR(id) {
-  const n=window.APP_DATA.mockNCRData.find(x=>x.id===id); if(!n)return;
-  openModal('View NCR','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('NCR ID',n.id)}${inf('Title',n.title)}
-      ${inf('Priority',priorityBadge(n.priority))}${inf('Status','<span class="badge badge-'+n.status+'">'+n.status.toUpperCase()+'</span>')}
-      ${inf('Date Raised',n.date)}${inf('Closure Date',n.closureDate||'—')}
-      ${inf('Location',n.location||'—')}${inf('Raised By',n.raised)}
-      ${inf('Assigned To',n.assignedTo)}
-    </div>
-    <div style="margin-top:14px">${inf('Remarks',n.remarks||'—')}</div>`);
-}
-
-function editNCR(id) {
-  const n=window.APP_DATA.mockNCRData.find(x=>x.id===id); if(!n)return;
-  openModal('Edit NCR','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">NCR ID</label><input class="form-control" id="en-id" value="${n.id}"></div>
-      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="en-title" value="${n.title}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Priority</label>
-        <select class="form-control" id="en-pri"><option value="low"${n.priority==='low'?' selected':''}>Low</option><option value="medium"${n.priority==='medium'?' selected':''}>Medium</option><option value="high"${n.priority==='high'?' selected':''}>High</option><option value="critical"${n.priority==='critical'?' selected':''}>Critical</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="en-status"><option value="open"${n.status==='open'?' selected':''}>Open</option><option value="closed"${n.status==='closed'?' selected':''}>Closed</option></select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="en-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(n.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
-    <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="en-loc" value="${n.location||''}"></div>
-    <div class="form-group"><label class="form-label">Assigned To</label>
-      <select class="form-control" id="en-assign">${window.APP_DATA.USERS.map(u=>`<option value="${u.id}"${u.id===n.assignedTo?' selected':''}>${u.name}</option>`).join('')}</select>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="en-rem" rows="2">${n.remarks||''}</textarea></div>`,
-  ()=>{
-    n.id=document.getElementById('en-id').value||n.id;
-    n.title=document.getElementById('en-title').value||n.title;
-    n.discipline=document.getElementById('en-disc').value;
-    n.priority=document.getElementById('en-pri').value;
-    n.status=document.getElementById('en-status').value;
-    n.location=document.getElementById('en-loc').value;
-    n.assignedTo=document.getElementById('en-assign').value;
-    n.remarks=document.getElementById('en-rem').value;
-    if(n.status==='closed'&&!n.closureDate) n.closureDate=new Date().toISOString().split('T')[0];
-    renderNCR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${n.id} updated`,'success');
-  });
-}
-
-function renderRFI() {
-  let data=window.APP_DATA.mockRFIData;
-  const df=STATE.rfiDiscFilter;
-  if(df&&df!=='all') data=data.filter(r=>(r.discipline||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('rfi-stats',[{label:'Total RFIs',value:data.length,color:'blue'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'amber'},{label:'High Priority',value:data.filter(d=>d.priority==='high').length,color:'rose'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'emerald'}]);
-  renderTable('rfi-table-body',data,r=>`
-    <tr>
-      <td class="td-mono">${r.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${r.title}</td>
-      <td><span class="tag">${r.discipline||'General'}</span></td>
-      <td>${priorityBadge(r.priority)}</td>
-      <td><span class="badge badge-${r.status}">${r.status.toUpperCase()}</span></td>
-      <td class="td-mono">${r.date}</td>
-      <td class="td-mono">${r.closureDate||'—'}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${r.remarks||'—'}</td>
-      <td>
-        <a class="drive-link" href="${openLocalFile('rfi',r.file)}" target="_blank" onclick="saveFilePath('rfi',this.href)">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewRFI('${r.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editRFI('${r.id}')">Edit</button>
-        ${r.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeRFI('${r.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-danger" onclick="deleteRFI('${r.id}')">Delete</button>`:''}
-      </td>
-    </tr>`);
-  setupTableFilter('rfi-filter-input','rfi-table-body');
-  setupDiscTabs('rfi-disc-tabs','rfiDiscFilter',renderRFI);
-}
-
-function viewRFI(id) {
-  const r=window.APP_DATA.mockRFIData.find(x=>x.id===id); if(!r)return;
-  openModal('View RFI','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('RFI ID',r.id)}${inf('Title',r.title)}
-      ${inf('Discipline',r.discipline||'—')}${inf('Priority',priorityBadge(r.priority))}
-      ${inf('Status','<span class="badge badge-'+r.status+'">'+r.status.toUpperCase()+'</span>')}
-      ${inf('Date',r.date)}${inf('Closure Date',r.closureDate||'—')}
-    </div>
-    <div style="margin-top:14px">${inf('Remarks',r.remarks||'—')}</div>`);
-}
-
-function editRFI(id) {
-  const r=window.APP_DATA.mockRFIData.find(x=>x.id===id); if(!r)return;
-  openModal('Edit RFI','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">RFI ID</label><input class="form-control" id="er-id" value="${r.id}"></div>
-      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="er-title" value="${r.title}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Priority</label>
-        <select class="form-control" id="er-pri"><option value="low"${r.priority==='low'?' selected':''}>Low</option><option value="medium"${r.priority==='medium'?' selected':''}>Medium</option><option value="high"${r.priority==='high'?' selected':''}>High</option><option value="critical"${r.priority==='critical'?' selected':''}>Critical</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="er-status"><option value="open"${r.status==='open'?' selected':''}>Open</option><option value="closed"${r.status==='closed'?' selected':''}>Closed</option></select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label><input class="form-control" id="er-disc" value="${r.discipline||''}"></div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="er-rem" rows="2">${r.remarks||''}</textarea></div>`,
-  ()=>{
-    r.id=document.getElementById('er-id').value||r.id;
-    r.title=document.getElementById('er-title').value||r.title;
-    r.priority=document.getElementById('er-pri').value;
-    r.status=document.getElementById('er-status').value;
-    r.discipline=document.getElementById('er-disc').value;
-    r.remarks=document.getElementById('er-rem').value;
-    if(r.status==='closed'&&!r.closureDate) r.closureDate=new Date().toISOString().split('T')[0];
-    renderRFI(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${r.id} updated`,'success');
-  });
-}
-
-function renderSI() {
-  let data=window.APP_DATA.mockSIData;
-  const df=STATE.siDiscFilter;
-  if(df&&df!=='all') data=data.filter(s=>(s.discipline||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('si-stats',[{label:'Total SIs',value:data.length,color:'blue'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'amber'},{label:'High Priority',value:data.filter(d=>d.priority==='high').length,color:'rose'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'emerald'}]);
-  renderTable('si-table-body',data,s=>`
-    <tr>
-      <td class="td-mono">${s.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${s.title}</td>
-      <td><span class="tag">${s.discipline||'General'}</span></td>
-      <td class="td-mono">${s.ref||'—'}</td>
-      <td>${priorityBadge(s.priority)}</td>
-      <td><span class="badge badge-${s.status}">${s.status.toUpperCase()}</span></td>
-      <td class="td-mono">${s.date}</td>
-      <td style="color:var(--accent-amber);font-family:'DM Mono',monospace">${s.costImpact||'—'}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${s.remarks||'—'}</td>
-      <td>
-        <a class="drive-link" href="${openLocalFile('si',s.file)}" target="_blank" onclick="saveFilePath('si',this.href)">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewSI('${s.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editSI('${s.id}')">Edit</button>
-        ${s.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeSI('${s.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-danger" onclick="deleteSI('${s.id}')">Delete</button>`:''}
-      </td>
-    </tr>`);
-  setupTableFilter('si-filter-input','si-table-body');
-  setupDiscTabs('si-disc-tabs','siDiscFilter',renderSI);
-}
-
-function viewSI(id) {
-  const s=window.APP_DATA.mockSIData.find(x=>x.id===id); if(!s)return;
-  openModal('View Site Instruction','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('SI ID',s.id)}${inf('Title',s.title)}
-      ${inf('Ref',s.ref||'—')}${inf('Priority',priorityBadge(s.priority))}
-      ${inf('Status','<span class="badge badge-'+s.status+'">'+s.status.toUpperCase()+'</span>')}
-      ${inf('Date',s.date)}${inf('Cost Impact',s.costImpact||'—')}
-    </div>
-    <div style="margin-top:14px">${inf('Remarks',s.remarks||'—')}</div>`);
-}
-
-function editSI(id) {
-  const s=window.APP_DATA.mockSIData.find(x=>x.id===id); if(!s)return;
-  openModal('Edit Site Instruction','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">SI ID</label><input class="form-control" id="esi-id" value="${s.id}"></div>
-      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="esi-title" value="${s.title}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Priority</label>
-        <select class="form-control" id="esi-pri"><option value="low"${s.priority==='low'?' selected':''}>Low</option><option value="medium"${s.priority==='medium'?' selected':''}>Medium</option><option value="high"${s.priority==='high'?' selected':''}>High</option><option value="critical"${s.priority==='critical'?' selected':''}>Critical</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="esi-status"><option value="open"${s.status==='open'?' selected':''}>Open</option><option value="closed"${s.status==='closed'?' selected':''}>Closed</option></select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="esi-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(s.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Ref / SKT</label><input class="form-control" id="esi-ref" value="${s.ref||''}"></div>
-      <div class="form-group"><label class="form-label">Cost Impact</label><input class="form-control" id="esi-cost" value="${s.costImpact||''}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="esi-rem" rows="2">${s.remarks||''}</textarea></div>`,
-  ()=>{
-    s.id=document.getElementById('esi-id').value||s.id;
-    s.title=document.getElementById('esi-title').value||s.title;
-    s.discipline=document.getElementById('esi-disc').value;
-    s.priority=document.getElementById('esi-pri').value;
-    s.status=document.getElementById('esi-status').value;
-    s.ref=document.getElementById('esi-ref').value;
-    s.costImpact=document.getElementById('esi-cost').value;
-    s.remarks=document.getElementById('esi-rem').value;
-    renderSI(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${s.id} updated`,'success');
-  });
-}
-
-function setNCRTab(tab) { STATE.ncrTab=tab; if(tab==='rfi'||tab==='si'||tab==='wir'||tab==='mdr') navigateTo(tab); else navigateTo('ncr'); }
-function deleteNCR(id) { const data=window.APP_DATA.mockNCRData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete NCR <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); saveProjectDataAuto(); refreshDashboardKPIs(); renderNCR(); showToast('Deleted',`${id} deleted`,'success'); }); }
-function closeNCR(id) { const n=window.APP_DATA.mockNCRData.find(x=>x.id===id); if(n){n.status='closed';n.closureDate=new Date().toISOString().split('T')[0];saveProjectDataAuto();refreshDashboardKPIs();renderNCR();showToast('Closed',`${id} closed`,'success');} }
-function deleteRFI(id) { const data=window.APP_DATA.mockRFIData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete RFI <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); saveProjectDataAuto(); refreshDashboardKPIs(); renderRFI(); showToast('Deleted',`${id} deleted`,'success'); }); }
-function closeRFI(id) { const r=window.APP_DATA.mockRFIData.find(x=>x.id===id); if(r){r.status='closed';r.closureDate=new Date().toISOString().split('T')[0];saveProjectDataAuto();refreshDashboardKPIs();renderRFI();showToast('Closed',`${id} closed`,'success');} }
-function deleteSI(id)  { const data=window.APP_DATA.mockSIData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete SI <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); saveProjectDataAuto(); refreshDashboardKPIs(); renderSI(); showToast('Deleted',`${id} deleted`,'success'); }); }
-function closeSI(id)  { const s=window.APP_DATA.mockSIData.find(x=>x.id===id);  if(s){s.status='closed';saveProjectDataAuto();refreshDashboardKPIs();renderSI();showToast('Closed',`${id} closed`,'success');} }
+let mockSIData=[{id:'SI-001',title:'Increase Slab Thickness FL4 from 200 to 250mm',issuedBy:'U004',date:'2026-01-15',status:'open',priority:'high',file:'SI-001.pdf',costImpact:'SAR 42,000',remarks:'Design change approved by client',ref:'SKT-041'},{id:'SI-002',title:'Revise Drainage Gradient at Ground Level',issuedBy:'U004',date:'2026-01-22',status:'closed',priority:'low',file:'SI-002.pdf',costImpact:'SAR 8,500',remarks:'Completed and signed off',ref:'SKT-042'},{id:'SI-003',title:'Add Expansion Joint at Grid Line H',issuedBy:'U004',date:'2026-02-05',status:'open',priority:'medium',file:'SI-003.pdf',costImpact:'TBD',remarks:'Structural design in progress',ref:'SKT-043'}];
 
 // ── WIR — Work Inspection Requests ───────────────────────────
-function renderWIR() {
-  let data = window.APP_DATA.mockWIRData;
-  const df=STATE.wirDiscFilter;
-  if(df&&df!=='all') data=data.filter(w=>(w.discipline||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('wir-stats', [
-    { label: 'Total WIRs',   value: data.length,                              color: 'violet' },
-    { label: 'Pending',      value: data.filter(w => !w.closureDate).length,  color: 'amber'  },
-    { label: 'Inspected',    value: data.filter(w =>  w.closureDate).length,  color: 'emerald'},
-    { label: 'Passed',       value: data.filter(w => w.result === 'Passed').length, color: 'blue' },
-  ]);
-  renderTable('wir-table-body', data, w => `
-    <tr>
-      <td class="td-mono" style="color:#8e44ad">${w.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${w.title}</td>
-      <td><span class="tag">${w.discipline||'General'}</span></td>
-      <td>${priorityBadge(w.priority)}</td>
-      <td class="td-mono">${w.date}</td>
-      <td class="td-mono">${w.inspectionDate || '—'}</td>
-      <td><span class="badge badge-${w.result === 'Passed' ? 'approved' : w.result === 'Failed' ? 'rejected' : 'pending'}">${w.result}</span></td>
-      <td style="font-size:11px;color:var(--text-secondary)">${w.location || '—'}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${w.remarks || '—'}</td>
-      <td>
-        <a class="drive-link" href="${openLocalFile('wir',w.file)}" target="_blank" onclick="saveFilePath('wir',this.href)">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewWIR('${w.id}')">View</button>
-        ${isAdmin() ? `<button class="btn btn-sm btn-secondary" onclick="editWIR('${w.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteWIR('${w.id}')">Delete</button>` : ''}
-      </td>
-    </tr>`);
-  setupTableFilter('wir-filter-input','wir-table-body');
-  setupDiscTabs('wir-disc-tabs','wirDiscFilter',renderWIR);
-}
-
-function viewWIR(id) {
-  const w = window.APP_DATA.mockWIRData.find(x => x.id === id); if (!w) return;
-  openModal('Work Inspection Request — Details', '', `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('WIR ID', w.id)}${inf('Title', w.title)}
-      ${inf('Priority', priorityBadge(w.priority))}${inf('Requested By', w.requestedBy)}
-      ${inf('Date Raised', w.date)}${inf('Inspection Date', w.inspectionDate || '—')}
-      ${inf('Location', w.location || '—')}${inf('Assigned To', w.assignedTo)}
-      ${inf('Result', `<span class="badge badge-${w.result === 'Passed' ? 'approved' : w.result === 'Failed' ? 'rejected' : 'pending'}">${w.result}</span>`)}${inf('Closure Date', w.closureDate || '—')}
-    </div>
-    <div style="margin-top:14px">${inf('Remarks', w.remarks || '—')}</div>`);
-}
-
-function editWIR(id) {
-  const w = window.APP_DATA.mockWIRData.find(x => x.id === id); if (!w) return;
-  openModal('Edit Work Inspection Request', '', `
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">WIR ID</label><input class="form-control" id="ew-id" value="${w.id}"></div>
-      <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="ew-title" value="${w.title}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Priority</label>
-        <select class="form-control" id="ew-pri"><option value="low"${w.priority==='low'?' selected':''}>Low</option><option value="medium"${w.priority==='medium'?' selected':''}>Medium</option><option value="high"${w.priority==='high'?' selected':''}>High</option><option value="critical"${w.priority==='critical'?' selected':''}>Critical</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Result</label>
-        <select class="form-control" id="ew-result"><option${w.result==='Pending'?' selected':''}>Pending</option><option${w.result==='Passed'?' selected':''}>Passed</option><option${w.result==='Failed'?' selected':''}>Failed</option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Inspection Date</label><input class="form-control" id="ew-insdate" type="date" value="${w.inspectionDate || ''}"></div>
-      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="ew-loc" value="${w.location || ''}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="ew-rem" rows="2">${w.remarks || ''}</textarea></div>`,
-  () => {
-    w.id            = document.getElementById('ew-id').value || w.id;
-    w.title         = document.getElementById('ew-title').value || w.title;
-    w.priority      = document.getElementById('ew-pri').value;
-    w.result        = document.getElementById('ew-result').value;
-    w.inspectionDate= document.getElementById('ew-insdate').value;
-    w.location      = document.getElementById('ew-loc').value;
-    w.remarks       = document.getElementById('ew-rem').value;
-    if (w.result !== 'Pending' && !w.closureDate) w.closureDate = new Date().toISOString().split('T')[0];
-    renderWIR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated', `${w.id} updated`, 'success');
-  });
-}
-
-function deleteWIR(id) {
-  const data = window.APP_DATA.mockWIRData; const idx = data.findIndex(x => x.id === id); if (idx === -1) return;
-  openModal('Confirm Delete', '', `<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete WIR <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  () => { data.splice(idx, 1); renderWIR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted', `${id} deleted`, 'success'); });
-}
-
-function openAddWIRModal() {
-  openModal('Raise Work Inspection Request', '', `
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">WIR ID</label><input class="form-control" id="nw-id" placeholder="WIR-004"></div>
-      <div class="form-group"><label class="form-label">Priority</label>
-        <select class="form-control" id="nw-pri"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Title / Inspection Scope</label><input class="form-control" id="nw-title" placeholder="Describe the inspection required"></div>
-    <div class="form-group"><label class="form-label">Discipline</label>
-      <select class="form-control" id="nw-disc"><option value="">General</option>${window.APP_DATA.DISCIPLINES.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="nw-loc" placeholder="Site location / grid ref"></div>
-      <div class="form-group"><label class="form-label">Assigned Consultant</label>
-        <select class="form-control" id="nw-assign">${window.APP_DATA.USERS.map(u => `<option value="${u.id}">${u.name}</option>`).join('')}</select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nw-rem" rows="2"></textarea></div>`,
-  () => {
-    const id = document.getElementById('nw-id').value || ('WIR-0' + String(window.APP_DATA.mockWIRData.length + 1).padStart(2, '0'));
-    window.APP_DATA.mockWIRData.push({ id, title: document.getElementById('nw-title').value || 'New WIR', discipline: document.getElementById('nw-disc').value||'General', requestedBy: 'U001', date: new Date().toISOString().split('T')[0], status: 'WIR', priority: document.getElementById('nw-pri').value, assignedTo: document.getElementById('nw-assign').value, closureDate: '', file: id + '.pdf', location: document.getElementById('nw-loc').value, inspectionDate: '', result: 'Pending', remarks: document.getElementById('nw-rem').value });
-    renderWIR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Raised', `${id} has been raised`, 'info');
-  });
-}
-
-function printWIRPDF() {
-  let data = window.APP_DATA.mockWIRData;
-  const df=STATE.wirDiscFilter;
-  if(df&&df!=='all') data=data.filter(w=>(w.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df&&df!=='all'?df:'All Disciplines';
-  generatePDF({ title: 'WIR REGISTER — '+discLabel.toUpperCase(), subtitle: 'Work Inspection Requests | Discipline: '+discLabel, module: 'WIR',
-    kpis: [
-      { label: 'Total WIRs',  value: data.length,                              color: '#8e44ad' },
-      { label: 'Pending',     value: data.filter(w => !w.closureDate).length,  color: '#f59e0b' },
-      { label: 'Passed',      value: data.filter(w => w.result === 'Passed').length, color: '#059669' },
-      { label: 'Failed',      value: data.filter(w => w.result === 'Failed').length, color: '#dc2626' },
-    ],
-    tableHeaders: ['WIR ID', 'Title', 'Discipline', 'Priority', 'Date Raised', 'Inspection Date', 'Result', 'Location', 'Remarks'],
-    tableRows: data.map(w => [w.id, w.title, w.discipline||'General', w.priority.toUpperCase(), w.date, w.inspectionDate || '—', w.result, w.location || '—', w.remarks || '—']),
-  });
-}
+let mockWIRData=[
+  {id:'WIR-001',title:'Rebar Inspection – Level 3 Column Grid A',requestedBy:'U002',date:'2026-01-10',status:'WIR',priority:'high',assignedTo:'U004',closureDate:'2026-01-14',file:'WIR-001.pdf',location:'Level 3 – Grid A',inspectionDate:'2026-01-14',result:'Passed',remarks:'All bars correct size and spacing'},
+  {id:'WIR-002',title:'Pre-pour Inspection – Transfer Slab B2',requestedBy:'U002',date:'2026-01-20',status:'WIR',priority:'high',assignedTo:'U004',closureDate:'',file:'WIR-002.pdf',location:'Basement Level B2',inspectionDate:'',result:'Pending',remarks:'Awaiting consultant availability'},
+  {id:'WIR-003',title:'Waterproofing Membrane – Podium Deck',requestedBy:'U005',date:'2026-02-01',status:'WIR',priority:'medium',assignedTo:'U004',closureDate:'2026-02-05',file:'WIR-003.pdf',location:'Podium Roof Deck',inspectionDate:'2026-02-05',result:'Passed',remarks:'Thickness checks compliant'}
+];
 
 // ── MDR — Material Delivery Receipts ─────────────────────────
-function renderMDR() {
-  let data = window.APP_DATA.mockMDRData;
-  const df=STATE.mdrDiscFilter;
-  if(df&&df!=='all') data=data.filter(m=>(m.discipline||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('mdr-stats', [
-    { label: 'Total MDRs',   value: data.length,                                      color: 'cyan'   },
-    { label: 'Good',         value: data.filter(m => m.condition === 'Good').length,  color: 'emerald'},
-    { label: 'Rejected',     value: data.filter(m => m.condition === 'Rejected').length, color: 'rose'},
-    { label: 'Pending Check',value: data.filter(m => m.condition === 'Pending').length,  color: 'amber'},
-  ]);
-  renderTable('mdr-table-body', data, m => `
-    <tr>
-      <td class="td-mono" style="color:#16a085">${m.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${m.title}</td>
-      <td><span class="tag">${m.discipline||'General'}</span></td>
-      <td style="color:var(--text-secondary)">${m.deliveredBy}</td>
-      <td class="td-mono" style="color:var(--accent-amber)">${m.poRef || '—'}</td>
-      <td class="td-mono">${m.date}</td>
-      <td class="td-mono">${m.qty}</td>
-      <td><span class="badge badge-${m.condition === 'Good' ? 'approved' : m.condition === 'Rejected' ? 'rejected' : 'pending'}">${m.condition}</span></td>
-      <td style="font-size:11px;color:var(--text-secondary)">${m.location || '—'}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${m.remarks || '—'}</td>
-      <td>
-        <a class="drive-link" href="${openLocalFile('mdr',m.file)}" target="_blank" onclick="saveFilePath('mdr',this.href)">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewMDR('${m.id}')">View</button>
-        ${isAdmin() ? `<button class="btn btn-sm btn-secondary" onclick="editMDR('${m.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteMDR('${m.id}')">Delete</button>` : ''}
-      </td>
-    </tr>`);
-  setupTableFilter('mdr-filter-input','mdr-table-body');
-  setupDiscTabs('mdr-disc-tabs','mdrDiscFilter',renderMDR);
-}
+let mockMDRData=[
+  {id:'MDR-001',title:'Structural Steel Delivery – Batch 3',deliveredBy:'SteelTech Corp',date:'2026-01-15',status:'MDR',priority:'medium',receivedBy:'U005',file:'MDR-001.pdf',location:'Site Laydown Area A',poRef:'PO-001',qty:'42 MT',condition:'Good',remarks:'Mill certs attached, no visible damage'},
+  {id:'MDR-002',title:'Concrete Ready-Mix Delivery – Pour 12',deliveredBy:'MixPro Ready',date:'2026-01-28',status:'MDR',priority:'low',receivedBy:'U005',file:'MDR-002.pdf',location:'Batching Plant',poRef:'PO-002',qty:'180 m³',condition:'Good',remarks:'Slump test 120mm – compliant'},
+  {id:'MDR-003',title:'HVAC Chiller Unit – Unit 1 of 3',deliveredBy:'CoolAir Ltd',date:'2026-02-10',status:'MDR',priority:'high',receivedBy:'U003',file:'MDR-003.pdf',location:'Plant Room Level B1',poRef:'PO-004',qty:'1 No.',condition:'Good',remarks:'Factory test certs reviewed; installation pending'}
+];
 
-function viewMDR(id) {
-  const m = window.APP_DATA.mockMDRData.find(x => x.id === id); if (!m) return;
-  openModal('Material Delivery Receipt — Details', '', `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('MDR ID', m.id)}${inf('Description', m.title)}
-      ${inf('Delivered By', m.deliveredBy)}${inf('PO Reference', m.poRef || '—')}
-      ${inf('Date Received', m.date)}${inf('Quantity', m.qty)}
-      ${inf('Condition', `<span class="badge badge-${m.condition === 'Good' ? 'approved' : m.condition === 'Rejected' ? 'rejected' : 'pending'}">${m.condition}</span>`)}${inf('Received By', m.receivedBy)}
-      ${inf('Location', m.location || '—')}
-    </div>
-    <div style="margin-top:14px">${inf('Remarks', m.remarks || '—')}</div>`);
-}
+let mockTestingData=[{id:'TC-001',system:'Pile Load Test – TP01',type:'Structural',date:'2025-08-20',rev:1,status:'passed',cert:'PLC-001',file:'TC-001-Rev1.pdf',remarks:'Load 2x design load'},{id:'TC-002',system:'Concrete Cube Test Batch 12',type:'Material',date:'2025-12-15',rev:1,status:'passed',cert:'CCT-012',file:'TC-002-Rev1.pdf',remarks:'Avg 54.2 MPa at 28 days'},{id:'TC-003',system:'Waterproofing Test – B2 Slab',type:'Civil',date:'2026-01-10',rev:1,status:'failed',cert:'',file:'TC-003-Rev1.pdf',remarks:'Water infiltration detected'},{id:'TC-004',system:'Fire Alarm Loop Test – Phase 1',type:'MEP',date:'2026-01-28',rev:1,status:'pending',cert:'',file:'',remarks:'Scheduled'},{id:'TC-005',system:'CCTV System Commissioning',type:'ELV',date:'2026-02-10',rev:1,status:'pending',cert:'',file:'',remarks:'FAT planned'},{id:'TC-006',system:'Pump Test – Fire Suppression',type:'MEP',date:'2026-02-05',rev:2,status:'passed',cert:'FPS-006',file:'TC-006-Rev2.pdf',remarks:'Flow rates within spec'}];
 
-function editMDR(id) {
-  const m = window.APP_DATA.mockMDRData.find(x => x.id === id); if (!m) return;
-  openModal('Edit Material Delivery Receipt', '', `
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">MDR ID</label><input class="form-control" id="em-id2" value="${m.id}"></div>
-      <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="em-title" value="${m.title}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Condition</label>
-        <select class="form-control" id="em-cond"><option${m.condition==='Good'?' selected':''}>Good</option><option${m.condition==='Pending'?' selected':''}>Pending</option><option${m.condition==='Rejected'?' selected':''}>Rejected</option><option${m.condition==='Damaged'?' selected':''}>Damaged</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Quantity</label><input class="form-control" id="em-qty" value="${m.qty}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">PO Reference</label><input class="form-control" id="em-po2" value="${m.poRef || ''}"></div>
-      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="em-loc2" value="${m.location || ''}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="em-rem2" rows="2">${m.remarks || ''}</textarea></div>`,
-  () => {
-    m.id        = document.getElementById('em-id2').value || m.id;
-    m.title     = document.getElementById('em-title').value || m.title;
-    m.condition = document.getElementById('em-cond').value;
-    m.qty       = document.getElementById('em-qty').value;
-    m.poRef     = document.getElementById('em-po2').value;
-    m.location  = document.getElementById('em-loc2').value;
-    m.remarks   = document.getElementById('em-rem2').value;
-    renderMDR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated', `${m.id} updated`, 'success');
+let mockProcurementData=[{id:'PO-001',item:'Structural Steel Package',vendor:'SteelTech Corp',poValue:4200000,status:'delivered',poDate:'2025-09-01',deliveryDate:'2026-01-15',payStatus:'75% paid',performance:88,remarks:'Final payment pending'},{id:'PO-002',item:'Ready Mix Concrete Supply',vendor:'MixPro Ready',poValue:2800000,status:'active',poDate:'2025-10-15',deliveryDate:'2026-12-01',payStatus:'40% paid',performance:92,remarks:'Ongoing supply'},{id:'PO-003',item:'Curtain Wall System',vendor:'GlazTec Systems',poValue:7500000,status:'pending',poDate:'2026-01-10',deliveryDate:'2026-05-20',payStatus:'10% paid',performance:0,remarks:'Material approval pending'},{id:'PO-004',item:'HVAC Equipment Package',vendor:'CoolAir Ltd',poValue:3200000,status:'partially-delivered',poDate:'2025-12-01',deliveryDate:'2026-06-01',payStatus:'30% paid',performance:78,remarks:'Chiller units delayed'},{id:'PO-005',item:'Elevator Systems – 8 Lifts',vendor:'LiftTech Pro',poValue:1800000,status:'pending',poDate:'2026-01-20',deliveryDate:'2026-08-01',payStatus:'5% paid',performance:0,remarks:'24-week lead time'},{id:'PO-006',item:'Waterproofing Materials',vendor:'SealPro',poValue:450000,status:'delivered',poDate:'2025-11-20',deliveryDate:'2026-01-30',payStatus:'100% paid',performance:95,remarks:'Fully complete'}];
+
+const mockProgressData={milestones:[{id:'MS01',name:'Piling Complete',planned:'2025-08-30',actual:'2025-09-10',status:'completed',delay:11},{id:'MS02',name:'Basement Slab – Level B2',planned:'2025-10-15',actual:'2025-10-28',status:'completed',delay:13},{id:'MS03',name:'Ground Floor Slab',planned:'2025-12-20',actual:'2026-01-05',status:'completed',delay:16},{id:'MS04',name:'Structure Complete – L10',planned:'2026-04-30',actual:'',status:'on-track',delay:0},{id:'MS05',name:'Facade Envelope Closed',planned:'2026-08-15',actual:'',status:'at-risk',delay:0},{id:'MS06',name:'MEP Rough-in Complete',planned:'2026-10-30',actual:'',status:'on-track',delay:0},{id:'MS07',name:'Fit-out Complete',planned:'2027-03-15',actual:'',status:'on-track',delay:0},{id:'MS08',name:'Practical Completion',planned:'2027-06-30',actual:'',status:'on-track',delay:0}],sCurveData:[{month:'Jan 25',planned:2,actual:1.5},{month:'Feb 25',planned:4,actual:3.2},{month:'Mar 25',planned:7,actual:5.8},{month:'Apr 25',planned:10,actual:8.5},{month:'May 25',planned:14,actual:12},{month:'Jun 25',planned:18,actual:16},{month:'Jul 25',planned:22,actual:20},{month:'Aug 25',planned:26,actual:24},{month:'Sep 25',planned:30,actual:27},{month:'Oct 25',planned:34,actual:30},{month:'Nov 25',planned:38,actual:33},{month:'Dec 25',planned:41,actual:35},{month:'Jan 26',planned:44,actual:36},{month:'Feb 26',planned:48,actual:null}],disciplineProgress:[{name:'Structural',progress:48,planned:52},{name:'Civil',progress:72,planned:80},{name:'Mechanical',progress:15,planned:18},{name:'Electrical',progress:20,planned:25},{name:'Plumbing',progress:12,planned:16},{name:'HVAC',progress:18,planned:22},{name:'Architect',progress:12,planned:15},{name:'Landscape',progress:5,planned:8}]};
+
+let mockHSEData={incidents:[{id:'HSE-001',type:'near-miss',desc:'Worker nearly struck by falling tool from scaffold',date:'2026-01-05',severity:'low',status:'closed',casualties:0,location:'Level 3 Scaffold',rootCause:'Unsecured tool bag',correctiveAction:'Toolbag inspection protocol issued',investigator:'U001'},{id:'HSE-002',type:'incident',desc:'Minor hand laceration – grinder without guard',date:'2026-01-12',severity:'medium',status:'closed',casualties:1,location:'Fab Workshop',rootCause:'PPE non-compliance',correctiveAction:'Re-training conducted',investigator:'U001'},{id:'HSE-003',type:'near-miss',desc:'Crane load swing towards personnel exclusion zone',date:'2026-01-19',severity:'high',status:'open',casualties:0,location:'Zone B – TC-2',rootCause:'Under investigation',correctiveAction:'Crane ops suspended pending review',investigator:'U001'},{id:'HSE-004',type:'incident',desc:'Slip on wet concrete – ankle sprain',date:'2026-02-02',severity:'medium',status:'open',casualties:1,location:'Level 2 Podium',rootCause:'Inadequate signage',correctiveAction:'Barriers and signage installed',investigator:'U001'}],stats:{lti:1,nearMiss:15,toolboxTalks:48,safeManHours:284000,ltir:0.35}};
+
+let mockSubcontractorData=[{id:'SC-001',name:'AlphaFoundation Works',scope:'Piling & Foundations',status:'completed',workers:0,contractValue:3800000,paidToDate:3800000,performance:89,safety:95,poRef:'PO-008',contactPerson:'Ahmed Al-Rashid',phone:'+1-555-0101',startDate:'2025-01-15',endDate:'2025-09-10'},{id:'SC-002',name:'SteelFrame Masters',scope:'Structural Steelwork',status:'active',workers:68,contractValue:8200000,paidToDate:4500000,performance:84,safety:88,poRef:'PO-001',contactPerson:'Carlos Mendez',phone:'+1-555-0102',startDate:'2025-08-01',endDate:'2026-06-30'},{id:'SC-003',name:'ProConcrete Solutions',scope:'In-situ Concrete',status:'active',workers:124,contractValue:5600000,paidToDate:2800000,performance:78,safety:82,poRef:'PO-002',contactPerson:'Wei Zhang',phone:'+1-555-0103',startDate:'2025-09-01',endDate:'2026-09-30'},{id:'SC-004',name:'MEP Systems Group',scope:'Mechanical & Electrical',status:'active',workers:45,contractValue:12500000,paidToDate:1800000,performance:91,safety:94,poRef:'PO-004',contactPerson:'Raj Patel',phone:'+1-555-0104',startDate:'2025-11-01',endDate:'2027-03-31'},{id:'SC-005',name:'FacadePro International',scope:'Curtain Wall & Glazing',status:'mobilizing',workers:12,contractValue:7200000,paidToDate:360000,performance:0,safety:0,poRef:'PO-003',contactPerson:'Lena Müller',phone:'+1-555-0105',startDate:'2026-02-15',endDate:'2026-12-31'},{id:'SC-006',name:'FinishLine Interiors',scope:'Fit-out & Finishes',status:'not-started',workers:0,contractValue:9800000,paidToDate:0,performance:0,safety:0,poRef:'TBD',contactPerson:'Fatima Hassan',phone:'+1-555-0106',startDate:'2026-09-01',endDate:'2027-05-31'}];
+
+const mockCostData={budget:188200000,revisedBudget:188200000,committedCost:98400000,actualCost:67200000,forecastFinalCost:192500000,costVariance:-4300000,categories:[{name:'Preliminaries',budget:12000000,committed:11800000,actual:9200000,forecast:12400000},{name:'Structural Works',budget:45000000,committed:38000000,actual:29000000,forecast:46200000},{name:'MEP Systems',budget:38000000,committed:22000000,actual:12000000,forecast:40500000},{name:'Architectural',budget:32000000,committed:15000000,actual:8500000,forecast:33800000},{name:'External Works',budget:18000000,committed:8000000,actual:4200000,forecast:17600000},{name:'Contingency',budget:12000000,committed:3600000,actual:2300000,forecast:8000000},{name:'Variations',budget:3200000,committed:3200000,actual:2000000,forecast:3200000}]};
+
+const mockManpowerData={today:{date:'2026-02-17',totalWorkers:412,skilled:168,unskilled:212,staff:32},weekly:[{week:'Week 1',target:380,actual:362,skilled:145,unskilled:190,staff:27},{week:'Week 2',target:390,actual:378,skilled:150,unskilled:198,staff:30},{week:'Week 3',target:400,actual:391,skilled:158,unskilled:203,staff:30},{week:'Week 4',target:420,actual:408,skilled:165,unskilled:212,staff:31},{week:'Week 5',target:430,actual:412,skilled:168,unskilled:212,staff:32},{week:'Week 6',target:450,actual:null,skilled:null,unskilled:null,staff:null}],equipment:[{id:'EQ-001',type:'Tower Crane TC-1',status:'active',utilization:78,operator:'R. Hassan',location:'Zone A'},{id:'EQ-002',type:'Tower Crane TC-2',status:'active',utilization:65,operator:'M. Santos',location:'Zone B'},{id:'EQ-003',type:'Concrete Pump 52m',status:'active',utilization:55,operator:'J. Kim',location:'Level 3'},{id:'EQ-004',type:'Mobile Crane 100T',status:'standby',utilization:20,operator:'—',location:'Yard'},{id:'EQ-005',type:'Excavator CAT 330',status:'active',utilization:88,operator:'D. Osei',location:'Basement'},{id:'EQ-006',type:'Batching Plant 60m³',status:'active',utilization:70,operator:'A. Farida',location:'Site Office'},{id:'EQ-007',type:'Personnel Hoist PH-1',status:'active',utilization:90,operator:'Automated',location:'North Core'},{id:'EQ-008',type:'Personnel Hoist PH-2',status:'maintenance',utilization:0,operator:'—',location:'South Core'}]};
+
+let mockCloseoutData=[{id:'CL-001',item:'As-built Drawings – Civil',status:'not-started',due:'2027-05-01',assignedTo:'U005',category:'Documentation',remarks:''},{id:'CL-002',item:'As-built Drawings – Structural',status:'not-started',due:'2027-05-01',assignedTo:'U002',category:'Documentation',remarks:''},{id:'CL-003',item:'O&M Manuals – MEP Systems',status:'in-progress',due:'2027-04-15',assignedTo:'U003',category:'Manuals',remarks:'Draft 1 issued'},{id:'CL-004',item:'Fire Safety Certificate',status:'not-started',due:'2027-05-30',assignedTo:'U001',category:'Permits',remarks:''},{id:'CL-005',item:'Building Occupancy Permit',status:'not-started',due:'2027-06-15',assignedTo:'U001',category:'Permits',remarks:''},{id:'CL-006',item:'Defects Liability Register',status:'not-started',due:'2027-06-30',assignedTo:'U001',category:'Documentation',remarks:''},{id:'CL-007',item:'BMS Training Records',status:'in-progress',due:'2027-04-01',assignedTo:'U003',category:'Training',remarks:'Session 1 completed'},{id:'CL-008',item:'Spare Parts Handover Schedule',status:'not-started',due:'2027-05-15',assignedTo:'U003',category:'Handover',remarks:''}];
+
+const NOTIFICATIONS=[{id:1,type:'warning',text:'3 drawings pending consultant approval',time:'10 min ago',read:false},{id:2,type:'danger',text:'NCR-003 is critical – action required',time:'1 hr ago',read:false},{id:3,type:'info',text:'Weekly progress report due today',time:'2 hrs ago',read:false},{id:4,type:'success',text:'PO-006 fully delivered and accepted',time:'Yesterday',read:true},{id:5,type:'warning',text:'HSE Incident HSE-003 still open',time:'2 days ago',read:true}];
+
+function computeKPIs(){return{drawingsPending:mockDrawingsData.filter(d=>d.status==='submitted'||d.status==='under-review').length,drawingsApproved:mockDrawingsData.filter(d=>d.status==='approved').length,drawingsTotal:mockDrawingsData.length,materialsPending:mockMaterialsData.filter(m=>m.status!=='approved').length,openNCRs:mockNCRData.filter(n=>n.status==='open').length,openRFIs:mockRFIData.filter(r=>r.status==='open').length,openSIs:mockSIData.filter(s=>s.status==='open').length,pendingWIRs:mockWIRData.filter(w=>!w.closureDate).length,pendingMDRs:mockMDRData.filter(m=>m.condition==='Pending').length,scheduleVariance:-4.2,costVariance:((mockCostData.forecastFinalCost-mockCostData.revisedBudget)/mockCostData.revisedBudget*100).toFixed(1),overallProgress:ACTIVE_PROJECT.currentProgress,plannedProgress:38,activeWorkers:mockManpowerData.today.totalWorkers,openIncidents:mockHSEData.incidents.filter(i=>i.status==='open').length,safeManHours:mockHSEData.stats.safeManHours,ltir:mockHSEData.stats.ltir};}
+
+// ── STATUS CONFIGURATION — single source of truth ─────────────
+// Used by summary counts, pie chart, bar chart, cumulative chart, and Export CSV.
+const STATUS_CONFIG = {
+  'A':   { label: 'Approved (A)',                   color: '#27ae60' },
+  'AAN': { label: 'Approved as Noted (AAN)',         color: '#2ecc71' },
+  'R&R': { label: 'Revise and Resubmit (R&R)',       color: '#e67e22' },
+  'CA':  { label: 'Conditional Approval (CA)',       color: '#f39c12' },
+  'R':   { label: 'Rejected (R)',                    color: '#e74c3c' },
+  'NFD': { label: 'Need Further Details (NFD)',      color: '#3498db' },
+  'NFI': { label: 'Noted for Information (NFI)',     color: '#9b59b6' },
+  'WIR': { label: 'Work Inspection Request (WIR)',   color: '#8e44ad' },  // purple
+  'MDR': { label: 'Material Delivery Receipt (MDR)', color: '#16a085' },  // teal
+};
+const STATUS_ORDER = ['A','AAN','R&R','CA','R','NFD','NFI','WIR','MDR'];
+
+// ── COMPUTE STATUS COUNTS (case-insensitive) ──────────────────
+function computeStatusCounts(rows, statusColumnKey) {
+  statusColumnKey = statusColumnKey || 'Status';
+  const counts = {};
+  STATUS_ORDER.forEach(k => { counts[k] = 0; });
+  rows.forEach(row => {
+    const raw = ((row[statusColumnKey] || '')).trim().toUpperCase();
+    let matched = null;
+    if      (raw === 'A')                                   matched = 'A';
+    else if (raw === 'AAN')                                 matched = 'AAN';
+    else if (raw === 'R&R' || raw === 'RR' || raw === 'R AND R') matched = 'R&R';
+    else if (raw === 'CA')                                  matched = 'CA';
+    else if (raw === 'R')                                   matched = 'R';
+    else if (raw === 'NFD')                                 matched = 'NFD';
+    else if (raw === 'NFI')                                 matched = 'NFI';
+    else if (raw === 'WIR')                                 matched = 'WIR';
+    else if (raw === 'MDR')                                 matched = 'MDR';
+    if (matched) counts[matched]++;
   });
+  return counts;
 }
 
-function deleteMDR(id) {
-  const data = window.APP_DATA.mockMDRData; const idx = data.findIndex(x => x.id === id); if (idx === -1) return;
-  openModal('Confirm Delete', '', `<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete MDR <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,
-  () => { data.splice(idx, 1); renderMDR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted', `${id} deleted`, 'success'); });
-}
-
-function openAddMDRModal() {
-  openModal('Log Material Delivery Receipt', '', `
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">MDR ID</label><input class="form-control" id="nm-id2" placeholder="MDR-004"></div>
-      <div class="form-group"><label class="form-label">PO Reference</label><input class="form-control" id="nm-po2" placeholder="PO-001"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Material / Delivery Description</label><input class="form-control" id="nm-title2" placeholder="Describe what was delivered"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Delivered By (Supplier)</label><input class="form-control" id="nm-by" placeholder="Supplier name"></div>
-      <div class="form-group"><label class="form-label">Quantity</label><input class="form-control" id="nm-qty2" placeholder="e.g. 42 MT"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label>
-      <select class="form-control" id="nm-disc2"><option value="">General</option>${window.APP_DATA.DISCIPLINES.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Condition</label>
-        <select class="form-control" id="nm-cond"><option>Good</option><option>Pending</option><option>Rejected</option><option>Damaged</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="nm-loc2" placeholder="Delivery location on site"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nm-rem2" rows="2"></textarea></div>`,
-  () => {
-    const id = document.getElementById('nm-id2').value || ('MDR-0' + String(window.APP_DATA.mockMDRData.length + 1).padStart(2, '0'));
-    window.APP_DATA.mockMDRData.push({ id, title: document.getElementById('nm-title2').value || 'New MDR', discipline: document.getElementById('nm-disc2').value||'General', deliveredBy: document.getElementById('nm-by').value, date: new Date().toISOString().split('T')[0], status: 'MDR', priority: 'medium', receivedBy: 'U001', file: id + '.pdf', location: document.getElementById('nm-loc2').value, poRef: document.getElementById('nm-po2').value, qty: document.getElementById('nm-qty2').value, condition: document.getElementById('nm-cond').value, remarks: document.getElementById('nm-rem2').value });
-    renderMDR(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Logged', `${id} has been logged`, 'success');
-  });
-}
-
-function printMDRPDF() {
-  let data = window.APP_DATA.mockMDRData;
-  const df=STATE.mdrDiscFilter;
-  if(df&&df!=='all') data=data.filter(m=>(m.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df&&df!=='all'?df:'All Disciplines';
-  generatePDF({ title: 'MDR REGISTER — '+discLabel.toUpperCase(), subtitle: 'Material Delivery Receipts | Discipline: '+discLabel, module: 'MDR',
-    kpis: [
-      { label: 'Total MDRs',    value: data.length,                               color: '#16a085' },
-      { label: 'Good',          value: data.filter(m => m.condition === 'Good').length, color: '#059669' },
-      { label: 'Rejected',      value: data.filter(m => m.condition === 'Rejected').length, color: '#dc2626' },
-      { label: 'Pending Check', value: data.filter(m => m.condition === 'Pending').length, color: '#f59e0b' },
-    ],
-    tableHeaders: ['MDR ID', 'Description', 'Discipline', 'Delivered By', 'PO Ref', 'Date', 'Qty', 'Condition', 'Location', 'Remarks'],
-    tableRows: data.map(m => [m.id, m.title, m.discipline||'General', m.deliveredBy, m.poRef || '—', m.date, m.qty, m.condition, m.location || '—', m.remarks || '—']),
-  });
-}
-
-function openAddNCRModal() {
-  const page = STATE.currentPage;
-  const isRFI = page==='rfi', isSI = page==='si';
-  const label = isRFI?'RFI':isSI?'SI':'NCR';
-  const data = isRFI?window.APP_DATA.mockRFIData:isSI?window.APP_DATA.mockSIData:window.APP_DATA.mockNCRData;
-  const prefix = label+'-0';
-  openModal(`Raise New ${label}`,'',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">${label} ID</label><input class="form-control" id="nn-id" placeholder="${label}-00${data.length+1}"></div>
-      <div class="form-group"><label class="form-label">Priority</label>
-        <select class="form-control" id="nn-pri"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Title / Description</label><input class="form-control" id="nn-title" placeholder="Describe the issue"></div>
-    <div class="form-group"><label class="form-label">Discipline</label>
-      <select class="form-control" id="nn-disc"><option value="">General</option>${window.APP_DATA.DISCIPLINES.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="nn-loc" placeholder="Site location"></div>
-      <div class="form-group"><label class="form-label">Assigned To</label>
-        <select class="form-control" id="nn-assign">${window.APP_DATA.USERS.map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}</select>
-      </div>
-    </div>
-    ${isSI?'<div class="form-group"><label class="form-label">Cost Impact</label><input class="form-control" id="nn-cost" placeholder="SAR 0"></div>':''}
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nn-rem" rows="2"></textarea></div>`,
-  ()=>{
-    const id=document.getElementById('nn-id').value||(prefix+String(data.length+1).padStart(2,'0'));
-    const disc=document.getElementById('nn-disc').value||'General';
-    const today=new Date().toISOString().split('T')[0];
-    if(isRFI) window.APP_DATA.mockRFIData.push({id,title:document.getElementById('nn-title').value||'New RFI',discipline:disc,priority:document.getElementById('nn-pri').value,status:'open',date:today,closureDate:'',file:id+'.pdf',remarks:document.getElementById('nn-rem').value,location:document.getElementById('nn-loc').value});
-    else if(isSI) window.APP_DATA.mockSIData.push({id,title:document.getElementById('nn-title').value||'New SI',discipline:disc,ref:'',priority:document.getElementById('nn-pri').value,status:'open',date:today,costImpact:document.getElementById('nn-cost')?.value||'',file:id+'.pdf',remarks:document.getElementById('nn-rem').value});
-    else window.APP_DATA.mockNCRData.push({id,title:document.getElementById('nn-title').value||'New NCR',discipline:disc,raised:'U001',date:today,status:'open',priority:document.getElementById('nn-pri').value,assignedTo:document.getElementById('nn-assign').value,closureDate:'',file:id+'.pdf',remarks:document.getElementById('nn-rem').value,location:document.getElementById('nn-loc').value});
-    saveProjectDataAuto(); refreshDashboardKPIs();
-    saveProjectDataAuto(); refreshDashboardKPIs(); if(isRFI) renderRFI(); else if(isSI) renderSI(); else renderNCR();
-    showToast('Raised',`${id} has been raised`,'warning');
-  });
-}
-
-function printNCRPDF() {
-  let data=window.APP_DATA.mockNCRData;
-  const df=STATE.ncrDiscFilter;
-  if(df&&df!=='all') data=data.filter(n=>(n.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df&&df!=='all'?df:'All Disciplines';
-  generatePDF({ title:'NCR REGISTER — '+discLabel.toUpperCase(), subtitle:'Non-Conformance Reports | Discipline: '+discLabel, module:'NCR',
-    kpis:[{label:'Total NCRs',value:data.length,color:'#1d4ed8'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'#f59e0b'},{label:'Critical Open',value:data.filter(d=>d.priority==='critical'&&d.status==='open').length,color:'#dc2626'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'#059669'}],
-    tableHeaders:['NCR ID','Title','Discipline','Priority','Status','Date Raised','Closure Date','Location','Remarks'],
-    tableRows:data.map(n=>[n.id,n.title,n.discipline||'General',n.priority.toUpperCase(),pdfBadge(n.status),n.date,n.closureDate||'Open',n.location||'—',n.remarks||'—']),
-  });
-}
-
-function printRFIPDF() {
-  let data=window.APP_DATA.mockRFIData;
-  const df=STATE.rfiDiscFilter;
-  if(df&&df!=='all') data=data.filter(r=>(r.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df&&df!=='all'?df:'All Disciplines';
-  generatePDF({ title:'RFI REGISTER — '+discLabel.toUpperCase(), subtitle:'Requests for Information | Discipline: '+discLabel, module:'RFI',
-    kpis:[{label:'Total RFIs',value:data.length,color:'#1d4ed8'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'#f59e0b'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'#059669'},{label:'High Priority',value:data.filter(d=>d.priority==='high').length,color:'#dc2626'}],
-    tableHeaders:['RFI ID','Title','Discipline','Priority','Status','Date','Closure Date','Remarks'],
-    tableRows:data.map(r=>[r.id,r.title,r.discipline||'General',r.priority.toUpperCase(),pdfBadge(r.status),r.date,r.closureDate||'Open',r.remarks||'—']),
-  });
-}
-
-function printSIPDF() {
-  let data=window.APP_DATA.mockSIData;
-  const df=STATE.siDiscFilter;
-  if(df&&df!=='all') data=data.filter(s=>(s.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df&&df!=='all'?df:'All Disciplines';
-  generatePDF({ title:'SITE INSTRUCTIONS — '+discLabel.toUpperCase(), subtitle:'Issued by Consultant / Engineer | Discipline: '+discLabel, module:'SI',
-    kpis:[{label:'Total SIs',value:data.length,color:'#1d4ed8'},{label:'Open',value:data.filter(d=>d.status==='open').length,color:'#f59e0b'},{label:'Closed',value:data.filter(d=>d.status==='closed').length,color:'#059669'},{label:'High Priority',value:data.filter(d=>d.priority==='high').length,color:'#dc2626'}],
-    tableHeaders:['SI ID','Title','Discipline','Ref / SKT','Priority','Status','Date','Cost Impact','Remarks'],
-    tableRows:data.map(s=>[s.id,s.title,s.discipline||'General',s.ref||'—',s.priority.toUpperCase(),pdfBadge(s.status),s.date,s.costImpact||'—',s.remarks||'—']),
-  });
-}
-
-// ── PROCUREMENT ───────────────────────────────────────────────
-function renderProcurement() {
-  let data=window.APP_DATA.mockProcurementData;
-  const df=STATE.procurementDiscFilter;
-  if(df&&df!=='all') data=data.filter(p=>(p.discipline||'').toLowerCase()===df.toLowerCase());
-  const total=data.reduce((a,p)=>a+p.poValue,0);
-  renderRegisterStats('procurement-stats',[{label:'Total PO Value',value:formatMillions(total),color:'blue'},{label:'Active POs',value:data.filter(p=>p.status==='active').length,color:'emerald'},{label:'Pending Delivery',value:data.filter(p=>p.status==='pending'||p.status==='partially-delivered').length,color:'amber'},{label:'Delivered',value:data.filter(p=>p.status==='delivered').length,color:'violet'}]);
-  renderTable('procurement-table-body',data,p=>{
-    const pc=p.performance>=90?'var(--accent-emerald)':p.performance>=75?'var(--accent-amber)':p.performance>0?'var(--accent-rose)':'var(--text-muted)';
-    return `<tr>
-      <td class="td-mono" style="color:var(--accent-amber)">${p.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${p.item}</td>
-      <td><span class="tag">${p.discipline||'General'}</span></td>
-      <td style="color:var(--text-secondary)">${p.vendor}</td>
-      <td class="td-mono">${formatCurrency(p.poValue)}</td>
-      <td>${statusBadge(p.status)}</td>
-      <td class="td-mono">${p.deliveryDate}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${p.payStatus}</td>
-      <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${p.performance}%;background:${pc};transition:width 1s"></div></div><span style="font-family:'DM Mono',monospace;font-size:10px;color:${pc}">${p.performance||'—'}${p.performance?'%':''}</span></div></td>
-      <td style="font-size:11px;color:var(--text-secondary)">${p.remarks||'—'}</td>
-      <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.procurement}${encodeURIComponent(p.id+'.pdf')}" target="_blank">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewPO('${p.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editPO('${p.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deletePO('${p.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('procurement')">Import</button>`:''}
-      </td>
-    </tr>`;
-  });
-  setupTableFilter('procurement-filter-input','procurement-table-body');
-  setupDiscTabs('procurement-disc-tabs','procurementDiscFilter',renderProcurement);
-  renderProcurementChart();
-}
-
-function renderProcurementChart() {
-  const ctx=document.getElementById('procurement-chart'); if(!ctx)return;
-  if(STATE.charts.procurement) STATE.charts.procurement.destroy();
-  const data=window.APP_DATA.mockProcurementData;
-  STATE.charts.procurement=new Chart(ctx,{type:'doughnut',data:{labels:data.map(p=>p.id),datasets:[{data:data.map(p=>p.poValue),backgroundColor:['#3b82f6','#10b981','#f59e0b','#f43f5e','#8b5cf6','#06b6d4'],borderWidth:0}]},options:{...chartDefaults(),cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#8a9bb8',font:{size:10}}}}}});
-}
-
-function viewPO(id) {
-  const p=window.APP_DATA.mockProcurementData.find(x=>x.id===id); if(!p)return;
-  openModal('Purchase Order Details','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('PO No.',p.id)}${inf('Description',p.item)}
-      ${inf('Vendor',p.vendor)}${inf('Value',formatCurrency(p.poValue))}
-      ${inf('Status',statusBadge(p.status))}${inf('Delivery Date',p.deliveryDate)}
-      ${inf('Payment Status',p.payStatus)}${inf('Performance',p.performance?p.performance+'%':'—')}
-    </div>
-    <div style="margin-top:14px">${inf('Remarks',p.remarks||'—')}</div>`);
-}
-
-function deletePO(id) { const data=window.APP_DATA.mockProcurementData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete PO <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderProcurement(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); }); }
-
-function editPO(id) {
-  const p=window.APP_DATA.mockProcurementData.find(x=>x.id===id); if(!p)return;
-  openModal('Edit Purchase Order','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">PO No.</label><input class="form-control" id="ep-id" value="${p.id}"></div>
-      <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="ep-item" value="${p.item}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label>
-      <select class="form-control" id="ep-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(p.discipline||'')?'selected':''}>${d}</option>`).join('')}</select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="ep-status">${['pending','active','partially-delivered','delivered'].map(s=>`<option value="${s}"${s===p.status?' selected':''}>${capitalize(s)}</option>`).join('')}</select>
-      </div>
-      <div class="form-group"><label class="form-label">Performance %</label><input class="form-control" id="ep-perf" type="number" min="0" max="100" value="${p.performance}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Delivery Date</label><input class="form-control" id="ep-deldate" type="date" value="${p.deliveryDate}"></div>
-      <div class="form-group"><label class="form-label">Payment Status</label><input class="form-control" id="ep-pay" value="${p.payStatus}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="ep-remarks" rows="2">${p.remarks||''}</textarea></div>`,
-  ()=>{
-    p.id=document.getElementById('ep-id').value||p.id;
-    p.item=document.getElementById('ep-item').value||p.item;
-    p.discipline=document.getElementById('ep-disc').value;
-    p.status=document.getElementById('ep-status').value;
-    p.performance=parseInt(document.getElementById('ep-perf').value)||0;
-    p.deliveryDate=document.getElementById('ep-deldate').value;
-    p.payStatus=document.getElementById('ep-pay').value;
-    p.remarks=document.getElementById('ep-remarks').value;
-    renderProcurement(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${p.id} updated`,'success');
-  });
-}
-
-function openAddPOModal() {
-  openModal('Add Purchase Order','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">PO No.</label><input class="form-control" id="np-id" placeholder="PO-006"></div>
-      <div class="form-group"><label class="form-label">PO Value (SAR)</label><input class="form-control" id="np-value" type="number" placeholder="1000000"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="np-item" placeholder="Item description"></div>
-    <div class="form-group"><label class="form-label">Vendor</label><input class="form-control" id="np-vendor" placeholder="Vendor name"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">PO Date</label><input class="form-control" id="np-podate" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
-      <div class="form-group"><label class="form-label">Delivery Date</label><input class="form-control" id="np-deldate" type="date"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label>
-      <select class="form-control" id="np-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
-    </div>
-    <div class="form-group"><label class="form-label">Status</label>
-      <select class="form-control" id="np-status"><option value="pending">Pending</option><option value="active">Active</option><option value="partially-delivered">Partially Delivered</option><option value="delivered">Delivered</option></select>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="np-remarks" rows="2"></textarea></div>`,
-  ()=>{
-    const id=document.getElementById('np-id').value||('PO-0'+String(window.APP_DATA.mockProcurementData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockProcurementData.push({
-      id, item: document.getElementById('np-item').value || 'New PO',
-      discipline: document.getElementById('np-disc').value||'General',
-      vendor: document.getElementById('np-vendor').value,
-      poValue: parseFloat(document.getElementById('np-value').value) || 0,
-      status: document.getElementById('np-status').value,
-      poDate: document.getElementById('np-podate').value,
-      deliveryDate: document.getElementById('np-deldate').value,
-      payStatus: '0% paid',
-      performance: 0,
-      remarks: document.getElementById('np-remarks').value
-    });
-    renderProcurement(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Procurement`,'success');
-  });
-}
-
-function printProcurementPDF() {
-  let data=window.APP_DATA.mockProcurementData;
-  const df=STATE.procurementDiscFilter;
-  if(df&&df!=='all') data=data.filter(p=>(p.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df==='all'?'All Disciplines':df;
-  const total=data.reduce((a,p)=>a+p.poValue,0);
-  generatePDF({ title:'PROCUREMENT TRACKER — '+discLabel.toUpperCase(), subtitle:'Purchase Orders & Vendor Performance | Discipline: '+discLabel, module:'PO',
-    kpis:[{label:'Total PO Value',value:formatMillions(total),color:'#1d4ed8'},{label:'Active POs',value:data.filter(d=>d.status==='active').length,color:'#059669'},{label:'Pending Delivery',value:data.filter(d=>d.status==='pending').length,color:'#f59e0b'},{label:'Avg Performance',value:(data.filter(d=>d.performance>0).reduce((a,d)=>a+d.performance,0)/data.filter(d=>d.performance>0).length||0).toFixed(0)+'%',color:'#7c3aed'}],
-    tableHeaders:['PO No.','Description','Vendor','PO Value','Status','Delivery Date','Payment','Performance','Remarks'],
-    tableRows:data.map(p=>[p.id,p.item,p.vendor,formatCurrency(p.poValue),pdfBadge(p.status),p.deliveryDate,p.payStatus,p.performance?p.performance+'%':'—',p.remarks||'—']),
-  });
-}
-
-// ── PROGRESS ──────────────────────────────────────────────────
-function renderProgress() {
-  const KPIs=window.APP_DATA.computeKPIs();
-  renderRegisterStats('progress-stats',[{label:'Overall Progress',value:KPIs.overallProgress+'%',color:'blue'},{label:'Schedule Variance',value:KPIs.scheduleVariance+'%',color:'amber'},{label:'Milestones Complete',value:window.APP_DATA.mockProgressData.milestones.filter(m=>m.status==='completed').length,color:'emerald'},{label:'At Risk',value:window.APP_DATA.mockProgressData.milestones.filter(m=>m.status==='at-risk').length,color:'rose'}]);
-  renderMilestoneList(); renderFullSCurve(); renderDisciplineProgressBars();
-}
-
-function renderFullSCurve() {
-  const ctx=document.getElementById('progress-scurve-chart'); if(!ctx)return;
-  if(STATE.charts.progressScurve) STATE.charts.progressScurve.destroy();
-  const d=window.APP_DATA.mockProgressData.sCurveData;
-  // Use same options as dashboard for consistency
-  STATE.charts.progressScurve=new Chart(ctx,{type:'line',data:{labels:d.map(x=>x.month),datasets:[{label:'Planned %',data:d.map(x=>x.planned),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true},{label:'Actual %',data:d.map(x=>x.actual),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.08)',borderWidth:2.5,pointRadius:4,tension:0.4,fill:true,spanGaps:false}]},options:chartDefaults({scales:{y:{max:60,ticks:{callback:v=>v+'%'}}}})});
-}
-
-function renderDisciplineProgressBars() {
-  const c=document.getElementById('discipline-progress-list'); if(!c)return;
-  c.innerHTML=window.APP_DATA.mockProgressData.disciplineProgress.map(d=>`
-    <div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span style="font-size:13px;font-weight:600">${d.name}</span>
-        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)">${d.progress}% / ${d.planned}% planned</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill ${d.progress<d.planned*0.85?'amber':''}" style="width:${d.progress}%"></div></div>
-    </div>`).join('');
-}
-
-function openUpdateProgressModal() {
-  const data = window.APP_DATA.mockProgressData;
-  const milestonesHTML = data.milestones.map((m, i) => `
-    <div class="form-row" style="margin-bottom:8px">
-      <div class="form-group"><label>${m.name}</label><input class="form-control" id="ms-${i}" type="date" value="${m.actual || ''}" placeholder="Actual date"></div>
-      <div class="form-group"><label>Status</label>
-        <select class="form-control" id="ms-status-${i}">
-          <option value="completed" ${m.status==='completed'?'selected':''}>Completed</option>
-          <option value="on-track" ${m.status==='on-track'?'selected':''}>On Track</option>
-          <option value="at-risk" ${m.status==='at-risk'?'selected':''}>At Risk</option>
-          <option value="delayed" ${m.status==='delayed'?'selected':''}>Delayed</option>
-        </select>
-      </div>
-    </div>`).join('');
-  const disciplinesHTML = data.disciplineProgress.map((d, i) => `
-    <div class="form-row" style="margin-bottom:8px">
-      <div class="form-group"><label>${d.name} Progress %</label><input class="form-control" id="disc-${i}" type="number" min="0" max="100" value="${d.progress}"></div>
-    </div>`).join('');
-  openModal('Update Progress', '', `
-    <h3>Milestones</h3>
-    ${milestonesHTML}
-    <h3>Discipline Progress</h3>
-    ${disciplinesHTML}
-    `, () => {
-      data.milestones.forEach((m, i) => {
-        const actualInput = document.getElementById(`ms-${i}`);
-        if (actualInput) m.actual = actualInput.value || '';
-        const statusSelect = document.getElementById(`ms-status-${i}`);
-        if (statusSelect) m.status = statusSelect.value;
-        if (m.actual && m.planned) {
-          const planned = new Date(m.planned);
-          const actual = new Date(m.actual);
-          m.delay = Math.round((actual - planned) / (1000*60*60*24));
-        } else {
-          m.delay = 0;
-        }
-      });
-      data.disciplineProgress.forEach((d, i) => {
-        const input = document.getElementById(`disc-${i}`);
-        if (input) d.progress = parseInt(input.value) || 0;
-      });
-      renderProgress();
-      renderDashboard();
-      showToast('Progress Updated', 'All progress values have been refreshed', 'success');
-    });
-}
-
-async function printProgressPDF() {
-  const D=window.APP_DATA, KPIs=D.computeKPIs();
-  const scurveCanvas = document.getElementById('progress-scurve-chart');
-  const charts = scurveCanvas ? [{ data: scurveCanvas.toDataURL('image/png') }] : [];
-  generatePDF({ title:'WEEKLY PROGRESS REPORT', subtitle:'S-Curve, Milestone Tracking & Discipline Progress', module:'WPR',
-    kpis:[{label:'Overall Progress',value:KPIs.overallProgress+'%',color:'#1d4ed8'},{label:'Schedule Variance',value:KPIs.scheduleVariance+'%',color:'#f59e0b'},{label:'Active Workers',value:KPIs.activeWorkers,color:'#059669'},{label:'Cost Variance',value:(KPIs.costVariance>0?'+':'')+KPIs.costVariance+'%',color:'#dc2626'}],
-    tableHeaders:['Milestone','Planned Date','Actual Date','Status','Delay (days)'],
-    tableRows:D.mockProgressData.milestones.map(m=>[m.name,m.planned,m.actual||'—',pdfBadge(m.status),m.delay>0?'+'+m.delay+'d':'On time']),
-    extraHTML:`<div class="sec-title" style="font-family:'Barlow Condensed',Arial;font-size:13pt;font-weight:800;color:#1e3a5f;border-left:4px solid #f59e0b;padding-left:10px;margin:12px 0 8px;text-transform:uppercase">Discipline Progress</div>${D.mockProgressData.disciplineProgress.map(d=>`<div style="margin-bottom:8px;display:flex;align-items:center;gap:12px"><span style="width:120px;font-size:9pt;font-weight:600">${d.name}</span><div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden"><div style="height:100%;width:${d.progress}%;background:#1d4ed8"></div></div><span style="width:80px;text-align:right;font-size:9pt;font-family:monospace">${d.progress}% / ${d.planned}%</span></div>`).join('')}`,
-    charts: charts
-  });
-}
-
-// ── HSE ───────────────────────────────────────────────────────
-function renderHSE() {
-  const {incidents,stats}=window.APP_DATA.mockHSEData;
-  renderRegisterStats('hse-stats',[{label:'Safe Man Hours',value:(stats.safeManHours/1000).toFixed(0)+'K',color:'emerald'},{label:'LTIR',value:stats.ltir,color:'amber'},{label:'Near Misses',value:stats.nearMiss,color:'rose'},{label:'Toolbox Talks',value:stats.toolboxTalks,color:'blue'}]);
-  renderTable('hse-table-body',incidents,i=>`
-    <tr>
-      <td class="td-mono">${i.id}</td>
-      <td><span class="badge badge-${i.type==='incident'?'rejected':'pending'}">${i.type.replace('-',' ')}</span></td>
-      <td style="color:var(--text-primary);font-size:12px">${i.desc}</td>
-      <td class="td-mono">${i.date}</td>
-      <td>${severityBadge(i.severity)}</td>
-      <td><span class="badge badge-${i.status}">${i.status.toUpperCase()}</span></td>
-      <td class="td-mono">${i.casualties}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${i.location||'—'}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${i.correctiveAction||'—'}</td>
-      <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.hse}${encodeURIComponent(i.id+'.pdf')}" target="_blank">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewHSE('${i.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editHSE('${i.id}')">Edit</button>
-        ${i.status==='open'?`<button class="btn btn-sm btn-success" onclick="closeHSE('${i.id}')">Close</button>`:''}
-        <button class="btn btn-sm btn-danger" onclick="deleteHSE('${i.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('hse')">Import</button>`:''}
-      </td>
-    </tr>`);
-  renderHSEChart();
-}
-
-function renderHSEChart() {
-  const ctx=document.getElementById('hse-chart'); if(!ctx)return;
-  if(STATE.charts.hse) STATE.charts.hse.destroy();
-  STATE.charts.hse=new Chart(ctx,{type:'doughnut',data:{labels:['Near Miss','Incident','LTI'],datasets:[{data:[15,3,1],backgroundColor:['#f59e0b','#f43f5e','#8b5cf6'],borderWidth:0}]},options:{...chartDefaults(),cutout:'60%',plugins:{legend:{labels:{color:'#8a9bb8',font:{size:11}}}}}});
-}
-
-function openAddHSEModal() {
-  openModal('Log HSE Incident / Near Miss','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Type</label>
-        <select class="form-control" id="nh-type"><option value="near-miss">Near Miss</option><option value="incident">Incident</option><option value="dangerous-occurrence">Dangerous Occurrence</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Severity</label>
-        <select class="form-control" id="nh-sev"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="nh-desc" rows="2" placeholder="Describe what happened"></textarea></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="nh-loc" placeholder="Location on site"></div>
-      <div class="form-group"><label class="form-label">Casualties</label><input class="form-control" id="nh-cas" type="number" value="0" min="0"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Root Cause</label><input class="form-control" id="nh-root" placeholder="Root cause analysis"></div>
-    <div class="form-group"><label class="form-label">Corrective Action</label><textarea class="form-control" id="nh-action" rows="2" placeholder="Corrective actions taken"></textarea></div>`,
-  ()=>{
-    const id='HSE-0'+String(window.APP_DATA.mockHSEData.incidents.length+1).padStart(2,'0');
-    window.APP_DATA.mockHSEData.incidents.push({id,type:document.getElementById('nh-type').value,desc:document.getElementById('nh-desc').value||'HSE Event',date:new Date().toISOString().split('T')[0],severity:document.getElementById('nh-sev').value,status:'open',casualties:parseInt(document.getElementById('nh-cas').value)||0,location:document.getElementById('nh-loc').value,rootCause:document.getElementById('nh-root').value,correctiveAction:document.getElementById('nh-action').value,investigator:'U001'});
-    renderHSE(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Logged',`${id} has been logged`,'warning');
-  });
-}
-
-function closeHSE(id) { const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(i){i.status='closed';saveProjectDataAuto();refreshDashboardKPIs();renderHSE();showToast('Closed',`${id} closed`,'success');} }
-function deleteHSE(id) { const data=window.APP_DATA.mockHSEData.incidents; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete HSE <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); saveProjectDataAuto(); refreshDashboardKPIs(); renderHSE(); showToast('Deleted',`${id} deleted`,'success'); }); }
-function editHSE(id) {
-  const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(!i)return;
-  openModal('Edit HSE Incident','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">HSE ID</label><input class="form-control" id="eh-id" value="${i.id}"></div>
-      <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="eh-desc" value="${i.desc||''}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Severity</label>
-        <select class="form-control" id="eh-sev"><option value="low"${i.severity==='low'?' selected':''}>Low</option><option value="medium"${i.severity==='medium'?' selected':''}>Medium</option><option value="high"${i.severity==='high'?' selected':''}>High</option><option value="critical"${i.severity==='critical'?' selected':''}>Critical</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="eh-status"><option value="open"${i.status==='open'?' selected':''}>Open</option><option value="closed"${i.status==='closed'?' selected':''}>Closed</option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="eh-loc" value="${i.location||''}"></div>
-      <div class="form-group"><label class="form-label">Casualties</label><input class="form-control" id="eh-cas" type="number" value="${i.casualties||0}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Root Cause</label><input class="form-control" id="eh-root" value="${i.rootCause||''}"></div>
-    <div class="form-group"><label class="form-label">Corrective Action</label><textarea class="form-control" id="eh-action" rows="2">${i.correctiveAction||''}</textarea></div>`,
-  ()=>{
-    i.id=document.getElementById('eh-id').value||i.id;
-    i.desc=document.getElementById('eh-desc').value||i.desc;
-    i.severity=document.getElementById('eh-sev').value;
-    i.status=document.getElementById('eh-status').value;
-    i.location=document.getElementById('eh-loc').value;
-    i.casualties=parseInt(document.getElementById('eh-cas').value)||0;
-    i.rootCause=document.getElementById('eh-root').value;
-    i.correctiveAction=document.getElementById('eh-action').value;
-    renderHSE(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${i.id} updated`,'success');
-  });
-}
-
-function viewHSE(id) {
-  const i=window.APP_DATA.mockHSEData.incidents.find(x=>x.id===id); if(!i)return;
-  openModal('HSE Incident Detail','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('ID',i.id)}${inf('Type',i.type)}
-      ${inf('Date',i.date)}${inf('Location',i.location||'—')}
-      ${inf('Severity',severityBadge(i.severity))}${inf('Status','<span class="badge badge-'+i.status+'">'+i.status.toUpperCase()+'</span>')}
-      ${inf('Casualties',i.casualties)}${inf('Investigator',i.investigator||'—')}
-    </div>
-    <div style="margin-top:14px">${inf('Description',i.desc)}</div>
-    <div style="margin-top:10px">${inf('Root Cause',i.rootCause||'—')}</div>
-    <div style="margin-top:10px">${inf('Corrective Action',i.correctiveAction||'—')}</div>`);
-}
-
-function printHSEPDF() {
-  const D=window.APP_DATA, {incidents,stats}=D.mockHSEData;
-  generatePDF({ title:'HSE REGISTER', subtitle:'Safety Incidents, Near Misses & Performance Statistics', module:'HSE',
-    kpis:[{label:'Safe Man Hours',value:(stats.safeManHours/1000).toFixed(0)+'K',color:'#059669'},{label:'LTIR',value:stats.ltir,color:'#f59e0b'},{label:'Near Misses (YTD)',value:stats.nearMiss,color:'#dc2626'},{label:'Toolbox Talks',value:stats.toolboxTalks,color:'#1d4ed8'}],
-    tableHeaders:['ID','Type','Description','Date','Severity','Status','Casualties','Location','Corrective Action'],
-    tableRows:incidents.map(i=>[i.id,i.type.replace('-',' ').toUpperCase(),i.desc,i.date,i.severity.toUpperCase(),pdfBadge(i.status),i.casualties,i.location||'—',i.correctiveAction||'—']),
-  });
-}
-
-// ── SUBCONTRACTORS ────────────────────────────────────────────
-function renderSubcontractors() {
-  let data=window.APP_DATA.mockSubcontractorData;
-  const df=STATE.subDiscFilter;
-  if(df&&df!=='all') data=data.filter(s=>(s.discipline||s.scope||'').toLowerCase().includes(df.toLowerCase()));
-  const totalContract=data.reduce((a,s)=>a+s.contractValue,0);
-  const totalPaid=data.reduce((a,s)=>a+s.paidToDate,0);
-  renderRegisterStats('sub-stats',[{label:'Active Subcontractors',value:data.filter(s=>s.status==='active').length,color:'blue'},{label:'Total Contract',value:formatMillions(totalContract),color:'violet'},{label:'Total Paid',value:formatMillions(totalPaid),color:'emerald'},{label:'Active Workers',value:data.reduce((a,s)=>a+s.workers,0),color:'cyan'}]);
-  renderTable('sub-table-body',data,s=>{
-    const pc=s.performance>=90?'var(--accent-emerald)':s.performance>=75?'var(--accent-amber)':s.performance>0?'var(--accent-rose)':'var(--text-muted)';
-    return `<tr>
-      <td class="td-mono">${s.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${s.name}</td>
-      <td><span class="tag">${s.discipline||'General'}</span></td>
-      <td style="font-size:12px;color:var(--text-secondary)">${s.scope}</td>
-      <td class="td-mono" style="color:var(--accent-amber)">${s.poRef||'—'}</td>
-      <td><span class="badge badge-${s.status}">${s.status}</span></td>
-      <td class="td-mono">${s.workers||'—'}</td>
-      <td class="td-mono">${formatCurrency(s.contractValue)}</td>
-      <td class="td-mono">${formatCurrency(s.paidToDate)}</td>
-      <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${s.performance}%;background:${pc}"></div></div><span style="font-family:'DM Mono',monospace;font-size:11px;color:${pc}">${s.performance||'—'}${s.performance?'%':''}</span></div></td>
-      <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.subcontractors}${encodeURIComponent(s.id+'.pdf')}" target="_blank">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewSub('${s.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editSub('${s.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteSub('${s.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('subcontractors')">Import</button>`:''}
-      </td>
-    </tr>`;
-  });
-  setupDiscTabs('sub-disc-tabs','subDiscFilter',renderSubcontractors);
-}
-
-function viewSub(id) {
-  const s=window.APP_DATA.mockSubcontractorData.find(x=>x.id===id); if(!s)return;
-  openModal('Subcontractor Profile','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('ID',s.id)}${inf('Company Name',s.name)}
-      ${inf('Scope',s.scope)}${inf('PO Reference','<span style="color:var(--accent-amber);font-family:DM Mono,monospace">'+s.poRef+'</span>')}
-      ${inf('Status',statusBadge(s.status))}${inf('Workers On Site',s.workers||'—')}
-      ${inf('Contract Value',formatCurrency(s.contractValue))}${inf('Paid to Date',formatCurrency(s.paidToDate))}
-      ${inf('Contact Person',s.contactPerson||'—')}${inf('Phone',s.phone||'—')}
-      ${inf('Start Date',s.startDate||'—')}${inf('End Date',s.endDate||'—')}
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
-      <div style="text-align:center;padding:14px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:var(--accent-blue)">${s.performance||'N/A'}${s.performance?'%':''}</div><div style="font-size:11px;color:var(--text-muted)">Performance Score</div></div>
-      <div style="text-align:center;padding:14px;background:var(--bg-surface);border-radius:8px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:var(--accent-emerald)">${s.safety||'N/A'}${s.safety?'%':''}</div><div style="font-size:11px;color:var(--text-muted)">Safety Score</div></div>
-    </div>`);
-}
-
-function deleteSub(id) { const data=window.APP_DATA.mockSubcontractorData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderSubcontractors(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); }); }
-
-function editSub(id) {
-  const s=window.APP_DATA.mockSubcontractorData.find(x=>x.id===id); if(!s)return;
-  openModal('Edit Subcontractor','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="es-id" value="${s.id}"></div>
-      <div class="form-group"><label class="form-label">Company Name</label><input class="form-control" id="es-name" value="${s.name}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label>
-      <select class="form-control" id="es-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(s.discipline||'')?'selected':''}>${d}</option>`).join('')}</select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="es-status">
-          <option value="not-started" ${s.status==='not-started'?'selected':''}>Not Started</option>
-          <option value="mobilizing" ${s.status==='mobilizing'?'selected':''}>Mobilizing</option>
-          <option value="active" ${s.status==='active'?'selected':''}>Active</option>
-          <option value="completed" ${s.status==='completed'?'selected':''}>Completed</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Workers</label><input class="form-control" id="es-workers" type="number" value="${s.workers}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Paid to Date (SAR)</label><input class="form-control" id="es-paid" type="number" value="${s.paidToDate}"></div>
-      <div class="form-group"><label class="form-label">Performance %</label><input class="form-control" id="es-perf" type="number" min="0" max="100" value="${s.performance}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Contact Person</label><input class="form-control" id="es-contact" value="${s.contactPerson||''}"></div>
-    <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="es-phone" value="${s.phone||''}"></div>`,
-  ()=>{
-    s.id=document.getElementById('es-id').value||s.id;
-    s.name=document.getElementById('es-name').value||s.name;
-    s.discipline=document.getElementById('es-disc').value;
-    s.status=document.getElementById('es-status').value;
-    s.workers=parseInt(document.getElementById('es-workers').value)||0;
-    s.paidToDate=parseFloat(document.getElementById('es-paid').value)||0;
-    s.performance=parseInt(document.getElementById('es-perf').value)||0;
-    s.contactPerson=document.getElementById('es-contact').value;
-    s.phone=document.getElementById('es-phone').value;
-    renderSubcontractors(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${s.id} updated`,'success');
-  });
-}
-
-function openAddSubModal() {
-  openModal('Add Subcontractor','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="ns-id" placeholder="SC-007"></div>
-      <div class="form-group"><label class="form-label">PO Reference</label><input class="form-control" id="ns-po" placeholder="PO-009"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Company Name</label><input class="form-control" id="ns-name" placeholder="Subcontractor company name"></div>
-    <div class="form-group"><label class="form-label">Scope of Work</label><input class="form-control" id="ns-scope" placeholder="e.g. MEP Mechanical Works"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Contract Value (SAR)</label><input class="form-control" id="ns-val" type="number" placeholder="1000000"></div>
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="ns-status"><option value="not-started">Not Started</option><option value="mobilizing">Mobilizing</option><option value="active">Active</option><option value="completed">Completed</option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Contact Person</label><input class="form-control" id="ns-contact" placeholder="Name"></div>
-      <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="ns-phone" placeholder="+1-555-0100"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Start Date</label><input class="form-control" id="ns-start" type="date"></div>
-      <div class="form-group"><label class="form-label">End Date</label><input class="form-control" id="ns-end" type="date"></div>
-    </div>`,
-  ()=>{
-    const id=document.getElementById('ns-id').value||('SC-0'+String(window.APP_DATA.mockSubcontractorData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockSubcontractorData.push({id,name:document.getElementById('ns-name').value||'New Subcontractor',scope:document.getElementById('ns-scope').value,status:document.getElementById('ns-status').value,workers:0,contractValue:parseFloat(document.getElementById('ns-val').value)||0,paidToDate:0,performance:0,safety:0,poRef:document.getElementById('ns-po').value,contactPerson:document.getElementById('ns-contact').value,phone:document.getElementById('ns-phone').value,startDate:document.getElementById('ns-start').value,endDate:document.getElementById('ns-end').value});
-    renderSubcontractors(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Subcontractor Register`,'success');
-  });
-}
-
-function printSubPDF() {
-  let data=window.APP_DATA.mockSubcontractorData;
-  const df=STATE.subDiscFilter;
-  if(df&&df!=='all') data=data.filter(s=>(s.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df==='all'?'All Disciplines':df;
-  const totalContract=data.reduce((a,s)=>a+s.contractValue,0);
-  generatePDF({ title:'SUBCONTRACTOR REGISTER — '+discLabel.toUpperCase(), subtitle:'Scope, Payments, Performance | Discipline: '+discLabel, module:'SUB',
-    kpis:[{label:'Active Subcontractors',value:data.filter(d=>d.status==='active').length,color:'#1d4ed8'},{label:'Total Contract Value',value:formatMillions(totalContract),color:'#7c3aed'},{label:'Total Workers',value:data.reduce((a,s)=>a+s.workers,0),color:'#059669'},{label:'Mobilizing',value:data.filter(d=>d.status==='mobilizing').length,color:'#f59e0b'}],
-    tableHeaders:['ID','Company','Scope','PO Ref','Status','Workers','Contract Value','Paid to Date','Performance'],
-    tableRows:data.map(s=>[s.id,s.name,s.scope,s.poRef||'—',s.status.toUpperCase(),formatCurrency(s.contractValue),formatCurrency(s.paidToDate),s.performance?s.performance+'%':'—']),
-  });
-}
-
-// ── COST ─────────────────────────────────────────────────────
-function renderCost() {
-  const D=window.APP_DATA.mockCostData;
-  let cats=D.categories;
-  const df=STATE.costDiscFilter;
-  if(df&&df!=='all') cats=cats.filter(c=>(c.discipline||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('cost-stats',[{label:'Revised Budget',value:formatMillions(cats.reduce((a,c)=>a+c.budget,0)||D.revisedBudget),color:'blue'},{label:'Actual Cost',value:formatMillions(cats.reduce((a,c)=>a+c.actual,0)||D.actualCost),color:'emerald'},{label:'Forecast Final',value:formatMillions(cats.reduce((a,c)=>a+c.forecast,0)||D.forecastFinalCost),color:'amber'},{label:'Cost Variance',value:formatMillions(cats.reduce((a,c)=>a+(c.forecast-c.budget),0)||D.costVariance),color:'rose'}]);
-  renderTable('cost-table-body',cats,c=>{
-    const fv=c.forecast-c.budget, vc=fv>0?'var(--accent-rose)':'var(--accent-emerald)';
-    return `<tr>
-      <td style="font-weight:600;color:var(--text-primary)">${c.name}</td>
-      <td class="td-mono">${formatCurrency(c.budget)}</td>
-      <td class="td-mono">${formatCurrency(c.committed)}</td>
-      <td class="td-mono">${formatCurrency(c.actual)}</td>
-      <td class="td-mono">${formatCurrency(c.forecast)}</td>
-      <td class="td-mono" style="color:${vc}">${fv>0?'+':''}${formatCurrency(fv)}</td>
-      <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,(c.actual/c.budget*100)).toFixed(0)}%"></div></div></td>
-      <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.cost}${encodeURIComponent(c.name.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewCostCategory('${c.name}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCostCategory('${c.name}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteCostCategory('${c.name}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('cost')">Import</button>`:''}
-      </td>
-    </tr>`;
-  });
-  setupDiscTabs('cost-disc-tabs','costDiscFilter',renderCost);
-  renderCostChart();
-}
-
-function renderCostChart() {
-  const ctx=document.getElementById('cost-chart'); if(!ctx)return;
-  if(STATE.charts.cost) STATE.charts.cost.destroy();
-  const cats=window.APP_DATA.mockCostData.categories;
-  STATE.charts.cost=new Chart(ctx,{type:'bar',data:{labels:cats.map(c=>c.name.length>12?c.name.substring(0,12)+'…':c.name),datasets:[{label:'Budget',data:cats.map(c=>+(c.budget/1e6).toFixed(2)),backgroundColor:'rgba(59,130,246,0.3)',borderColor:'#3b82f6',borderWidth:1,borderRadius:4},{label:'Forecast',data:cats.map(c=>+(c.forecast/1e6).toFixed(2)),backgroundColor:'rgba(244,63,94,0.5)',borderColor:'#f43f5e',borderWidth:1,borderRadius:4},{label:'Actual',data:cats.map(c=>+(c.actual/1e6).toFixed(2)),backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10b981',borderWidth:1,borderRadius:4}]},options:chartDefaults({scales:{y:{ticks:{callback:v=>'SAR '+v+'M'}}}})});
-}
-
-function viewCostCategory(name) {
-  const c=window.APP_DATA.mockCostData.categories.find(x=>x.name===name); if(!c)return;
-  const fv=c.forecast-c.budget;
-  openModal('Cost Category Details','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('Category',c.name)}${inf('Budget',formatCurrency(c.budget))}
-      ${inf('Committed',formatCurrency(c.committed))}${inf('Actual Cost',formatCurrency(c.actual))}
-      ${inf('Forecast Final',formatCurrency(c.forecast))}${inf('Variance',(fv>0?'+':'')+formatCurrency(fv))}
-      ${inf('% Spent',(c.actual/c.budget*100).toFixed(1)+'%')}
-    </div>`);
-}
-
-function deleteCostCategory(name) { const data=window.APP_DATA.mockCostData.categories; const idx=data.findIndex(x=>x.name===name); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete category <span style="color:var(--accent-rose)">${name}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderCost(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${name} deleted`,'success'); }); }
-
-function editCostCategory(name) {
-  const c=window.APP_DATA.mockCostData.categories.find(x=>x.name===name); if(!c)return;
-  openModal('Edit Cost Category','',`
-    <div class="form-group"><label class="form-label">Category Name</label><input class="form-control" id="ec-name" value="${c.name}"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Budget (SAR)</label><input class="form-control" id="ec-budget" type="number" value="${c.budget}"></div>
-      <div class="form-group"><label class="form-label">Committed (SAR)</label><input class="form-control" id="ec-committed" type="number" value="${c.committed}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Actual (SAR)</label><input class="form-control" id="ec-actual" type="number" value="${c.actual}"></div>
-      <div class="form-group"><label class="form-label">Forecast (SAR)</label><input class="form-control" id="ec-forecast" type="number" value="${c.forecast}"></div>
-    </div>`,
-  ()=>{
-    c.name=document.getElementById('ec-name').value||c.name;
-    c.budget=parseFloat(document.getElementById('ec-budget').value)||c.budget;
-    c.committed=parseFloat(document.getElementById('ec-committed').value)||c.committed;
-    c.actual=parseFloat(document.getElementById('ec-actual').value)||c.actual;
-    c.forecast=parseFloat(document.getElementById('ec-forecast').value)||c.forecast;
-    renderCost(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${c.name} updated`,'success');
-  });
-}
-
-function openAddVariationOrderModal() {
-  const D=window.APP_DATA.mockCostData;
-  openModal('📝 Add Variation Order','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">VO Reference</label><input class="form-control" id="vo-ref" placeholder="VO-001"></div>
-      <div class="form-group"><label class="form-label">Category</label>
-        <select class="form-control" id="vo-cat">${D.categories.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}</select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="vo-desc" placeholder="Variation order description"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Budget Adjustment (SAR)</label><input class="form-control" id="vo-budget" type="number" placeholder="0" value="0"></div>
-      <div class="form-group"><label class="form-label">Forecast Adjustment (SAR)</label><input class="form-control" id="vo-forecast" type="number" placeholder="0" value="0"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="vo-remarks" rows="2" placeholder="Reason for variation"></textarea></div>`,
-  ()=>{
-    const catName=document.getElementById('vo-cat').value;
-    const cat=D.categories.find(x=>x.name===catName);
-    if(cat){
-      const budgetAdj=parseFloat(document.getElementById('vo-budget').value)||0;
-      const forecastAdj=parseFloat(document.getElementById('vo-forecast').value)||0;
-      cat.budget+=budgetAdj;
-      cat.forecast+=forecastAdj;
-      D.revisedBudget+=budgetAdj;
-      D.forecastFinalCost+=forecastAdj;
-      D.costVariance=D.forecastFinalCost-D.revisedBudget;
-    }
-    const ref=document.getElementById('vo-ref').value||'VO-'+Date.now();
-    renderCost(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Variation Order Added',`${ref} applied to ${catName}`,'success');
-  });
-}
-
-function printCostPDF() {
-  const D=window.APP_DATA.mockCostData;
-  let cats=D.categories;
-  const df=STATE.costDiscFilter;
-  if(df&&df!=='all') cats=cats.filter(c=>(c.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df==='all'?'All Disciplines':df;
-  generatePDF({ title:'COST CONTROL REPORT', subtitle:'Budget vs Actual vs Forecast — Full Breakdown', module:'COST',
-    kpis:[{label:'Revised Budget',value:formatMillions(D.revisedBudget),color:'#1d4ed8'},{label:'Actual Cost',value:formatMillions(D.actualCost),color:'#059669'},{label:'Forecast Final',value:formatMillions(D.forecastFinalCost),color:'#f59e0b'},{label:'Cost Variance',value:formatMillions(D.costVariance),color:'#dc2626'}],
-    tableHeaders:['Category','Budget','Committed','Actual','Forecast','Variance','% Spent'],
-    tableRows:D.categories.map(c=>{ const fv=c.forecast-c.budget; return [c.name,formatCurrency(c.budget),formatCurrency(c.committed),formatCurrency(c.actual),formatCurrency(c.forecast),(fv>0?'+':'')+formatCurrency(fv),(c.actual/c.budget*100).toFixed(0)+'%']; }),
-  });
-}
-
-// ── MANPOWER ──────────────────────────────────────────────────
-function renderManpower() {
-  const {today,equipment,weekly}=window.APP_DATA.mockManpowerData;
-  renderRegisterStats('manpower-stats',[{label:'Total Workers Today',value:today.totalWorkers,color:'blue'},{label:'Skilled Workers',value:today.skilled,color:'emerald'},{label:'Staff',value:today.staff,color:'violet'},{label:'Equipment Active',value:equipment.filter(e=>e.status==='active').length,color:'cyan'}]);
-  renderTable('manpower-table-body',weekly,w=>`
-    <tr>
-      <td class="td-mono">${w.week}</td>
-      <td class="td-mono">${w.target}</td>
-      <td class="td-mono">${w.actual??'—'}</td>
-      <td class="td-mono">${w.skilled??'—'}</td>
-      <td class="td-mono">${w.unskilled??'—'}</td>
-      <td class="td-mono">${w.staff??'—'}</td>
-      <td>${w.actual?`<div class="progress-bar"><div class="progress-fill ${w.actual<w.target*0.9?'amber':''}" style="width:${Math.min(100,w.actual/w.target*100).toFixed(0)}%"></div></div>`:'—'}</td>
-      <td>${w.actual?`<span style="font-family:'DM Mono',monospace;font-size:11px;color:${w.actual>=w.target*0.95?'var(--accent-emerald)':'var(--accent-amber)'}">${(w.actual/w.target*100).toFixed(0)}%</span>`:'—'}</td>
-      <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.manpower}${encodeURIComponent(w.week.replace(/\s+/g,'-')+'.pdf')}" target="_blank">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewManpowerWeek('${w.week}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editManpowerWeek('${w.week}')">Edit</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('manpower')">Import</button>`:''}
-      </td>
-    </tr>`);
- const ec=document.getElementById('equipment-list');
-  if(ec) ec.innerHTML=equipment.map(e=>{
-    const uc=e.utilization>80?'var(--accent-emerald)':e.utilization>40?'var(--accent-amber)':e.utilization>0?'var(--accent-rose)':'var(--text-muted)';
-    return `<div class="equip-item">
-      <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${e.status==='active'?'var(--accent-emerald)':e.status==='standby'?'var(--accent-amber)':'var(--accent-rose)'}"></span>
-      <div class="equip-name">${e.type}</div>
-      <div class="equip-bar"><div class="equip-fill" style="width:${e.utilization}%;background:${uc}"></div></div>
-      <div class="equip-pct" style="color:${uc}">${e.utilization}%</div>
-      ${isAdmin()?`<button class="btn btn-sm btn-secondary" style="padding:2px 7px;font-size:10px;margin-left:4px;" onclick="editEquipment('${e.id}')">Edit</button>
-      <button class="btn btn-sm btn-secondary" style="padding:2px 7px;font-size:10px;color:var(--accent-rose);" onclick="deleteEquipment('${e.id}')">Delete</button>`:''}
-     </div>`;
-  }).join('');
-  renderManpowerChart();
-}
-function renderManpowerChart() {
-  const ctx=document.getElementById('manpower-chart'); if(!ctx)return;
-  if(STATE.charts.manpower) STATE.charts.manpower.destroy();
-  const w=window.APP_DATA.mockManpowerData.weekly;
-  STATE.charts.manpower=new Chart(ctx,{type:'bar',data:{labels:w.map(x=>x.week),datasets:[{label:'Target',data:w.map(x=>x.target),backgroundColor:'rgba(59,130,246,0.3)',borderColor:'#3b82f6',borderWidth:1,borderRadius:4},{label:'Actual',data:w.map(x=>x.actual),backgroundColor:'rgba(16,185,129,0.7)',borderColor:'#10b981',borderWidth:1,borderRadius:4}]},options:chartDefaults()});
-}
-
-function viewManpowerWeek(week) {
-  const w=window.APP_DATA.mockManpowerData.weekly.find(x=>x.week===week); if(!w)return;
-  openModal('Weekly Manpower Details','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('Week',w.week)}${inf('Target Workers',w.target)}
-      ${inf('Actual Workers',w.actual??'—')}${inf('Skilled',w.skilled??'—')}
-      ${inf('Unskilled',w.unskilled??'—')}${inf('Staff',w.staff??'—')}
-      ${inf('Achievement',w.actual?((w.actual/w.target*100).toFixed(0)+'%'):'—')}
-    </div>`);
-}
-
-function editManpowerWeek(week) {
-  const w=window.APP_DATA.mockManpowerData.weekly.find(x=>x.week===week); if(!w)return;
-  openModal('Edit Weekly Manpower Log','',`
-    <div class="form-group"><label class="form-label">Week: ${w.week}</label></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Target Workers</label><input class="form-control" id="emw-target" type="number" value="${w.target}"></div>
-      <div class="form-group"><label class="form-label">Actual Workers</label><input class="form-control" id="emw-actual" type="number" value="${w.actual??''}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Skilled</label><input class="form-control" id="emw-skilled" type="number" value="${w.skilled??''}"></div>
-      <div class="form-group"><label class="form-label">Unskilled</label><input class="form-control" id="emw-unskilled" type="number" value="${w.unskilled??''}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Staff</label><input class="form-control" id="emw-staff" type="number" value="${w.staff??''}"></div>`,
-  ()=>{
-    w.target=parseInt(document.getElementById('emw-target').value)||w.target;
-    const a=document.getElementById('emw-actual').value; w.actual=a?parseInt(a):w.actual;
-    const sk=document.getElementById('emw-skilled').value; w.skilled=sk?parseInt(sk):w.skilled;
-    const un=document.getElementById('emw-unskilled').value; w.unskilled=un?parseInt(un):w.unskilled;
-    const st=document.getElementById('emw-staff').value; w.staff=st?parseInt(st):w.staff;
-    renderManpower(); showToast('Updated',`${week} updated`,'success');
-  });
-}
-
-function addEquipment() {
-  const eq = window.APP_DATA.mockManpowerData.equipment;
-  openModal('Add New Equipment','',`
-    <div class="form-group"><label class="form-label">Equipment Name</label>
-      <input class="form-control" id="ae-name" placeholder="e.g. Excavator CAT 320">
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="ae-status">
-          <option value="active">Active</option>
-          <option value="standby">Standby</option>
-          <option value="maintenance">Maintenance</option>
-          <option value="breakdown">Breakdown</option>
-          <option value="off-hired">Off-Hired</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Utilization %</label>
-        <input class="form-control" id="ae-util" type="number" min="0" max="100" value="0">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Operator</label>
-        <input class="form-control" id="ae-op" placeholder="Operator name">
-      </div>
-      <div class="form-group"><label class="form-label">Location / Zone</label>
-        <input class="form-control" id="ae-loc" placeholder="e.g. Zone A, Level 3">
-      </div>
-    </div>`,
-  ()=>{
-    const name = document.getElementById('ae-name').value.trim();
-    if(!name){ showToast('Error','Equipment name is required','error'); return; }
-    const newId = 'EQ-' + String(eq.length + 1).padStart(3,'0');
-    eq.push({ id:newId, type:name, status:document.getElementById('ae-status').value, utilization:parseInt(document.getElementById('ae-util').value)||0, operator:document.getElementById('ae-op').value||'—', location:document.getElementById('ae-loc').value||'—' });
-    renderManpower();
-    showToast('Added', `${name} added`, 'success');
-  });
-}
-
-function editEquipment(id) {
-  const e=window.APP_DATA.mockManpowerData.equipment.find(x=>x.id===id); if(!e)return;
-  openModal('Edit Equipment','',`
-    <div class="form-group"><label class="form-label">Equipment Name</label>
-      <input class="form-control" id="ee-name" value="${e.type}">
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="ee-status">
-          <option value="active"${e.status==='active'?' selected':''}>Active</option>
-          <option value="standby"${e.status==='standby'?' selected':''}>Standby</option>
-          <option value="maintenance"${e.status==='maintenance'?' selected':''}>Maintenance</option>
-          <option value="breakdown"${e.status==='breakdown'?' selected':''}>Breakdown</option>
-          <option value="off-hired"${e.status==='off-hired'?' selected':''}>Off-Hired</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Utilization %</label>
-        <input class="form-control" id="ee-util" type="number" min="0" max="100" value="${e.utilization}">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Operator</label>
-        <input class="form-control" id="ee-op" value="${e.operator||''}">
-      </div>
-      <div class="form-group"><label class="form-label">Location / Zone</label>
-        <input class="form-control" id="ee-loc" value="${e.location||''}">
-      </div>
-    </div>`,
-  ()=>{
-    e.type=document.getElementById('ee-name').value.trim()||e.type;
-    e.status=document.getElementById('ee-status').value;
-    e.utilization=parseInt(document.getElementById('ee-util').value)||0;
-    e.operator=document.getElementById('ee-op').value;
-    e.location=document.getElementById('ee-loc').value;
-    renderManpower();
-    showToast('Updated',`${e.type} updated`,'success');
-  });
-}
-
-function deleteEquipment(id) {
-  const eq=window.APP_DATA.mockManpowerData.equipment;
-  const idx=eq.findIndex(x=>x.id===id); if(idx===-1)return;
-  const name=eq[idx].type;
-  openModal('Confirm Delete','',`
-    <div style="text-align:center;padding:16px 0;">
-      <div style="font-size:32px;margin-bottom:12px;">🗑️</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Remove <span style="color:var(--accent-rose)">${name}</span>?</div>
-      <div style="font-size:12px;color:var(--text-muted);">This cannot be undone.</div>
-    </div>`,
-  ()=>{ eq.splice(idx,1); renderManpower(); showToast('Deleted',`${name} removed`,'success'); });
-}
-
-function openAddDailyLogModal() {
-  openModal('Add Daily Log','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Date</label><input class="form-control" id="dl-date" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
-      <div class="form-group"><label class="form-label">Total Workers</label><input class="form-control" id="dl-total" type="number" value="0"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Skilled</label><input class="form-control" id="dl-skilled" type="number" value="0"></div>
-      <div class="form-group"><label class="form-label">Unskilled</label><input class="form-control" id="dl-unskilled" type="number" value="0"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Staff</label><input class="form-control" id="dl-staff" type="number" value="0"></div>`,
-  ()=>{
-    const date = document.getElementById('dl-date').value;
-    const total = parseInt(document.getElementById('dl-total').value) || 0;
-    const skilled = parseInt(document.getElementById('dl-skilled').value) || 0;
-    const unskilled = parseInt(document.getElementById('dl-unskilled').value) || 0;
-    const staff = parseInt(document.getElementById('dl-staff').value) || 0;
-    window.APP_DATA.mockManpowerData.today = { date, totalWorkers: total, skilled, unskilled, staff };
-    const weekIndex = window.APP_DATA.mockManpowerData.weekly.findIndex(w => w.week.includes('Week 6'));
-    if (weekIndex >= 0) {
-      window.APP_DATA.mockManpowerData.weekly[weekIndex].actual = total;
-      window.APP_DATA.mockManpowerData.weekly[weekIndex].skilled = skilled;
-      window.APP_DATA.mockManpowerData.weekly[weekIndex].unskilled = unskilled;
-      window.APP_DATA.mockManpowerData.weekly[weekIndex].staff = staff;
-    }
-    renderManpower(); showToast('Daily Log Added', 'Manpower data updated', 'success');
-  });
-}
-
-function printManpowerPDF() {
-  const {today,weekly,equipment}=window.APP_DATA.mockManpowerData;
-  generatePDF({ title:'MANPOWER & EQUIPMENT REPORT', subtitle:'Daily Log, Weekly Targets & Equipment Utilization', module:'MP',
-    kpis:[{label:'Total Workers Today',value:today.totalWorkers,color:'#1d4ed8'},{label:'Skilled',value:today.skilled,color:'#059669'},{label:'Unskilled',value:today.unskilled,color:'#f59e0b'},{label:'Staff',value:today.staff,color:'#7c3aed'}],
-    tableHeaders:['Week','Target Workers','Actual Workers','Skilled','Unskilled','Staff','Achievement %'],
-    tableRows:weekly.map(w=>[w.week,w.target,w.actual??'—',w.skilled??'—',w.unskilled??'—',w.staff??'—',w.actual?(w.actual/w.target*100).toFixed(0)+'%':'—']),
-    extraHTML:`<br><table style="width:100%;border-collapse:collapse;font-size:8.5pt"><thead><tr><th style="background:#1e3a5f;color:#fff;padding:7px 9px;text-align:left;font-size:8pt;text-transform:uppercase">Equipment</th><th style="background:#1e3a5f;color:#fff;padding:7px 9px;text-align:left;font-size:8pt">Status</th><th style="background:#1e3a5f;color:#fff;padding:7px 9px;text-align:left;font-size:8pt">Utilization</th><th style="background:#1e3a5f;color:#fff;padding:7px 9px;text-align:left;font-size:8pt">Operator</th><th style="background:#1e3a5f;color:#fff;padding:7px 9px;text-align:left;font-size:8pt">Location</th></tr></thead><tbody>${equipment.map((e,i)=>`<tr style="background:${i%2===0?'#f8f9fa':'#fff'}"><td style="padding:6px 9px;border-bottom:1px solid #e9ecef">${e.type}</td><td style="padding:6px 9px;border-bottom:1px solid #e9ecef">${e.status.toUpperCase()}</td><td style="padding:6px 9px;border-bottom:1px solid #e9ecef">${e.utilization}%</td><td style="padding:6px 9px;border-bottom:1px solid #e9ecef">${e.operator}</td><td style="padding:6px 9px;border-bottom:1px solid #e9ecef">${e.location||'—'}</td></tr>`).join('')}</tbody></table>`,
-  });
-}
-
-// ── CLOSEOUT ──────────────────────────────────────────────────
-function renderCloseout() {
-  let data=window.APP_DATA.mockCloseoutData;
-  const df=STATE.closeoutDiscFilter;
-  if(df&&df!=='all') data=data.filter(c=>(c.discipline||'').toLowerCase()===df.toLowerCase());
-  renderRegisterStats('closeout-stats',[{label:'Total Items',value:data.length,color:'blue'},{label:'In Progress',value:data.filter(c=>c.status==='in-progress').length,color:'amber'},{label:'Not Started',value:data.filter(c=>c.status==='not-started').length,color:'rose'},{label:'Complete',value:data.filter(c=>c.status==='complete').length,color:'emerald'}]);
-  renderTable('closeout-table-body',data,c=>`
-    <tr>
-      <td class="td-mono">${c.id}</td>
-      <td style="font-weight:600;color:var(--text-primary)">${c.item}</td>
-      <td><span class="tag">${c.discipline||'General'}</span></td>
-      <td><span class="tag">${c.category||'—'}</span></td>
-      <td><span class="badge badge-${c.status==='in-progress'?'pending':c.status==='complete'?'approved':'draft'}">${c.status.replace('-',' ')}</span></td>
-      <td class="td-mono">${c.due}</td>
-      <td class="td-mono">${c.assignedTo}</td>
-      <td style="font-size:11px;color:var(--text-secondary)">${c.remarks||'—'}</td>
-      <td>
-        <a class="drive-link" href="${window.APP_DATA.LOCAL_DRIVE.closeout}${encodeURIComponent(c.id+'.pdf')}" target="_blank">Open</a>
-        <button class="btn btn-sm btn-secondary" onclick="viewCloseout('${c.id}')">View</button>
-        ${isAdmin()?`<button class="btn btn-sm btn-secondary" onclick="editCloseout('${c.id}')">Edit</button>
-        ${c.status!=='complete'?`<button class="btn btn-sm btn-success" onclick="completeCloseout('${c.id}')">✓ Complete</button>`:'<span style="color:var(--accent-emerald);font-size:12px">✓ Done</span>'}
-        <button class="btn btn-sm btn-danger" onclick="deleteCloseout('${c.id}')">Delete</button>
-        <button class="btn btn-sm btn-secondary" onclick="triggerImport('closeout')">Import</button>`:c.status==='complete'?'<span style="color:var(--accent-emerald);font-size:12px">✓ Done</span>':''}
-      </td>
-    </tr>`);
-  setupDiscTabs('closeout-disc-tabs','closeoutDiscFilter',renderCloseout);
-}
-
-function viewCloseout(id) {
-  const c=window.APP_DATA.mockCloseoutData.find(x=>x.id===id); if(!c)return;
-  openModal('Closeout Item Details','',`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      ${inf('ID',c.id)}${inf('Item',c.item)}
-      ${inf('Category',c.category||'—')}${inf('Status',statusBadge(c.status))}
-      ${inf('Due Date',c.due)}${inf('Assigned To',c.assignedTo)}
-    </div>
-    <div style="margin-top:14px">${inf('Remarks',c.remarks||'—')}</div>`);
-}
-
-function deleteCloseout(id) { const data=window.APP_DATA.mockCloseoutData; const idx=data.findIndex(x=>x.id===id); if(idx===-1)return; openModal('Confirm Delete','',`<div style="text-align:center;padding:16px 0"><div style="font-size:32px;margin-bottom:12px">🗑️</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Delete <span style="color:var(--accent-rose)">${id}</span>?</div><div style="font-size:12px;color:var(--text-muted)">This cannot be undone.</div></div>`,()=>{ data.splice(idx,1); renderCloseout(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Deleted',`${id} deleted`,'success'); }); }
-
-function editCloseout(id) {
-  const c=window.APP_DATA.mockCloseoutData.find(x=>x.id===id); if(!c)return;
-  openModal('Edit Closeout Item','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="ecl-id" value="${c.id}"></div>
-      <div class="form-group"><label class="form-label">Closeout Item</label><input class="form-control" id="ecl-item" value="${c.item}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="ecl-status"><option value="not-started"${c.status==='not-started'?' selected':''}>Not Started</option><option value="in-progress"${c.status==='in-progress'?' selected':''}>In Progress</option><option value="complete"${c.status==='complete'?' selected':''}>Complete</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Due Date</label><input class="form-control" id="ecl-due" type="date" value="${c.due||''}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Assigned To</label>
-      <select class="form-control" id="ecl-assign">${window.APP_DATA.USERS.map(u=>`<option value="${u.id}"${u.id===c.assignedTo?' selected':''}>${u.name}</option>`).join('')}</select>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="ecl-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}"${d===(c.discipline||'')?'selected':''}>${d}</option>`).join('')}</select></div>
-    <div class="form-group"><label class="form-label">Category</label><input class="form-control" id="ecl-cat" value="${c.category||''}"></div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="ecl-rem" rows="2">${c.remarks||''}</textarea></div>`,
-  ()=>{
-    c.id=document.getElementById('ecl-id').value||c.id;
-    c.item=document.getElementById('ecl-item').value||c.item;
-    c.discipline=document.getElementById('ecl-disc').value;
-    c.status=document.getElementById('ecl-status').value;
-    c.due=document.getElementById('ecl-due').value;
-    c.assignedTo=document.getElementById('ecl-assign').value;
-    c.category=document.getElementById('ecl-cat').value;
-    c.remarks=document.getElementById('ecl-rem').value;
-    renderCloseout(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Updated',`${c.id} updated`,'success');
-  });
-}
-
-function completeCloseout(id) { const c=window.APP_DATA.mockCloseoutData.find(x=>x.id===id); if(c){c.status='complete';renderCloseout();saveProjectDataAuto();refreshDashboardKPIs();showToast('Complete',`${id} marked complete`,'success');} }
-
-function openAddCloseoutItemModal() {
-  openModal('Add Closeout Item','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">ID</label><input class="form-control" id="nc-id" placeholder="CL-009"></div>
-      <div class="form-group"><label class="form-label">Category</label><input class="form-control" id="nc-cat" placeholder="Documentation"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Item Description</label><input class="form-control" id="nc-item" placeholder="Closeout item"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Due Date</label><input class="form-control" id="nc-due" type="date"></div>
-      <div class="form-group"><label class="form-label">Assigned To</label>
-        <select class="form-control" id="nc-assign">${window.APP_DATA.USERS.map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}</select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Discipline</label><select class="form-control" id="nc-disc"><option value="">General</option>${(window.APP_DATA.DISCIPLINES||['Civil','Architect','Structural','Mechanical','Electrical','Plumbing','HVAC','Fire Protection']).map(d=>`<option value="${d}">${d}</option>`).join('')}</select></div>
-    <div class="form-group"><label class="form-label">Status</label>
-      <select class="form-control" id="nc-status"><option value="not-started">Not Started</option><option value="in-progress">In Progress</option><option value="complete">Complete</option></select>
-    </div>
-    <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-control" id="nc-remarks" rows="2"></textarea></div>`,
-  ()=>{
-    const id=document.getElementById('nc-id').value||('CL-0'+String(window.APP_DATA.mockCloseoutData.length+1).padStart(2,'0'));
-    window.APP_DATA.mockCloseoutData.push({
-      id, item: document.getElementById('nc-item').value || 'New Closeout Item',
-      discipline: document.getElementById('nc-disc').value||'General',
-      category: document.getElementById('nc-cat').value,
-      due: document.getElementById('nc-due').value,
-      assignedTo: document.getElementById('nc-assign').value,
-      status: document.getElementById('nc-status').value,
-      remarks: document.getElementById('nc-remarks').value
-    });
-    renderCloseout(); saveProjectDataAuto(); refreshDashboardKPIs(); showToast('Added',`${id} added to Closeout Register`,'success');
-  });
-}
-
-function printCloseoutPDF() {
-  let data=window.APP_DATA.mockCloseoutData;
-  const df=STATE.closeoutDiscFilter;
-  if(df&&df!=='all') data=data.filter(c=>(c.discipline||'').toLowerCase()===df.toLowerCase());
-  const discLabel=df==='all'?'All Disciplines':df;
-  generatePDF({ title:'PROJECT CLOSEOUT — '+discLabel.toUpperCase(), subtitle:'Handover Documents & O&M Manuals | Discipline: '+discLabel, module:'CLO',
-    kpis:[{label:'Total Items',value:data.length,color:'#1d4ed8'},{label:'In Progress',value:data.filter(d=>d.status==='in-progress').length,color:'#f59e0b'},{label:'Not Started',value:data.filter(d=>d.status==='not-started').length,color:'#dc2626'},{label:'Complete',value:data.filter(d=>d.status==='complete').length,color:'#059669'}],
-    tableHeaders:['ID','Closeout Item','Discipline','Category','Status','Due Date','Assigned To','Remarks'],
-    tableRows:data.map(c=>[c.id,c.item,c.discipline||'General',c.category||'—',c.status.replace('-',' ').toUpperCase(),c.due,c.assignedTo,c.remarks||'—']),
-  });
-}
-
-// ── PROJECT MANAGEMENT ────────────────────────────────────────
-function openAddProjectModal() {
-  openModal('Add New Project','',`
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Project ID</label><input class="form-control" id="np-id" placeholder="PRJ-003"></div>
-      <div class="form-group"><label class="form-label">Project Code</label><input class="form-control" id="np-code" placeholder="ABC-2026"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Project Name</label><input class="form-control" id="np-name" placeholder="Full project name"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Client</label><input class="form-control" id="np-client" placeholder="Client company name"></div>
-      <div class="form-group"><label class="form-label">Contractor</label><input class="form-control" id="np-contractor" value="BuildCore International LLC"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Consultant</label><input class="form-control" id="np-consultant" placeholder="Consulting firm"></div>
-    <div class="form-group"><label class="form-label">Location</label><input class="form-control" id="np-location" placeholder="Project site location"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Contract Value (SAR)</label><input class="form-control" id="np-value" type="number" placeholder="50000000"></div>
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-control" id="np-status"><option value="active">Active</option><option value="planned">Planned</option><option value="completed">Completed</option><option value="on-hold">On Hold</option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Start Date</label><input class="form-control" id="np-start" type="date"></div>
-      <div class="form-group"><label class="form-label">Planned End Date</label><input class="form-control" id="np-end" type="date"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="np-desc" rows="2" placeholder="Brief project description"></textarea></div>`,
-  ()=>{
-    const proj={id:document.getElementById('np-id').value||('PRJ-0'+String(window.APP_DATA.PROJECTS.length+1).padStart(2,'0')),code:document.getElementById('np-code').value||'NEW-2026',name:document.getElementById('np-name').value||'New Project',client:document.getElementById('np-client').value,contractor:document.getElementById('np-contractor').value,consultant:document.getElementById('np-consultant').value,location:document.getElementById('np-location').value,contractValue:parseFloat(document.getElementById('np-value').value)||0,currency:'SAR',currentProgress:0,status:document.getElementById('np-status').value,startDate:document.getElementById('np-start').value,plannedEnd:document.getElementById('np-end').value,description:document.getElementById('np-desc').value};
-    window.APP_DATA.PROJECTS.push(proj);
-    const switcher=document.getElementById('project-switcher');
-    if(switcher){ const opt=document.createElement('option'); opt.value=proj.id; opt.textContent=proj.code+' — '+proj.name.substring(0,28)+'…'; switcher.appendChild(opt); }
-    renderProjects();
-    saveProjectDataAuto(); refreshDashboardKPIs();
-    try { updateSidebarProject(); } catch(e) {}
-    try { if(STATE.currentPage==='dashboard') renderDashboard(); } catch(e) {}
-    showToast('Project Added',proj.name+' — Dashboard updated','success');
-  });
-}
-
-// ── CSV IMPORT ────────────────────────────────────────────────
-function parseCSVFile(file, callback) {
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const lines=e.target.result.split('\n').filter(l=>l.trim());
-    if(lines.length<2){showToast('Import Error','CSV has no data rows','error');return;}
-    const headers=lines[0].split(',').map(h=>h.replace(/"/g,'').trim());
-    const rows=lines.slice(1).map(line=>{ const vals=line.split(','); const obj={}; headers.forEach((h,i)=>{obj[h]=(vals[i]||'').replace(/"/g,'').trim();}); return obj; });
-    callback(rows);
-  };
-  reader.readAsText(file);
-}
-
-function triggerImport(module) {
-  const input=document.createElement('input'); input.type='file'; input.accept='.csv';
-  input.onchange=e=>{
-    const file=e.target.files[0]; if(!file)return;
-    parseCSVFile(file,rows=>{
-      const today=new Date().toISOString().split('T')[0];
-      if(module==='drawings') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockDrawingsData.push({id:r.id,title:r.title,discipline:r.discipline||'Civil',rev:parseInt(r.rev)||1,status:r.status||'submitted',submittedBy:'U001',date:r.date||today,consultant:r.consultant||'',file:r.file||'',comments:r.comments||''});});
-      else if(module==='materials') rows.forEach(r=>{if(r.id&&r.item)window.APP_DATA.mockMaterialsData.push({id:r.id,item:r.item,discipline:r.discipline||'General',boqRef:r.boqRef||'',poNo:r.poNo||'',supplier:r.supplier||'',rev:parseInt(r.rev)||1,status:r.status||'submitted',submitDate:r.submitDate||today,approveDate:r.approveDate||'',deliveryDate:r.deliveryDate||'',qty:parseFloat(r.qty)||0,unit:r.unit||'',remarks:r.remarks||''});});
-      else if(module==='methods') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockMethodsData.push({id:r.id,title:r.title,discipline:r.discipline||'General',category:r.category||'General',risk:r.risk||'Low',rev:parseInt(r.rev)||1,status:r.status||'submitted',submittedBy:'U001',date:r.date||today,hseReview:r.hseReview||'Pending',file:r.file||r.id+'-Rev1.pdf'});});
-      else if(module==='testing') rows.forEach(r=>{if(r.id&&r.system)window.APP_DATA.mockTestingData.push({id:r.id,system:r.system,discipline:r.discipline||'General',type:r.type||'General',date:r.date||today,rev:parseInt(r.rev)||1,status:r.status||'pending',cert:r.cert||'',file:r.file||'',remarks:r.remarks||''});});
-      else if(module==='ncr') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockNCRData.push({id:r.id,title:r.title,discipline:r.discipline||'General',raised:'U001',date:r.date||today,status:r.status||'open',priority:r.priority||'medium',assignedTo:r.assignedTo||'',closureDate:r.closureDate||'',file:r.file||r.id+'.pdf',remarks:r.remarks||'',location:r.location||''});});
-      else if(module==='rfi') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockRFIData.push({id:r.id,title:r.title,discipline:r.discipline||'General',priority:r.priority||'medium',status:r.status||'open',date:r.date||today,closureDate:r.closureDate||'',file:r.file||r.id+'.pdf',remarks:r.remarks||''});});
-      else if(module==='si') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockSIData.push({id:r.id,title:r.title,discipline:r.discipline||'General',ref:r.ref||'',priority:r.priority||'medium',status:r.status||'open',date:r.date||today,costImpact:r.costImpact||'',file:r.file||r.id+'.pdf',remarks:r.remarks||''});});
-      else if(module==='wir') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockWIRData.push({id:r.id,title:r.title,discipline:r.discipline||'General',requestedBy:'U001',date:r.date||today,status:'WIR',priority:r.priority||'medium',assignedTo:r.assignedTo||'',closureDate:r.closureDate||'',file:r.file||r.id+'.pdf',location:r.location||'',inspectionDate:r.inspectionDate||'',result:r.result||'Pending',remarks:r.remarks||''});});
-      else if(module==='mdr') rows.forEach(r=>{if(r.id&&r.title)window.APP_DATA.mockMDRData.push({id:r.id,title:r.title,discipline:r.discipline||'General',deliveredBy:r.deliveredBy||'',date:r.date||today,status:'MDR',priority:'medium',receivedBy:'U001',file:r.file||r.id+'.pdf',location:r.location||'',poRef:r.poRef||'',qty:r.qty||'0',condition:r.condition||'Pending',remarks:r.remarks||''});});
-      else if(module==='hse') rows.forEach(r=>{if(r.id&&r.desc)window.APP_DATA.mockHSEData.incidents.push({id:r.id,type:r.type||'near-miss',desc:r.desc,date:r.date||today,severity:r.severity||'low',status:r.status||'open',casualties:parseInt(r.casualties)||0,location:r.location||'',rootCause:r.rootCause||'',correctiveAction:r.correctiveAction||'',investigator:'U001'});});
-      else if(module==='procurement') rows.forEach(r=>{if(r.id&&r.item)window.APP_DATA.mockProcurementData.push({id:r.id,item:r.item,vendor:r.vendor||'',poValue:parseFloat(r.poValue)||0,status:r.status||'pending',poDate:r.poDate||today,deliveryDate:r.deliveryDate||'',payStatus:r.payStatus||'0% paid',performance:parseInt(r.performance)||0,remarks:r.remarks||''});});
-      else if(module==='subcontractors') rows.forEach(r=>{if(r.id&&r.name)window.APP_DATA.mockSubcontractorData.push({id:r.id,name:r.name,scope:r.scope||'',status:r.status||'active',workers:parseInt(r.workers)||0,contractValue:parseFloat(r.contractValue)||0,paidToDate:parseFloat(r.paidToDate)||0,performance:parseInt(r.performance)||0,safety:parseInt(r.safety)||0,poRef:r.poRef||'',contactPerson:r.contactPerson||'',phone:r.phone||''});});
-      else if(module==='closeout') rows.forEach(r=>{if(r.id&&r.item)window.APP_DATA.mockCloseoutData.push({id:r.id,item:r.item,category:r.category||'',status:r.status||'not-started',due:r.due||'',assignedTo:r.assignedTo||'',remarks:r.remarks||''});});
-      saveProjectDataAuto(); refreshDashboardKPIs();
-      renderPage(STATE.currentPage);
-      showToast('CSV Imported',`${rows.length} records imported from ${file.name}. Platform data updated.`,'success');
-    });
-  };
-  input.click();
-}
-
-// ── DISCIPLINE TAB HELPER ─────────────────────────────────────
-function setupDiscTabs(tabsContainerId, stateKey, renderFn) {
-  const container = document.getElementById(tabsContainerId);
-  if (!container) return;
-  // Only attach once
-  if (container._discTabsReady) return;
-  container._discTabsReady = true;
-  container.querySelectorAll('.mep-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      container.querySelectorAll('.mep-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      STATE[stateKey] = tab.dataset.disc || 'all';
-      renderFn();
-    });
-  });
-}
-
-// ── LOCAL FILE PATH HELPERS (Amendment 4) ─────────────────────
-// Save path to localStorage for reuse
-function saveFilePath(module, href) {
-  if (!href || href.startsWith('file:///')) {
-    try { localStorage.setItem('CI_filePath_'+module, href); } catch(e) {}
+// ── EXPORT TO CSV (improved: proper escaping + Blob/createObjectURL) ─
+function exportToCSV(data, filename) {
+  if (!data || !data.length) { return; }
+  function escField(v) {
+    const s = String(v == null ? '' : v);
+    return (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r'))
+      ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
+  const headers = Object.keys(data[0]);
+  const rows    = data.map(row => headers.map(h => escField(row[h])).join(','));
+  const csv     = [headers.map(escField).join(','), ...rows].join('\r\n');
+  const blob    = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href        = url;
+  a.download    = filename + '.csv';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
-// Get saved base path or use default from LOCAL_DRIVE
-function openLocalFile(module, filename) {
-  let base;
+// ── EXPORT CONSTRUCTION LOG CSV (with summary header) ─────────
+// `rows`    — parsed CSV row objects (window._uploadedRows)
+// `headers` — original column order  (window._uploadedHeaders)
+function exportConstructionLogCSV(rows, headers) {
+  rows    = rows    || window._uploadedRows    || [];
+  headers = headers || window._uploadedHeaders || [];
+  if (!rows.length || !headers.length) {
+    if (typeof showToast === 'function') showToast('No Data', 'Please upload a CSV file first.', 'warning');
+    else alert('No data loaded. Please upload a CSV file first.');
+    return;
+  }
+  function escField(v) {
+    const s = String(v == null ? '' : v);
+    return (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r'))
+      ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  const counts       = computeStatusCounts(rows);
+  const totalCount   = rows.length;
+  const summaryParts = STATUS_ORDER.map(k => STATUS_CONFIG[k].label + ': ' + counts[k]);
+  const lines = [];
+  lines.push(escField('Total no. = ' + totalCount));
+  lines.push(escField(summaryParts.join('; ')));
+  lines.push('');
+  lines.push(headers.map(escField).join(','));
+  rows.forEach(row => { lines.push(headers.map(h => escField(row[h])).join(',')); });
+  const csv  = lines.join('\r\n');
+  const today = new Date();
+  const yyyy  = today.getFullYear();
+  const mm    = String(today.getMonth() + 1).padStart(2, '0');
+  const dd    = String(today.getDate()).padStart(2, '0');
+  const fname = 'Construction_Log_Summary_' + yyyy + '-' + mm + '-' + dd + '.csv';
+  const blob  = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement('a');
+  a.href      = url;
+  a.download  = fname;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  if (typeof showToast === 'function') showToast('Export Complete', fname, 'success');
+}
+
+// ── PROJECT DATA PERSISTENCE ──────────────────────────────────
+const PROJECT_STORAGE_KEY = 'ci_project_data';
+
+function saveProjectData() {
+  const snapshot = {
+    version: '2026.2',
+    savedAt: new Date().toISOString(),
+    PROJECTS: window.APP_DATA ? window.APP_DATA.PROJECTS : PROJECTS,
+    activeProjectId: window.APP_DATA ? window.APP_DATA.ACTIVE_PROJECT.id : ACTIVE_PROJECT.id,
+    mockDrawingsData, mockMaterialsData, mockMethodsData, mockNCRData,
+    mockRFIData, mockSIData, mockWIRData, mockMDRData, mockProcurementData, mockProgressData,
+    mockHSEData, mockSubcontractorData, mockCostData, mockManpowerData,
+    mockTestingData, mockCloseoutData
+  };
   try {
-    const saved = localStorage.getItem('CI_filePath_'+module);
-    if (saved) {
-      // saved is a full path to a previous file — extract folder
-      const parts = saved.replace(/\\/g,'/').split('/');
-      parts.pop(); // remove filename
-      base = parts.join('/') + '/';
-      if (!base.startsWith('file:///')) base = 'file:///' + base.replace(/^\/+/,'');
-    }
-  } catch(e) {}
-  if (!base) {
-    const driveMap = {
-      drawings: window.APP_DATA.LOCAL_DRIVE.drawings,
-      materials: window.APP_DATA.LOCAL_DRIVE.materials,
-      methods: window.APP_DATA.LOCAL_DRIVE.methods,
-      testing: window.APP_DATA.LOCAL_DRIVE.testing,
-      ncr: window.APP_DATA.LOCAL_DRIVE.ncr,
-      rfi: window.APP_DATA.LOCAL_DRIVE.rfi,
-      si: window.APP_DATA.LOCAL_DRIVE.si,
-      wir: window.APP_DATA.LOCAL_DRIVE.wir,
-      mdr: window.APP_DATA.LOCAL_DRIVE.mdr,
-      hse: window.APP_DATA.LOCAL_DRIVE.hse,
-      procurement: window.APP_DATA.LOCAL_DRIVE.procurement,
-      subcontractors: window.APP_DATA.LOCAL_DRIVE.subcontractors,
-      cost: window.APP_DATA.LOCAL_DRIVE.cost,
-      manpower: window.APP_DATA.LOCAL_DRIVE.manpower,
-      closeout: window.APP_DATA.LOCAL_DRIVE.closeout,
-    };
-    base = driveMap[module] || window.APP_DATA.LOCAL_DRIVE.root;
-  }
-  return base + encodeURIComponent(filename||'');
+    localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(snapshot));
+    return true;
+  } catch(e) { console.error('saveProjectData error:', e); return false; }
 }
 
-// ── SHARED UTILITIES ──────────────────────────────────────────
-function renderRegisterStats(cid,stats){const c=document.getElementById(cid);if(!c)return;c.innerHTML=stats.map(s=>`<div class="kpi-card ${s.color}"><div class="kpi-label">${s.label}</div><div class="kpi-value">${s.value}</div></div>`).join('');}
-
-function renderTable(tbid,data,rowFn){const tb=document.getElementById(tbid);if(!tb)return;tb.innerHTML=data.length?data.map(rowFn).join(''):`<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted)">No records found</td></tr>`;}
-
-function setupTableFilter(inputId,tbodyId){const input=document.getElementById(inputId);if(!input)return;const ni=input.cloneNode(true);input.parentNode.replaceChild(ni,input);ni.addEventListener('input',debounce(e=>{const q=e.target.value.toLowerCase();Array.from(document.getElementById(tbodyId)?.querySelectorAll('tr')||[]).forEach(row=>{row.style.display=row.textContent.toLowerCase().includes(q)?'':'none';});},200));}
-
-function setupSelectFilter(selId,tbodyId,colIndex){const sel=document.getElementById(selId);if(!sel)return;sel.addEventListener('change',()=>{const q=sel.value.toLowerCase();Array.from(document.getElementById(tbodyId)?.querySelectorAll('tr')||[]).forEach(row=>{const cell=row.cells[colIndex];if(!cell)return;row.style.display=!q||cell.textContent.toLowerCase().includes(q)?'':'none';});});}
-
-function statusBadge(s){const map={'approved':'approved','submitted':'submitted','under-review':'review','rejected':'rejected','active':'active','completed':'completed','pending':'pending','passed':'approved','failed':'rejected','open':'open','closed':'closed','mobilizing':'mobilizing','not-started':'draft','partially-delivered':'pending','delivered':'completed','in-progress':'pending'};return `<span class="badge badge-${map[s]||'draft'}">${s.replace(/-/g,' ')}</span>`;}
-function riskBadge(r){const m={Critical:'critical',High:'high',Medium:'medium',Low:'low'};return `<span class="badge badge-${m[r]||'low'}">${r}</span>`;}
-function priorityBadge(p){return `<span class="badge badge-${p||'low'}">${(p||'low')}</span>`;}
-function severityBadge(s){return `<span class="badge badge-${s||'low'}">${s||'low'}</span>`;}
-function inf(label,value){return `<div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">${label}</div><div style="font-size:13px;color:var(--text-primary)">${value}</div></div>`;}
-function capitalize(s){return s.charAt(0).toUpperCase()+s.slice(1);}
-function debounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms);};}
-
-// ── MODAL ─────────────────────────────────────────────────────
-function openModal(title,subtitle,content,onSave) {
-  document.getElementById('modal-title').textContent=title;
-  document.getElementById('modal-body').innerHTML=content;
-  const saveBtn=document.getElementById('modal-save-btn');
-  saveBtn.style.display=onSave?'':'none';
-  saveBtn.onclick=()=>{if(onSave)onSave();closeModal();};
-  document.getElementById('modal-overlay').classList.add('active');
-}
-
-function closeModal(){document.getElementById('modal-overlay').classList.remove('active');}
-document.addEventListener('click',e=>{if(e.target.id==='modal-overlay')closeModal();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
-
-// ── TOAST ─────────────────────────────────────────────────────
-function showToast(title,message,type='info'){
-  const c=document.getElementById('toast-container');
-  const t=document.createElement('div'); t.className=`toast ${type}`;
-  const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
-  t.innerHTML=`<span style="font-size:16px">${icons[type]||'ℹ️'}</span><div style="flex:1"><div style="font-weight:600;font-size:12.5px;color:var(--text-primary)">${title}</div><div style="font-size:11.5px;color:var(--text-secondary);margin-top:1px">${message}</div></div><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 0 0 4px">✕</button>`;
-  c.appendChild(t);
-  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(100%)';t.style.transition='all 0.3s ease';setTimeout(()=>t.remove(),300);},4500);
-}
-
-// ── CHART DEFAULTS ────────────────────────────────────────────
-function chartDefaults(o={}){
-  const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8a9bb8',font:{family:"'DM Mono',monospace",size:11},boxWidth:10}},tooltip:{backgroundColor:'rgba(26,32,48,0.95)',titleColor:'#e8edf5',bodyColor:'#8a9bb8',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,padding:10,titleFont:{family:"'Barlow Condensed',sans-serif",size:14,weight:'700'},bodyFont:{family:"'DM Mono',monospace",size:11}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4a5870',font:{family:"'DM Mono',monospace",size:10}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4a5870',font:{family:"'DM Mono',monospace",size:10}}}},animation:{duration:800,easing:'easeInOutQuart'}};
-  if(o.scales){if(o.scales.x)Object.assign(base.scales.x,o.scales.x);if(o.scales.y)Object.assign(base.scales.y,o.scales.y);delete o.scales;}
-  return {...base,...o};
-}
-
-// ── LANGUAGE TOGGLE (EN / AR) ──────────────────────────────────
-const TRANSLATIONS = {
-  en: {
-    'Dashboard Overview': 'Dashboard Overview',
-    'Project Management': 'Project Management',
-    'Drawing Register': 'Drawing Register',
-    'Material Submittal Register': 'Material Submittal Register',
-    'Method Statement Register': 'Method Statement Register',
-    'Test & Commissioning Register': 'Test & Commissioning Register',
-    'NCR / RFI / Site Instructions': 'NCR / RFI / Site Instructions',
-    'Procurement Tracker': 'Procurement Tracker',
-    'Progress Tracker': 'Progress Tracker',
-    'HSE Register': 'HSE Register',
-    'Subcontractor Management': 'Subcontractor Management',
-    'Cost Control': 'Cost Control',
-    'Manpower & Equipment': 'Manpower & Equipment',
-    'Project Closeout': 'Project Closeout',
-    'Active Project': 'Active Project',
-    'ADMIN': 'ADMIN', 'OPERATOR': 'OPERATOR',
-    'Overview': 'Overview',
-    'Document Control': 'Document Control',
-    'Site Management': 'Site Management',
-    'Commercial': 'Commercial',
-    'Closeout': 'Closeout',
-  },
-  ar: {
-    'Dashboard Overview': 'نظرة عامة على لوحة القيادة',
-    'Project Management': 'إدارة المشاريع',
-    'Drawing Register': 'سجل الرسومات',
-    'Material Submittal Register': 'سجل تقديم المواد',
-    'Method Statement Register': 'سجل بيانات الطريقة',
-    'Test & Commissioning Register': 'سجل الاختبار والتشغيل',
-    'NCR / RFI / Site Instructions': 'تقارير عدم المطابقة / استفسارات المعلومات',
-    'Procurement Tracker': 'متابعة المشتريات',
-    'Progress Tracker': 'متابعة التقدم',
-    'HSE Register': 'سجل الصحة والسلامة والبيئة',
-    'Subcontractor Management': 'إدارة المقاولين من الباطن',
-    'Cost Control': 'التحكم في التكاليف',
-    'Manpower & Equipment': 'القوى العاملة والمعدات',
-    'Project Closeout': 'إغلاق المشروع',
-    'Active Project': 'المشروع النشط',
-    'ADMIN': 'مسؤول', 'OPERATOR': 'مشغّل',
-    'Overview': 'نظرة عامة',
-    'Document Control': 'التحكم في الوثائق',
-    'Site Management': 'إدارة الموقع',
-    'Commercial': 'التجاري',
-    'Closeout': 'الإغلاق',
-  }
-};
-
-STATE.language = 'en';
-
-function toggleLanguage() {
-  STATE.language = STATE.language === 'en' ? 'ar' : 'en';
-  const isAr = STATE.language === 'ar';
-  const btn = document.getElementById('lang-toggle');
-  if (btn) btn.textContent = isAr ? 'AR' : 'EN';
-  document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
-  document.documentElement.setAttribute('lang', isAr ? 'ar' : 'en');
-  // Translate nav section labels
-  document.querySelectorAll('.nav-section-label').forEach(el => {
-    const t = TRANSLATIONS[STATE.language][el.textContent.trim()];
-    if (t) el.textContent = t;
-  });
-  // Translate nav items (text nodes, not the icon/badge)
-  document.querySelectorAll('.nav-item').forEach(el => {
-    const icon = el.querySelector('.nav-icon');
-    const badge = el.querySelector('.nav-badge');
-    const pageTitles = { dashboard: isAr?'لوحة القيادة':'Dashboard', projects: isAr?'المشاريع':'Projects', drawings: isAr?'سجل الرسومات':'Drawing Register', materials: isAr?'تقديم المواد':'Material Submittals', methods: isAr?'بيانات الطريقة':'Method Statements', testing: isAr?'الاختبار والتشغيل':'Test & Commissioning', ncr: isAr?'تقارير عدم المطابقة':'NCR / RFI / SI', procurement: isAr?'المشتريات':'Procurement Tracker', progress: isAr?'التقدم':'Progress Tracker', hse: isAr?'سجل HSE':'HSE Register', subcontractors: isAr?'المقاولون':'Subcontractors', cost: isAr?'التكاليف':'Cost Control', manpower: isAr?'القوى العاملة':'Manpower & Equipment', closeout: isAr?'الإغلاق':'Project Closeout' };
-    const page = el.dataset.page;
-    if (page && pageTitles[page]) {
-      el.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) n.textContent = ' ' + pageTitles[page]; });
-    }
-  });
-  // Translate sidebar labels
-  const projLabel = document.querySelector('.proj-label');
-  if (projLabel) projLabel.textContent = isAr ? 'المشروع النشط' : 'Active Project';
-  // Translate header title
-  const titleMap = TRANSLATIONS[STATE.language];
-  const hTitle = document.getElementById('header-page-title');
-  if (hTitle) { const t = titleMap[hTitle.textContent]; if(t) hTitle.textContent = t; }
-  // Re-render page for table labels update
-  renderPage(STATE.currentPage);
-  showToast(isAr ? 'اللغة' : 'Language', isAr ? 'تم التبديل إلى العربية' : 'Switched to English', 'info');
-}
-
-// ── PROJECT DATA SAVE / IMPORT (UI wrappers) ───────────────────
-function saveAndExportProjectData() {
-  // First auto-save to localStorage
-  const lsOk = window.APP_DATA.saveProjectData();
-  // Then download JSON file
-  window.APP_DATA.exportProjectData();
-  showToast('Project Data Saved', lsOk ? 'Saved to local storage & downloaded as JSON backup' : 'Downloaded backup (localStorage save failed)', lsOk ? 'success' : 'warning');
-}
-
-function importProjectDataFromFile() {
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = '.json';
-  fileInput.onchange = async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    try {
-      await window.APP_DATA.importProjectData(file);
-      // Reload entire app UI
-      const proj = window.APP_DATA.ACTIVE_PROJECT;
-      updateProjectDisplay(proj);
-      const switcher = document.getElementById('project-switcher');
-      if (switcher) {
-        switcher.innerHTML = window.APP_DATA.PROJECTS.map(p => `<option value="${p.id}" ${p.id===proj.id?'selected':''}>${p.code} — ${p.name.substring(0,28)}…</option>`).join('');
-      }
-      renderPage(STATE.currentPage);
-      showToast('Project Data Imported', `All data loaded from ${file.name}`, 'success');
-    } catch (err) {
-      showToast('Import Error', err.message, 'error');
-    }
+function exportProjectData() {
+  const snapshot = {
+    version: '2026.2',
+    savedAt: new Date().toISOString(),
+    PROJECTS: window.APP_DATA ? window.APP_DATA.PROJECTS : PROJECTS,
+    activeProjectId: window.APP_DATA ? window.APP_DATA.ACTIVE_PROJECT.id : ACTIVE_PROJECT.id,
+    mockDrawingsData, mockMaterialsData, mockMethodsData, mockNCRData,
+    mockRFIData, mockSIData, mockWIRData, mockMDRData, mockProcurementData, mockProgressData,
+    mockHSEData, mockSubcontractorData, mockCostData, mockManpowerData,
+    mockTestingData, mockCloseoutData
   };
-  fileInput.click();
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'CI-ProjectData-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
-// Auto-save to localStorage whenever any data changes
-// Call saveProjectDataAuto() from key mutation points
-function saveProjectDataAuto() {
-  window.APP_DATA.saveProjectData();
+function importProjectData(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.PROJECTS || !Array.isArray(data.PROJECTS)) throw new Error('Invalid project data file');
+        // Restore all data arrays in-place
+        if (data.PROJECTS)            { PROJECTS.length=0; data.PROJECTS.forEach(p=>PROJECTS.push(p)); }
+        if (data.mockDrawingsData)    { mockDrawingsData.length=0; data.mockDrawingsData.forEach(x=>mockDrawingsData.push(x)); }
+        if (data.mockMaterialsData)   { mockMaterialsData.length=0; data.mockMaterialsData.forEach(x=>mockMaterialsData.push(x)); }
+        if (data.mockMethodsData)     { mockMethodsData.length=0; data.mockMethodsData.forEach(x=>mockMethodsData.push(x)); }
+        if (data.mockNCRData)         { mockNCRData.length=0; data.mockNCRData.forEach(x=>mockNCRData.push(x)); }
+        if (data.mockRFIData)         { mockRFIData.length=0; data.mockRFIData.forEach(x=>mockRFIData.push(x)); }
+        if (data.mockSIData)          { mockSIData.length=0; data.mockSIData.forEach(x=>mockSIData.push(x)); }
+        if (data.mockWIRData)         { mockWIRData.length=0; data.mockWIRData.forEach(x=>mockWIRData.push(x)); }
+        if (data.mockMDRData)         { mockMDRData.length=0; data.mockMDRData.forEach(x=>mockMDRData.push(x)); }
+        if (data.mockProcurementData) { mockProcurementData.length=0; data.mockProcurementData.forEach(x=>mockProcurementData.push(x)); }
+        if (data.mockHSEData)         { Object.assign(mockHSEData, data.mockHSEData); }
+        if (data.mockSubcontractorData){ mockSubcontractorData.length=0; data.mockSubcontractorData.forEach(x=>mockSubcontractorData.push(x)); }
+        if (data.mockTestingData)     { mockTestingData.length=0; data.mockTestingData.forEach(x=>mockTestingData.push(x)); }
+        if (data.mockCloseoutData)    { mockCloseoutData.length=0; data.mockCloseoutData.forEach(x=>mockCloseoutData.push(x)); }
+        if (data.mockManpowerData)    { Object.assign(mockManpowerData, data.mockManpowerData); }
+        if (data.mockProgressData)    { Object.assign(mockProgressData, data.mockProgressData); }
+        if (data.mockCostData)        { Object.assign(mockCostData, data.mockCostData); }
+        // Restore active project
+        if (data.activeProjectId) {
+          const ap = PROJECTS.find(p => p.id === data.activeProjectId) || PROJECTS[0];
+          if (ap) ACTIVE_PROJECT = ap;
+        }
+        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(data));
+        resolve(data);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = () => reject(new Error('File read failed'));
+    reader.readAsText(file);
+  });
 }
 
-// ── EXPOSE ────────────────────────────────────────────────────
-const exp={navigateTo,openModal,closeModal,showToast,generatePDF,
-  openAddProjectModal,openAddDrawingModal,openAddMaterialModal,openAddSubModal,openAddNCRModal,openAddHSEModal,
-  openAddMethodModal,openAddTestModal,openAddPOModal,openAddDailyLogModal,openAddCloseoutItemModal,
-  openUpdateProgressModal,openEditProjectModal,confirmDeleteProject,exportProjectsCSV,printProjectsPDF,
-  openSettings,
-  editDrawingStatus,viewDrawing,deleteDrawing,editMaterial,viewMaterial,deleteMaterial,editMethod,viewMethod,deleteMethod,editTesting,viewTest,deleteTesting,
-  viewPO,editPO,deletePO,viewSub,editSub,deleteSub,viewHSE,editHSE,deleteHSE,viewNCR,editNCR,deleteNCR,viewRFI,editRFI,deleteRFI,viewSI,editSI,deleteSI,viewCloseout,editCloseout,deleteCloseout,
-  viewCostCategory,editCostCategory,deleteCostCategory,viewManpowerWeek,editManpowerWeek,
-  closeNCR,closeRFI,closeSI,closeHSE,completeCloseout,
-  setNCRTab,markNotifRead,triggerImport,openAddVariationOrderModal,
-  printDashboardPDF,printDrawingsPDF,printMaterialsPDF,printMethodsPDF,
-  printTestingPDF,printNCRPDF,printRFIPDF,printSIPDF,
-  printProcurementPDF,printProgressPDF,printHSEPDF,
- printSubPDF,printCostPDF,printManpowerPDF,printCloseoutPDF,addEquipment,deleteEquipment,
-  exportCurrentModule:(m)=>{const map={drawings:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockDrawingsData,'Drawing-Register'),materials:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMaterialsData,'Material-Submittals'),methods:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMethodsData,'Method-Statements'),ncr:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockNCRData,'NCR-Register'),rfi:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockRFIData,'RFI-Register'),si:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSIData,'SI-Register'),wir:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockWIRData,'WIR-Register'),mdr:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockMDRData,'MDR-Register'),procurement:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockProcurementData,'Procurement-Tracker'),hse:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockHSEData.incidents,'HSE-Register'),subcontractors:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockSubcontractorData,'Subcontractor-Register'),testing:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockTestingData,'Test-Commissioning'),cost:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCostData.categories,'Cost-Control'),closeout:()=>window.APP_DATA.exportToCSV(window.APP_DATA.mockCloseoutData,'Project-Closeout')};if(map[m]){map[m]();showToast('Exported',m+' data exported as CSV','success');}},
-  saveAndExportProjectData, importProjectDataFromFile, toggleLanguage,
-  // WIR
-  viewWIR, editWIR, deleteWIR, openAddWIRModal, printWIRPDF,
-  // MDR
-  viewMDR, editMDR, deleteMDR, openAddMDRModal, printMDRPDF,
-  // Separate page renders
-  renderRFIPage, renderSIPage, renderWIRPage, renderMDRPage,
-  // Discipline tab helpers
-  setupDiscTabs, openLocalFile, saveFilePath, refreshDashboardKPIs,
-  // setNCRTab kept for backwards compat
-  setNCRTab,
-};
-Object.assign(window,exp);
-window.STATE = STATE; // expose for HTML inline access
+function loadProjectDataFromStorage() {
+  try {
+    const raw = localStorage.getItem(PROJECT_STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data.PROJECTS) return false;
+    if (data.PROJECTS)            { PROJECTS.length=0; data.PROJECTS.forEach(p=>PROJECTS.push(p)); }
+    if (data.mockDrawingsData)    { mockDrawingsData.length=0; data.mockDrawingsData.forEach(x=>mockDrawingsData.push(x)); }
+    if (data.mockMaterialsData)   { mockMaterialsData.length=0; data.mockMaterialsData.forEach(x=>mockMaterialsData.push(x)); }
+    if (data.mockMethodsData)     { mockMethodsData.length=0; data.mockMethodsData.forEach(x=>mockMethodsData.push(x)); }
+    if (data.mockNCRData)         { mockNCRData.length=0; data.mockNCRData.forEach(x=>mockNCRData.push(x)); }
+    if (data.mockRFIData)         { mockRFIData.length=0; data.mockRFIData.forEach(x=>mockRFIData.push(x)); }
+    if (data.mockSIData)          { mockSIData.length=0; data.mockSIData.forEach(x=>mockSIData.push(x)); }
+    if (data.mockWIRData)         { mockWIRData.length=0; data.mockWIRData.forEach(x=>mockWIRData.push(x)); }
+    if (data.mockMDRData)         { mockMDRData.length=0; data.mockMDRData.forEach(x=>mockMDRData.push(x)); }
+    if (data.mockProcurementData) { mockProcurementData.length=0; data.mockProcurementData.forEach(x=>mockProcurementData.push(x)); }
+    if (data.mockHSEData)         { Object.assign(mockHSEData, data.mockHSEData); }
+    if (data.mockSubcontractorData){ mockSubcontractorData.length=0; data.mockSubcontractorData.forEach(x=>mockSubcontractorData.push(x)); }
+    if (data.mockTestingData)     { mockTestingData.length=0; data.mockTestingData.forEach(x=>mockTestingData.push(x)); }
+    if (data.mockCloseoutData)    { mockCloseoutData.length=0; data.mockCloseoutData.forEach(x=>mockCloseoutData.push(x)); }
+    if (data.mockManpowerData)    { Object.assign(mockManpowerData, data.mockManpowerData); }
+    if (data.mockProgressData)    { Object.assign(mockProgressData, data.mockProgressData); }
+    if (data.mockCostData)        { Object.assign(mockCostData, data.mockCostData); }
+    if (data.activeProjectId) {
+      const ap = PROJECTS.find(p => p.id === data.activeProjectId) || PROJECTS[0];
+      if (ap) ACTIVE_PROJECT = ap;
+    }
+    return true;
+  } catch(e) { console.error('loadProjectDataFromStorage error:', e); return false; }
+}
+
+// Auto-load from localStorage on script parse
+loadProjectDataFromStorage();
+
+// ── ENTRY STORAGE (localStorage) ─────────────────────────────
+const ENTRIES_KEY = 'myEntries';
+function loadEntries() {
+  try { const raw=localStorage.getItem(ENTRIES_KEY); return raw?JSON.parse(raw):[]; } catch(e){return [];}
+}
+function saveEntries(entries) {
+  try { localStorage.setItem(ENTRIES_KEY,JSON.stringify(entries)); return true; } catch(e){return false;}
+}
+function exportEntries() {
+  const blob=new Blob([JSON.stringify(loadEntries(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='entries-backup.json'; a.click(); URL.revokeObjectURL(url);
+}
+function importEntries(file) {
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{ try{ const data=JSON.parse(e.target.result); if(!Array.isArray(data))throw new Error('Expected array'); saveEntries(data); resolve(data); }catch(err){reject(err);} };
+    reader.onerror=()=>reject(new Error('Read failed')); reader.readAsText(file);
+  });
+}
+
+window.APP_DATA={PLATFORM,PROJECTS,get ACTIVE_PROJECT(){return ACTIVE_PROJECT;},set ACTIVE_PROJECT(v){ACTIVE_PROJECT=v;},USERS,NOTIFICATIONS,DISCIPLINES,LOCAL_DRIVE,openLocalFile,mockDrawingsData,mockMaterialsData,mockMethodsData,mockNCRData,mockRFIData,mockSIData,mockWIRData,mockMDRData,mockProcurementData,mockProgressData,mockHSEData,mockSubcontractorData,mockCostData,mockManpowerData,mockTestingData,mockCloseoutData,computeKPIs,STATUS_CONFIG,STATUS_ORDER,computeStatusCounts,exportToCSV,exportConstructionLogCSV,saveProjectData,exportProjectData,importProjectData,loadEntries,saveEntries,exportEntries,importEntries};
